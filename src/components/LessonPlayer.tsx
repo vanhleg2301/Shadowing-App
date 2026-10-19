@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ClozePanel } from "@/components/ClozePanel";
+import { DictationPanel } from "@/components/DictationPanel";
 import { Icon } from "@/components/Icon";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
@@ -12,7 +14,14 @@ import { findActiveIndex, formatTime, type Lesson } from "@/lib/lesson";
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
 
-type Mode = "watch" | "shadow";
+type Mode = "watch" | "shadow" | "dictation" | "cloze";
+
+const MODES: { mode: Mode; label: string }[] = [
+  { mode: "watch", label: "Watch" },
+  { mode: "shadow", label: "Shadowing" },
+  { mode: "dictation", label: "Dictation" },
+  { mode: "cloze", label: "Cloze" },
+];
 
 interface LessonPlayerProps {
   lesson: Lesson;
@@ -25,7 +34,9 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
   );
   const [mode, setMode] = useState<Mode>("watch");
   const [loopIndex, setLoopIndex] = useState<number | null>(null);
-  const [shadowIndex, setShadowIndex] = useState(0);
+  const [practiceIndex, setPracticeIndex] = useState(0);
+  // In dictation and cloze the transcript stays hidden until the learner has answered that sentence.
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [speed, setSpeed] = useState(1);
   const [showTranslation, setShowTranslation] = useState(lesson.hasTranslation);
   const [lookup, setLookup] = useState<WordLookupState | null>(null);
@@ -33,8 +44,10 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
 
   const activeIndex = findActiveIndex(sentences, currentTime);
-  const highlightIndex = mode === "shadow" ? shadowIndex : activeIndex;
-  const currentIndex = mode === "shadow" ? shadowIndex : Math.max(activeIndex, 0);
+  const isPractice = mode !== "watch";
+  const highlightIndex = isPractice ? practiceIndex : activeIndex;
+  const currentIndex = isPractice ? practiceIndex : Math.max(activeIndex, 0);
+  const isMasked = (i: number) => (mode === "dictation" || mode === "cloze") && !revealed.has(i);
 
   useEffect(() => {
     const stopAt = stopAtRef.current;
@@ -55,14 +68,14 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
 
   const playSentence = (index: number) => {
     seekTo(sentences[index].start);
-    stopAtRef.current = mode === "shadow" ? sentences[index].end : null;
+    stopAtRef.current = isPractice ? sentences[index].end : null;
     play();
   };
 
   const goToSentence = (index: number) => {
     if (index < 0 || index >= sentences.length) return;
-    if (mode === "shadow") {
-      setShadowIndex(index);
+    if (isPractice) {
+      setPracticeIndex(index);
       playSentence(index);
       return;
     }
@@ -75,11 +88,14 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
     setMode(next);
     setLoopIndex(null);
     stopAtRef.current = null;
-    if (next === "shadow") {
-      setShadowIndex(Math.max(activeIndex, 0));
+    setRevealed(new Set());
+    if (next !== "watch") {
+      setPracticeIndex(Math.max(activeIndex, 0));
       pause();
     }
   };
+
+  const revealCurrent = () => setRevealed((prev) => new Set(prev).add(practiceIndex));
 
   const handleToggleLoop = () => {
     setLoopIndex(loopIndex === null ? Math.max(activeIndex, 0) : null);
@@ -117,7 +133,7 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
-      <header className="flex items-center gap-3 border-b border-line bg-cream px-4 py-3 lg:col-span-2 lg:px-6">
+      <header className="flex flex-wrap items-center gap-3 border-b border-line bg-cream px-4 py-3 lg:col-span-2 lg:flex-nowrap lg:px-6">
         <Link href="/" aria-label="Back to home" className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
         </Link>
@@ -125,17 +141,19 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
           <h1 className="truncate font-bold text-ink">{lesson.title}</h1>
           <p className="truncate text-sm text-muted">{lesson.author}</p>
         </div>
-        <div className="flex shrink-0 gap-1 rounded-2xl border border-line bg-white p-1">
-          {(["watch", "shadow"] as const).map((m) => (
+        <div className="flex w-full gap-1 rounded-2xl border border-line bg-white p-1 lg:w-auto lg:shrink-0">
+          {MODES.map((m) => (
             <button
-              key={m}
+              key={m.mode}
               type="button"
-              onClick={() => handleModeChange(m)}
-              className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
-                mode === m ? "bg-brand text-white shadow-[0_2px_0_0_var(--color-brand-dark)]" : "text-muted hover:text-ink"
+              onClick={() => handleModeChange(m.mode)}
+              className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                mode === m.mode
+                  ? "bg-brand text-white shadow-[0_2px_0_0_var(--color-brand-dark)]"
+                  : "text-muted hover:text-ink"
               }`}
             >
-              {m === "watch" ? "Watch" : "Shadowing"}
+              {m.label}
             </button>
           ))}
         </div>
@@ -173,45 +191,76 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
             >
               {formatTime(sentence.start)}
             </button>
-            <div className="min-w-0">
-              <p className={`text-[17px] leading-relaxed ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
-                {sentence.text.split(/(\s+)/).map((token, j) =>
-                  /\s/.test(token) || !normalizeWord(token) ? (
-                    token
-                  ) : (
-                    <button
-                      key={j}
-                      type="button"
-                      onClick={() => handleWordClick(token, sentence.text)}
-                      className="rounded-md hover:bg-amber-200/70 hover:text-ink"
-                    >
-                      {token}
-                    </button>
-                  ),
-                )}
+            {isMasked(i) ? (
+              <p aria-label="Hidden until you answer" className="min-w-0 select-none text-[17px] leading-relaxed text-ink/60 blur-[6px]">
+                {sentence.text}
               </p>
-              {showTranslation && sentence.translation && (
-                <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
-              )}
-            </div>
+            ) : (
+              <div className="min-w-0">
+                <p className={`text-[17px] leading-relaxed ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
+                  {sentence.text.split(/(\s+)/).map((token, j) =>
+                    /\s/.test(token) || !normalizeWord(token) ? (
+                      token
+                    ) : (
+                      <button
+                        key={j}
+                        type="button"
+                        onClick={() => handleWordClick(token, sentence.text)}
+                        className="rounded-md hover:bg-amber-200/70 hover:text-ink"
+                      >
+                        {token}
+                      </button>
+                    ),
+                  )}
+                </p>
+                {showTranslation && sentence.translation && (
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       <div className="shrink-0 border-t border-line bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 lg:col-start-1 lg:row-start-3 lg:self-start lg:border-0 lg:bg-transparent lg:px-6 lg:pt-5">
-        {mode === "shadow" ? (
+        {mode === "shadow" && (
           <ShadowingPanel
-            key={shadowIndex}
-            sentence={sentences[shadowIndex]}
-            index={shadowIndex}
+            key={practiceIndex}
+            sentence={sentences[practiceIndex]}
+            index={practiceIndex}
             total={sentences.length}
             showTranslation={showTranslation}
-            onPlaySentence={() => playSentence(shadowIndex)}
-            onPrev={() => goToSentence(shadowIndex - 1)}
-            onNext={() => goToSentence(shadowIndex + 1)}
+            onPlaySentence={() => playSentence(practiceIndex)}
+            onPrev={() => goToSentence(practiceIndex - 1)}
+            onNext={() => goToSentence(practiceIndex + 1)}
             onBeforeRecord={pause}
           />
-        ) : (
+        )}
+        {mode === "dictation" && (
+          <DictationPanel
+            key={practiceIndex}
+            sentence={sentences[practiceIndex]}
+            index={practiceIndex}
+            total={sentences.length}
+            onListen={() => playSentence(practiceIndex)}
+            onPrev={() => goToSentence(practiceIndex - 1)}
+            onNext={() => goToSentence(practiceIndex + 1)}
+            onReveal={revealCurrent}
+          />
+        )}
+        {mode === "cloze" && (
+          <ClozePanel
+            key={practiceIndex}
+            sentence={sentences[practiceIndex]}
+            index={practiceIndex}
+            total={sentences.length}
+            onListen={() => playSentence(practiceIndex)}
+            onPrev={() => goToSentence(practiceIndex - 1)}
+            onNext={() => goToSentence(practiceIndex + 1)}
+            onReveal={revealCurrent}
+          />
+        )}
+        {mode === "watch" && (
           <div className="grid grid-cols-6 gap-2 lg:max-w-xl">
             <button type="button" className="btn-3d py-3" onClick={() => goToSentence(currentIndex - 1)} aria-label="Previous sentence">
               <Icon name="prev" />
