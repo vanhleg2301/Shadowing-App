@@ -1,7 +1,9 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
+import { isAdminEmail } from "@/lib/admin-emails";
+import { getUserContext } from "@/lib/user-data";
 
 interface NavItem {
   label: string;
@@ -63,6 +65,9 @@ export function AppShell({ active, children }: AppShellProps) {
               </span>
             ),
           )}
+          <Suspense fallback={null}>
+            <AdminNavLink isActive={active === "/admin"} />
+          </Suspense>
         </nav>
 
         <div className="mt-auto pt-6">
@@ -89,5 +94,25 @@ export function AppShell({ active, children }: AppShellProps) {
         ))}
       </nav>
     </div>
+  );
+}
+
+// Streams in after the static shell, only for the two admin accounts.
+async function AdminNavLink({ isActive }: { isActive: boolean }) {
+  const ctx = await getUserContext().catch(() => null);
+  if (!ctx || !isAdminEmail(ctx.user.email)) return null;
+  return (
+    <Link
+      href="/admin"
+      aria-current={isActive ? "page" : undefined}
+      className={
+        isActive
+          ? "btn-3d btn-dark mt-4 justify-start px-4 py-3"
+          : "mt-4 flex items-center gap-1.5 rounded-2xl border border-dashed border-line px-4 py-3 font-semibold text-ink transition-colors hover:bg-cream"
+      }
+    >
+      <Icon name="book" className="size-6" />
+      Admin
+    </Link>
   );
 }
