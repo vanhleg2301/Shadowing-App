@@ -101,6 +101,16 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
     play();
   };
 
+  // Clicking a transcript row plays just that sentence once, in every mode.
+  const replaySentence = (index: number) => {
+    hasInteractedRef.current = true;
+    setIsResumeVisible(false);
+    if (isPractice) setPracticeIndex(index);
+    seekTo(sentences[index].start);
+    stopAtRef.current = sentences[index].end;
+    play();
+  };
+
   const goToSentence = (index: number) => {
     if (index < 0 || index >= sentences.length) return;
     hasInteractedRef.current = true;
@@ -212,7 +222,10 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
         <button
           key={j}
           type="button"
-          onClick={() => handleWordClick(token, text)}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleWordClick(token, text);
+          }}
           className={`rounded-md transition-colors duration-150 hover:bg-amber-200/70 hover:text-ink ${karaokeClass}`}
         >
           {token}
@@ -316,14 +329,26 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
               if (el) rowRefs.current.set(i, el);
               else rowRefs.current.delete(i);
             }}
-            className={`mb-1.5 flex gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
-              i === highlightIndex ? "border-brand/40 bg-brand-soft" : "border-transparent"
+            onClick={() => {
+              // Don't hijack a text selection (e.g. copying a sentence).
+              if (window.getSelection()?.toString()) return;
+              replaySentence(i);
+            }}
+            title="Click to replay this sentence"
+            className={`group/row mb-1.5 flex cursor-pointer gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
+              i === highlightIndex
+                ? "border-brand/40 bg-brand-soft hover:border-brand/60"
+                : "border-transparent hover:border-line hover:bg-white lg:hover:bg-cream"
             }`}
           >
             <button
               type="button"
-              onClick={() => goToSentence(i)}
-              aria-label={`Play sentence ${i + 1}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                goToSentence(i);
+              }}
+              aria-label={`Play from sentence ${i + 1}`}
+              title="Play from here"
               className="mt-0.5 h-fit shrink-0 rounded-lg px-1.5 py-0.5 font-mono text-xs font-semibold text-brand hover:bg-brand-soft"
             >
               {formatTime(sentence.start)}
