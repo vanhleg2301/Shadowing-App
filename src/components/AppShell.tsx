@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
 
 interface NavItem {
@@ -52,6 +53,10 @@ export function AppShell({ children }: AppShellProps) {
             ),
           )}
         </nav>
+
+        <div className="mt-auto pt-6">
+          <AuthButton variant="full" />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">{children}</div>

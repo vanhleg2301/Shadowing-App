@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/AppShell";
+import { AuthButton } from "@/components/AuthButton";
 import { Icon } from "@/components/Icon";
 import { PasteLinkForm } from "@/components/PasteLinkForm";
 import { VideoLibrary } from "@/components/VideoLibrary";
@@ -8,8 +9,11 @@ export default function HomePage() {
   return (
     <AppShell>
       <header className="sticky top-0 z-30 border-b border-line bg-cream/90 px-4 py-4 backdrop-blur md:px-10">
-        <div className="max-w-3xl">
+        <div className="flex max-w-3xl items-start gap-3">
           <PasteLinkForm />
+          <div className="shrink-0 md:hidden">
+            <AuthButton variant="compact" />
+          </div>
         </div>
       </header>
 
