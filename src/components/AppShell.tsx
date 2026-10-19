@@ -44,7 +44,7 @@ export function AppShell({ active, children }: AppShellProps) {
                 className={
                   item.href === active
                     ? "btn-3d btn-brand justify-start px-4 py-3"
-                    : "flex items-center gap-1.5 rounded-2xl px-4 py-3 font-semibold text-ink hover:bg-cream"
+                    : "flex items-center gap-1.5 rounded-2xl px-4 py-3 font-semibold text-ink transition-colors hover:bg-cream"
                 }
               >
                 <Icon name={item.icon} className={`size-6 ${item.href === active ? "" : item.iconClass}`} />

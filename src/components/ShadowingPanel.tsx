@@ -50,7 +50,7 @@ export function ShadowingPanel({
       {showTranslation && sentence.translation && <p className="mt-1 text-sm text-muted">{sentence.translation}</p>}
 
       {audioUrl && (
-        <div className="mt-3 rounded-2xl bg-cream p-2">
+        <div className="mt-3 animate-fade-in rounded-2xl bg-cream p-2">
           <p className="px-1 pb-1 text-xs font-semibold text-muted">Your voice</p>
           <audio className="h-10 w-full" src={audioUrl} controls />
         </div>

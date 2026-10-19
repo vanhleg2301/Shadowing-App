@@ -12,6 +12,76 @@
   --color-brand: #1f6f62;
   --color-brand-dark: #154f46;
   --color-brand-soft: #e3f1ed;
+
+  --animate-fade-up: fade-up 0.4s ease-out both;
+  --animate-fade-in: fade-in 0.2s ease-out both;
+  --animate-sheet-up: sheet-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 0.35s ease-out;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes sheet-up {
+    from {
+      opacity: 0;
+      transform: translateY(32px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop {
+    40% {
+      transform: scale(1.3);
+    }
+  }
+}
+
+/* Tailwind's preflight resets buttons to the default arrow cursor. */
+@layer base {
+  button:not(:disabled),
+  [role="button"],
+  [role="radio"],
+  select,
+  summary {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 body {

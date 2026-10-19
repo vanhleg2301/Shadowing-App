@@ -29,10 +29,10 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
   const ipa = (accent: Accent) => (accent === "uk" ? info?.ipaUk : info?.ipaUs);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-ink/40 sm:items-center" onClick={onClose}>
       <div
         lang="en"
-        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-line bg-white p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[85dvh] w-full max-w-lg animate-sheet-up overflow-y-auto rounded-t-3xl border border-line bg-white p-5 shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">

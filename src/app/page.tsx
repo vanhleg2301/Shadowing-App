@@ -20,7 +20,7 @@ export default function HomePage() {
       </header>
 
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Hi there, ready to practice?</h1>
+        <h1 className="animate-fade-up text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Hi there, ready to practice?</h1>
         <div className="mt-3 flex items-center gap-3">
           <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-bold text-orange-700">Shadowing</span>
           <span className="text-muted">Learning English</span>

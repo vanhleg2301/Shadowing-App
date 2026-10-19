@@ -21,7 +21,7 @@ export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite }: VideoC
     <div className="relative h-full">
       <Link
         href={`/watch/${video.videoId}`}
-        className="group block h-full rounded-3xl border border-line bg-white p-3 shadow-[0_4px_0_0_var(--color-line)] transition-transform hover:-translate-y-0.5"
+        className="group block h-full animate-fade-up rounded-3xl border border-line bg-white p-3 shadow-[0_4px_0_0_var(--color-line)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_8px_0_0_var(--color-line)] active:translate-y-0 active:shadow-[0_2px_0_0_var(--color-line)]"
       >
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-cream">
           <Image

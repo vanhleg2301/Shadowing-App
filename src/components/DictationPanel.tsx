@@ -49,7 +49,7 @@ export function DictationPanel({ sentence, index, total, onListen, onPrev, onNex
       />
 
       {result && (
-        <div className="mt-2 rounded-2xl bg-cream p-3">
+        <div className="mt-2 animate-fade-in rounded-2xl bg-cream p-3">
           <p className={`text-sm font-bold ${result.score === 100 ? "text-brand" : "text-amber-700"}`}>
             {result.score === 100 ? "Perfect!" : `${result.score}% correct`}
           </p>

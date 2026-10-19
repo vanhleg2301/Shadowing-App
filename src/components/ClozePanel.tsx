@@ -76,7 +76,7 @@ export function ClozePanel({ sentence, index, total, onListen, onPrev, onNext, o
       )}
 
       {isChecked && blanks.length > 0 && (
-        <p className={`mt-1 text-sm font-bold ${correctCount === blanks.length ? "text-brand" : "text-amber-700"}`}>
+        <p className={`mt-1 animate-fade-in text-sm font-bold ${correctCount === blanks.length ? "text-brand" : "text-amber-700"}`}>
           {correctCount === blanks.length ? "All correct!" : `${correctCount}/${blanks.length} correct`}
         </p>
       )}

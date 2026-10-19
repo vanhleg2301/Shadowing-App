@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
+import { ScrollRow } from "@/components/ScrollRow";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
 import { LEVELS, TOPICS, type CuratedVideo, type Level, type Topic } from "@/data/curated";
 
@@ -42,7 +43,7 @@ export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
         </div>
       </div>
 
-      <div className="-mx-4 mt-4 flex gap-2.5 overflow-x-auto px-4 pb-2 md:mx-0 md:flex-wrap md:px-0">
+      <div className="no-scrollbar -mx-4 mt-4 flex gap-2.5 overflow-x-auto px-4 pb-2 md:mx-0 md:flex-wrap md:px-0">
         <button
           type="button"
           onClick={() => setTopic(null)}
@@ -66,7 +67,7 @@ export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
       {topic ? (
         <section className="mt-6">
           <h2 className="text-2xl font-extrabold text-ink">{topic}</h2>
-          <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div key={`${topic}-${level}`} className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {selected.map((video) => (
               <VideoCard key={video.videoId} video={video} isFavorite={favoriteIds.includes(video.videoId)} />
             ))}
@@ -84,15 +85,17 @@ export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
                 className="flex items-center gap-1 text-sm font-semibold text-brand hover:text-brand-dark"
               >
                 See all {s.items.length}
-                <Icon name="next" className="size-4" />
+                <Icon name="chevronRight" className="size-4" />
               </button>
             </div>
-            <div className="-mx-4 mt-4 flex snap-x gap-5 overflow-x-auto px-4 pb-3 md:mx-0 md:px-0">
-              {s.items.map((video) => (
-                <div key={video.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]">
-                  <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} />
-                </div>
-              ))}
+            <div className="mt-3">
+              <ScrollRow label={`${s.topic} videos`}>
+                {s.items.map((video) => (
+                  <div key={video.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]">
+                    <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} />
+                  </div>
+                ))}
+              </ScrollRow>
             </div>
           </section>
         ))
