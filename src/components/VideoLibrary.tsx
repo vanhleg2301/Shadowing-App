@@ -7,9 +7,10 @@ import { LEVELS, TOPICS, type CuratedVideo, type Level, type Topic } from "@/dat
 
 interface VideoLibraryProps {
   videos: CuratedVideo[];
+  favoriteIds: string[];
 }
 
-export function VideoLibrary({ videos }: VideoLibraryProps) {
+export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
   const [level, setLevel] = useState<Level | "all">("all");
   const [topic, setTopic] = useState<Topic | null>(null);
 
@@ -67,7 +68,7 @@ export function VideoLibrary({ videos }: VideoLibraryProps) {
           <h2 className="text-2xl font-extrabold text-ink">{topic}</h2>
           <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {selected.map((video) => (
-              <VideoCard key={video.videoId} video={video} />
+              <VideoCard key={video.videoId} video={video} isFavorite={favoriteIds.includes(video.videoId)} />
             ))}
           </div>
           {selected.length === 0 && <p className="mt-6 text-muted">No videos at this level yet.</p>}
@@ -89,7 +90,7 @@ export function VideoLibrary({ videos }: VideoLibraryProps) {
             <div className="-mx-4 mt-4 flex snap-x gap-5 overflow-x-auto px-4 pb-3 md:mx-0 md:px-0">
               {s.items.map((video) => (
                 <div key={video.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]">
-                  <VideoCard video={video} />
+                  <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} />
                 </div>
               ))}
             </div>

@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon } from "@/components/Icon";
 import { PasteLinkForm } from "@/components/PasteLinkForm";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import { CURATED_VIDEOS } from "@/data/curated";
+import { getFavoriteIds } from "@/lib/user-data";
 
 export default function HomePage() {
   return (
@@ -35,9 +37,17 @@ export default function HomePage() {
         </section>
 
         <div className="mt-8">
-          <VideoLibrary videos={CURATED_VIDEOS} />
+          {/* The static shell shows the library right away; hearts fill in once the user's favorites stream in. */}
+          <Suspense fallback={<VideoLibrary videos={CURATED_VIDEOS} favoriteIds={[]} />}>
+            <LibraryWithFavorites />
+          </Suspense>
         </div>
       </main>
     </AppShell>
   );
+}
+
+async function LibraryWithFavorites() {
+  const favoriteIds = await getFavoriteIds().catch(() => []);
+  return <VideoLibrary videos={CURATED_VIDEOS} favoriteIds={favoriteIds} />;
 }

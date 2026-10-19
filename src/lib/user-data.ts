@@ -67,6 +67,13 @@ export async function getSavedWords(): Promise<SavedWord[] | null> {
   }));
 }
 
+export async function getFavoriteIds(): Promise<string[]> {
+  const ctx = await getUserContext();
+  if (!ctx) return [];
+  const { data } = await ctx.supabase.from("favorites").select("video_id");
+  return ((data ?? []) as { video_id: string }[]).map((r) => r.video_id);
+}
+
 // What the lesson page needs to render hearts and "saved" badges for the signed-in learner.
 export async function getLessonUserState(videoId: string): Promise<{ isFavorite: boolean; savedWords: string[] }> {
   const ctx = await getUserContext();

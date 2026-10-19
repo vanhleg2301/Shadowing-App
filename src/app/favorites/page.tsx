@@ -44,7 +44,7 @@ async function FavoritesList() {
     <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {favorites.map((f) => {
         const curated = CURATED_VIDEOS.find((v) => v.videoId === f.videoId);
-        return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} />;
+        return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} isFavorite />;
       })}
     </div>
   );
