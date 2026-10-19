@@ -128,14 +128,20 @@ async function fetchAsrSentences(track: CaptionTrack): Promise<Sentence[]> {
   }
   const chunks = sentenceGroups.flatMap(splitAtPauses);
   const hasPunctuation = sentenceGroups.length > 1;
-  return chunks.map((chunk, i) => ({
-    start: chunk[0].start,
-    end: chunks[i + 1]?.[0].start ?? chunk[chunk.length - 1].start + 1,
-    text: formatAsrPhrase(
+  return chunks.map((chunk, i) => {
+    const text = formatAsrPhrase(
       chunk.map((w) => w.text),
       i === 0 || endsSentence(chunks[i - 1][chunks[i - 1].length - 1].text) || !hasPunctuation,
-    ),
-  }));
+    );
+    const wordStarts = chunk.map((w) => Math.round(w.start * 100) / 100);
+    return {
+      start: chunk[0].start,
+      end: chunks[i + 1]?.[0].start ?? chunk[chunk.length - 1].start + 1,
+      text,
+      // Only kept when every token lines up with one timed word.
+      ...(text.split(/\s+/).length === wordStarts.length ? { wordStarts } : {}),
+    };
+  });
 }
 
 function endsSentence(text: string): boolean {

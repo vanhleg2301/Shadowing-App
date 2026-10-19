@@ -7,7 +7,11 @@ import { fetchLessonFromYouTube, type YouTubeLessonResult } from "../src/lib/cap
 import { toLessonRow } from "../src/lib/lesson-row";
 import { createAdminClient } from "../src/lib/supabase/admin";
 
-const CONCURRENCY = 4;
+// YouTube answers 429 after a few hundred quick caption requests, so stay gentle.
+const CONCURRENCY = 2;
+const PAUSE_MS = 1500;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
   const admin = createAdminClient();
@@ -29,6 +33,7 @@ async function main() {
   await Promise.all(
     Array.from({ length: CONCURRENCY }, async () => {
       for (let video = queue.shift(); video; video = queue.shift()) {
+        await sleep(PAUSE_MS);
         const result: YouTubeLessonResult = await fetchLessonFromYouTube(video.videoId).catch((e: unknown) => ({
           error: String(e),
         }));

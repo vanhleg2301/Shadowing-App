@@ -3,6 +3,8 @@ export interface Sentence {
   end: number;
   text: string;
   translation?: string;
+  // Start time of each whitespace-separated word in text (auto captions only), for karaoke highlighting.
+  wordStarts?: number[];
 }
 
 export interface Lesson {
@@ -18,6 +20,16 @@ export function findActiveIndex(sentences: Sentence[], time: number): number {
   let active = -1;
   for (let i = 0; i < sentences.length; i++) {
     if (sentences[i].start > time) break;
+    active = i;
+  }
+  return active;
+}
+
+export function findActiveWord(sentence: Sentence, time: number): number {
+  if (!sentence.wordStarts) return -1;
+  let active = -1;
+  for (let i = 0; i < sentence.wordStarts.length; i++) {
+    if (sentence.wordStarts[i] > time) break;
     active = i;
   }
   return active;

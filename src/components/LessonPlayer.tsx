@@ -12,7 +12,7 @@ import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSh
 import { useAuth } from "@/hooks/useAuth";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { normalizeWord, type WordInfo } from "@/lib/dictionary";
-import { findActiveIndex, formatTime, type Lesson } from "@/lib/lesson";
+import { findActiveIndex, findActiveWord, formatTime, type Lesson } from "@/lib/lesson";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
@@ -187,12 +187,75 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
     if (result.error === "signed-out") await signInWithGoogle();
   };
 
+  // Karaoke: words already spoken turn green and the current word is highlighted (auto-caption videos only).
+  const renderWords = (text: string, activeWord: number) => {
+    let wordIndex = -1;
+    return text.split(/(\s+)/).map((token, j) => {
+      if (token === "" || /\s/.test(token)) return token;
+      wordIndex++;
+      const karaokeClass =
+        activeWord < 0
+          ? ""
+          : wordIndex === activeWord
+            ? "bg-amber-200 text-ink"
+            : wordIndex < activeWord
+              ? "text-brand-dark"
+              : "";
+      if (!normalizeWord(token)) {
+        return (
+          <span key={j} className={karaokeClass}>
+            {token}
+          </span>
+        );
+      }
+      return (
+        <button
+          key={j}
+          type="button"
+          onClick={() => handleWordClick(token, text)}
+          className={`rounded-md transition-colors duration-150 hover:bg-amber-200/70 hover:text-ink ${karaokeClass}`}
+        >
+          {token}
+        </button>
+      );
+    });
+  };
+
   const handleWordClick = (token: string, sentence: string) => {
     const word = normalizeWord(token);
     if (!word) return;
     pause();
     fetchLookup(word, sentence);
   };
+
+  // Desktop shortcuts. The handler is replaced every render so it always sees the current state.
+  const shortcutRef = useRef<(event: KeyboardEvent) => void>(() => {});
+  useEffect(() => {
+    shortcutRef.current = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping = target?.closest("input, textarea, select, [contenteditable='true']");
+      if (isTyping || lookup || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === " ") {
+        event.preventDefault();
+        if (isPractice) playSentence(practiceIndex);
+        else if (isPlaying) pause();
+        else play();
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        goToSentence(currentIndex - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        goToSentence(currentIndex + 1);
+      } else if (event.key.toLowerCase() === "r" && !isPractice) {
+        handleToggleLoop();
+      }
+    };
+  });
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => shortcutRef.current(event);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
@@ -272,20 +335,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             ) : (
               <div className="min-w-0">
                 <p className={`text-[17px] leading-relaxed ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
-                  {sentence.text.split(/(\s+)/).map((token, j) =>
-                    /\s/.test(token) || !normalizeWord(token) ? (
-                      token
-                    ) : (
-                      <button
-                        key={j}
-                        type="button"
-                        onClick={() => handleWordClick(token, sentence.text)}
-                        className="rounded-md hover:bg-amber-200/70 hover:text-ink"
-                      >
-                        {token}
-                      </button>
-                    ),
-                  )}
+                  {renderWords(sentence.text, i === activeIndex ? findActiveWord(sentence, currentTime) : -1)}
                 </p>
                 {showTranslation && sentence.translation && (
                   <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
@@ -374,6 +424,16 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             </button>
           </div>
         )}
+        <p className="mt-3 hidden text-xs text-muted lg:block">
+          Shortcuts: <kbd className="font-semibold">Space</kbd> {isPractice ? "listen" : "play/pause"} ·{" "}
+          <kbd className="font-semibold">← →</kbd> previous/next sentence
+          {!isPractice && (
+            <>
+              {" "}
+              · <kbd className="font-semibold">R</kbd> repeat sentence
+            </>
+          )}
+        </p>
       </div>
 
       {lookup && (
