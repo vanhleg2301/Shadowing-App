@@ -19,7 +19,7 @@ export default function WatchPage({ params }: PageProps<"/watch/[videoId]">) {
 async function LessonLoader({ videoId }: { videoId: string }) {
   if (!isValidVideoId(videoId)) notFound();
 
-  const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [] }));
+  const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [], lastSentence: 0 }));
   let result: LessonResult;
   try {
     result = await getLesson(videoId);
@@ -46,6 +46,7 @@ async function LessonLoader({ videoId }: { videoId: string }) {
       lesson={result.lesson}
       initialIsFavorite={userState.isFavorite}
       initialSavedWords={userState.savedWords}
+      initialSentence={Math.min(userState.lastSentence, result.lesson.sentences.length - 1)}
     />
   );
 }

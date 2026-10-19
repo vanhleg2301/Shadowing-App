@@ -5,13 +5,18 @@ import { Icon } from "@/components/Icon";
 import { ScrollRow } from "@/components/ScrollRow";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
 import { LEVELS, TOPICS, type CuratedVideo, type Level, type Topic } from "@/data/curated";
+import type { LibraryUserState } from "@/lib/user-data";
 
 interface VideoLibraryProps {
   videos: CuratedVideo[];
-  favoriteIds: string[];
+  userState: LibraryUserState;
 }
 
-export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
+export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
+  const { favoriteIds, progress, continueIds } = userState;
+  const continueVideos = continueIds
+    .map((id) => videos.find((v) => v.videoId === id))
+    .filter((v): v is CuratedVideo => v !== undefined);
   const [level, setLevel] = useState<Level | "all">("all");
   const [topic, setTopic] = useState<Topic | null>(null);
 
@@ -69,13 +74,28 @@ export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
           <h2 className="text-2xl font-extrabold text-ink">{topic}</h2>
           <div key={`${topic}-${level}`} className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {selected.map((video) => (
-              <VideoCard key={video.videoId} video={video} isFavorite={favoriteIds.includes(video.videoId)} />
+              <VideoCard key={video.videoId} video={video} isFavorite={favoriteIds.includes(video.videoId)} progress={progress[video.videoId]} />
             ))}
           </div>
           {selected.length === 0 && <p className="mt-6 text-muted">No videos at this level yet.</p>}
         </section>
       ) : (
-        sections.map((s) => (
+        <>
+          {continueVideos.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-xl font-extrabold text-ink md:text-2xl">Continue watching</h2>
+              <div className="mt-3">
+                <ScrollRow label="Continue watching">
+                  {continueVideos.map((video) => (
+                    <div key={video.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]">
+                      <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} progress={progress[video.videoId]} />
+                    </div>
+                  ))}
+                </ScrollRow>
+              </div>
+            </section>
+          )}
+        {sections.map((s) => (
           <section key={s.topic} className="mt-10">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-xl font-extrabold text-ink md:text-2xl">{s.topic}</h2>
@@ -92,13 +112,14 @@ export function VideoLibrary({ videos, favoriteIds }: VideoLibraryProps) {
               <ScrollRow label={`${s.topic} videos`}>
                 {s.items.map((video) => (
                   <div key={video.videoId} className="w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]">
-                    <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} />
+                    <VideoCard video={video} isFavorite={favoriteIds.includes(video.videoId)} progress={progress[video.videoId]} />
                   </div>
                 ))}
               </ScrollRow>
             </div>
           </section>
-        ))
+        ))}
+        </>
       )}
 
       {sections.length === 0 && <p className="mt-10 text-center text-muted">No videos match these filters.</p>}

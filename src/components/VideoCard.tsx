@@ -14,9 +14,10 @@ interface VideoCardProps {
   video: Pick<CuratedVideo, "videoId" | "title"> & Partial<Pick<CuratedVideo, "level" | "duration">>;
   subtitle?: string;
   isFavorite: boolean;
+  progress?: number;
 }
 
-export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite }: VideoCardProps) {
+export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite, progress }: VideoCardProps) {
   return (
     <div className="relative h-full">
       <Link
@@ -41,6 +42,11 @@ export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite }: VideoC
             <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-ink/85 px-2 py-0.5 text-xs font-semibold text-white">
               {video.duration}
             </span>
+          )}
+          {progress !== undefined && progress > 0 && (
+            <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/30" aria-label={`${progress}% watched`}>
+              <div className={`h-full ${progress >= 100 ? "bg-green-400" : "bg-orange-400"}`} style={{ width: `${Math.min(progress, 100)}%` }} />
+            </div>
           )}
         </div>
         <div className="px-1 pb-1 pt-3">

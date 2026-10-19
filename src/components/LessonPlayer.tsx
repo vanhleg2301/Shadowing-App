@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { setSavedWord } from "@/app/actions";
+import { recordProgress, setSavedWord } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -16,6 +16,8 @@ import { findActiveIndex, formatTime, type Lesson } from "@/lib/lesson";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
+// Progress is saved at most this often while the learner moves through sentences.
+const PROGRESS_INTERVAL_MS = 10000;
 
 type Mode = "watch" | "shadow" | "dictation" | "cloze";
 
@@ -30,18 +32,23 @@ interface LessonPlayerProps {
   lesson: Lesson;
   initialIsFavorite: boolean;
   initialSavedWords: string[];
+  initialSentence: number;
 }
 
-export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: LessonPlayerProps) {
-  const { isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
+export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, initialSentence }: LessonPlayerProps) {
+  const { user, isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
   const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
   const { sentences } = lesson;
   const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(
     lesson.videoId,
+    lesson.sentences[initialSentence]?.start ?? 0,
   );
   const [mode, setMode] = useState<Mode>("watch");
   const [loopIndex, setLoopIndex] = useState<number | null>(null);
-  const [practiceIndex, setPracticeIndex] = useState(0);
+  const [practiceIndex, setPracticeIndex] = useState(initialSentence);
+  const [isResumeVisible, setIsResumeVisible] = useState(initialSentence > 0);
+  const hasInteractedRef = useRef(false);
+  const lastProgressAtRef = useRef(0);
   // In dictation and cloze the transcript stays hidden until the learner has answered that sentence.
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [speed, setSpeed] = useState(1);
@@ -69,6 +76,21 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: L
   }, [currentTime, loopIndex, sentences, pause, seekTo]);
 
   useEffect(() => {
+    if (isPlaying) hasInteractedRef.current = true;
+  }, [isPlaying]);
+
+  // Throttled save of where the learner is; skipped until they actually play or practise.
+  useEffect(() => {
+    if (!user || !hasInteractedRef.current) return;
+    const wait = Math.max(0, PROGRESS_INTERVAL_MS - (Date.now() - lastProgressAtRef.current));
+    const id = setTimeout(() => {
+      lastProgressAtRef.current = Date.now();
+      recordProgress({ videoId: lesson.videoId, sentenceIndex: currentIndex, sentenceCount: sentences.length });
+    }, wait);
+    return () => clearTimeout(id);
+  }, [currentIndex, user, lesson.videoId, sentences.length]);
+
+  useEffect(() => {
     if (highlightIndex < 0) return;
     rowRefs.current.get(highlightIndex)?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [highlightIndex]);
@@ -81,6 +103,8 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: L
 
   const goToSentence = (index: number) => {
     if (index < 0 || index >= sentences.length) return;
+    hasInteractedRef.current = true;
+    setIsResumeVisible(false);
     if (isPractice) {
       setPracticeIndex(index);
       playSentence(index);
@@ -102,7 +126,17 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: L
     }
   };
 
-  const revealCurrent = () => setRevealed((prev) => new Set(prev).add(practiceIndex));
+  const revealCurrent = () => {
+    hasInteractedRef.current = true;
+    setRevealed((prev) => new Set(prev).add(practiceIndex));
+  };
+
+  const handleStartOver = () => {
+    setIsResumeVisible(false);
+    setPracticeIndex(0);
+    seekTo(0);
+    pause();
+  };
 
   const handleToggleLoop = () => {
     setLoopIndex(loopIndex === null ? Math.max(activeIndex, 0) : null);
@@ -202,6 +236,16 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: L
         <p className="px-2 pb-2 text-xs font-bold uppercase tracking-wide text-muted">
           Transcript · {sentences.length} sentences
         </p>
+        {isResumeVisible && (
+          <div className="mb-3 flex animate-fade-in items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm">
+            <span className="text-ink">
+              Continuing from sentence <b>{initialSentence + 1}</b>
+            </span>
+            <button type="button" onClick={handleStartOver} className="shrink-0 font-semibold text-brand hover:text-brand-dark">
+              Start over
+            </button>
+          </div>
+        )}
         {sentences.map((sentence, i) => (
           <div
             key={i}

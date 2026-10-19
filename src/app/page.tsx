@@ -3,9 +3,10 @@ import { AppShell } from "@/components/AppShell";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon } from "@/components/Icon";
 import { PasteLinkForm } from "@/components/PasteLinkForm";
+import { StreakBadge } from "@/components/StreakBadge";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import { CURATED_VIDEOS } from "@/data/curated";
-import { getFavoriteIds } from "@/lib/user-data";
+import { getLibraryUserState, getStreak } from "@/lib/user-data";
 
 export default function HomePage() {
   return (
@@ -22,7 +23,9 @@ export default function HomePage() {
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <h1 className="animate-fade-up text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Hi there, ready to practice?</h1>
         <div className="mt-3 flex items-center gap-3">
-          <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-bold text-orange-700">Shadowing</span>
+          <Suspense fallback={null}>
+            <StreakChip />
+          </Suspense>
           <span className="text-muted">Learning English</span>
         </div>
 
@@ -37,9 +40,9 @@ export default function HomePage() {
         </section>
 
         <div className="mt-8">
-          {/* The static shell shows the library right away; hearts fill in once the user's favorites stream in. */}
-          <Suspense fallback={<VideoLibrary videos={CURATED_VIDEOS} favoriteIds={[]} />}>
-            <LibraryWithFavorites />
+          {/* The static shell shows the library right away; hearts and progress fill in once the user's data streams in. */}
+          <Suspense fallback={<VideoLibrary videos={CURATED_VIDEOS} userState={EMPTY_USER_STATE} />}>
+            <LibraryWithUserState />
           </Suspense>
         </div>
       </main>
@@ -47,7 +50,15 @@ export default function HomePage() {
   );
 }
 
-async function LibraryWithFavorites() {
-  const favoriteIds = await getFavoriteIds().catch(() => []);
-  return <VideoLibrary videos={CURATED_VIDEOS} favoriteIds={favoriteIds} />;
+const EMPTY_USER_STATE = { favoriteIds: [], progress: {}, continueIds: [] };
+
+async function LibraryWithUserState() {
+  const userState = await getLibraryUserState().catch(() => EMPTY_USER_STATE);
+  return <VideoLibrary videos={CURATED_VIDEOS} userState={userState} />;
+}
+
+async function StreakChip() {
+  const streak = await getStreak().catch(() => null);
+  if (!streak) return null;
+  return <StreakBadge streak={streak} />;
 }

@@ -12,6 +12,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", icon: "home", href: "/", iconClass: "text-orange-500" },
+  { label: "Review", icon: "repeat", href: "/review", iconClass: "text-violet-500" },
   { label: "Listening", icon: "headphones", iconClass: "text-sky-500" },
   { label: "Speaking", icon: "mic", iconClass: "text-teal-500" },
   { label: "Vocabulary", icon: "book", href: "/vocabulary", iconClass: "text-pink-500" },
@@ -72,7 +73,7 @@ export function AppShell({ active, children }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">{children}</div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:hidden">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => item.href).map((item) => (
           <Link
             key={item.label}
             href={item.href ?? "/"}
