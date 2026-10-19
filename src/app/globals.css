@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-be-vietnam-pro);
+}
+
+@theme {
+  --color-cream: #fbf8f2;
+  --color-ink: #1f2b29;
+  --color-muted: #6b7471;
+  --color-line: #e7e1d5;
+  --color-brand: #1f6f62;
+  --color-brand-dark: #154f46;
+  --color-brand-soft: #e3f1ed;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* 4You-style "chunky" controls: a solid bottom edge that collapses on press. */
+@layer components {
+  .btn-3d {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-2xl border border-line bg-white font-semibold text-ink transition-[transform,box-shadow] duration-75 select-none;
+    box-shadow: 0 3px 0 0 var(--color-line);
+  }
+  .btn-3d:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 0 var(--color-line);
+  }
+  .btn-3d:disabled {
+    @apply opacity-40;
+  }
+  .btn-brand {
+    @apply border-brand-dark bg-brand text-white;
+    box-shadow: 0 3px 0 0 var(--color-brand-dark);
+  }
+  .btn-brand:active:not(:disabled) {
+    box-shadow: 0 1px 0 0 var(--color-brand-dark);
+  }
+  .btn-dark {
+    @apply border-ink bg-ink text-white;
+    box-shadow: 0 3px 0 0 #000;
+  }
+  .btn-dark:active:not(:disabled) {
+    box-shadow: 0 1px 0 0 #000;
+  }
+  .btn-soft {
+    @apply border-brand/30 bg-brand-soft text-brand-dark;
+  }
+}
