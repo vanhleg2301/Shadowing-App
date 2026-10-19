@@ -5,10 +5,12 @@ import { Icon } from "@/components/Icon";
 import { PasteLinkForm } from "@/components/PasteLinkForm";
 import { StreakBadge } from "@/components/StreakBadge";
 import { VideoLibrary } from "@/components/VideoLibrary";
-import { CURATED_VIDEOS } from "@/data/curated";
+import type { CuratedVideo } from "@/data/curated";
+import { getCatalog } from "@/lib/catalog";
 import { getLibraryUserState, getStreak } from "@/lib/user-data";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const videos = await getCatalog();
   return (
     <AppShell active="/">
       <header className="sticky top-0 z-30 border-b border-line bg-cream/90 px-4 py-4 backdrop-blur md:px-10">
@@ -41,8 +43,8 @@ export default function HomePage() {
 
         <div className="mt-8">
           {/* The static shell shows the library right away; hearts and progress fill in once the user's data streams in. */}
-          <Suspense fallback={<VideoLibrary videos={CURATED_VIDEOS} userState={EMPTY_USER_STATE} />}>
-            <LibraryWithUserState />
+          <Suspense fallback={<VideoLibrary videos={videos} userState={EMPTY_USER_STATE} />}>
+            <LibraryWithUserState videos={videos} />
           </Suspense>
         </div>
       </main>
@@ -52,9 +54,9 @@ export default function HomePage() {
 
 const EMPTY_USER_STATE = { favoriteIds: [], progress: {}, continueIds: [] };
 
-async function LibraryWithUserState() {
+async function LibraryWithUserState({ videos }: { videos: CuratedVideo[] }) {
   const userState = await getLibraryUserState().catch(() => EMPTY_USER_STATE);
-  return <VideoLibrary videos={CURATED_VIDEOS} userState={userState} />;
+  return <VideoLibrary videos={videos} userState={userState} />;
 }
 
 async function StreakChip() {

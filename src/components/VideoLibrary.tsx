@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { ScrollRow } from "@/components/ScrollRow";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
-import { LEVELS, TOPICS, type CuratedVideo, type Level, type Topic } from "@/data/curated";
+import { LEVELS, orderTopics, type CuratedVideo, type Level, type Topic } from "@/data/curated";
 import type { LibraryUserState } from "@/lib/user-data";
 
 interface VideoLibraryProps {
@@ -21,7 +21,7 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
   const [topic, setTopic] = useState<Topic | null>(null);
 
   const byLevel = videos.filter((v) => level === "all" || v.level === level);
-  const sections = TOPICS.map((t) => ({ topic: t, items: byLevel.filter((v) => v.topic === t) })).filter(
+  const sections = orderTopics(videos.map((v) => v.topic)).map((t) => ({ topic: t, items: byLevel.filter((v) => v.topic === t) })).filter(
     (s) => s.items.length > 0,
   );
   const selected = topic ? byLevel.filter((v) => v.topic === topic) : [];

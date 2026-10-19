@@ -1,5 +1,6 @@
 // Everyday-English videos from the English Sponge channel (A1, A2 and B1 "Comprehensible Input" playlists),
 // grouped by daily-life topic. Entertainment episodes (anime, games, films) are left out.
+// The live catalog is the videos table (managed in /admin/videos); this list seeded it and is the fallback.
 export const LEVELS = ["A1", "A2", "B1"] as const;
 
 export type Level = (typeof LEVELS)[number];
@@ -18,7 +19,15 @@ export const TOPICS = [
   "Travel",
 ] as const;
 
-export type Topic = (typeof TOPICS)[number];
+// Admins can create topics beyond TOPICS, which only fixes the display order of the known ones.
+export type Topic = string;
+
+// Known topics first in their fixed order, then any topic an admin added, alphabetically.
+export function orderTopics(topics: string[]): string[] {
+  const known: readonly string[] = TOPICS;
+  const unique = [...new Set(topics)];
+  return [...known.filter((t) => unique.includes(t)), ...unique.filter((t) => !known.includes(t)).sort()];
+}
 
 export interface CuratedVideo {
   videoId: string;
@@ -26,6 +35,7 @@ export interface CuratedVideo {
   level: Level;
   topic: Topic;
   duration: string;
+  channel?: string;
 }
 
 export const CHANNEL_NAME = "English Sponge";

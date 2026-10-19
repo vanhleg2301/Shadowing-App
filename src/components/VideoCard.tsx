@@ -11,13 +11,13 @@ export const LEVEL_DOT: Record<Level, string> = {
 
 interface VideoCardProps {
   // Favorites can include pasted-link videos, which have no level or duration.
-  video: Pick<CuratedVideo, "videoId" | "title"> & Partial<Pick<CuratedVideo, "level" | "duration">>;
+  video: Pick<CuratedVideo, "videoId" | "title"> & Partial<Pick<CuratedVideo, "level" | "duration" | "channel">>;
   subtitle?: string;
   isFavorite: boolean;
   progress?: number;
 }
 
-export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite, progress }: VideoCardProps) {
+export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardProps) {
   return (
     <div className="relative h-full">
       <Link
@@ -51,7 +51,7 @@ export function VideoCard({ video, subtitle = CHANNEL_NAME, isFavorite, progress
         </div>
         <div className="px-1 pb-1 pt-3">
           <p className="line-clamp-2 text-[17px] font-semibold leading-snug text-ink">{video.title}</p>
-          <p className="mt-1 text-sm text-muted">{subtitle}</p>
+          <p className="mt-1 text-sm text-muted">{subtitle ?? video.channel ?? CHANNEL_NAME}</p>
         </div>
       </Link>
       <div className="absolute right-5 top-5">

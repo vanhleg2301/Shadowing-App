@@ -1,5 +1,7 @@
 import type { User } from "@supabase/supabase-js";
+import { CURATED_VIDEOS } from "@/data/curated";
 import { isAdminEmail } from "./admin-emails";
+import type { VideoRow } from "./catalog";
 import { createAdminClient } from "./supabase/admin";
 import { getUserContext } from "./user-data";
 
@@ -122,13 +124,14 @@ export async function getOverview(ctx: AdminContext) {
     return n ?? 0;
   };
   const today = new Date().toISOString().slice(0, 10);
-  const [users, lessons, savedWords, favorites, progress, activeToday] = await Promise.all([
+  const [users, lessons, savedWords, favorites, progress, activeToday, videos] = await Promise.all([
     ctx.admin.auth.admin.listUsers({ page: 1, perPage: 1 }),
     count("lessons"),
     count("saved_words"),
     count("favorites"),
     count("lesson_progress"),
     ctx.admin.from("study_days").select("*", { count: "exact", head: true }).gte("day", today),
+    ctx.admin.from("videos").select("*", { count: "exact", head: true }).eq("is_published", true),
   ]);
   return {
     users: users.error ? 0 : users.data.total,
@@ -137,5 +140,25 @@ export async function getOverview(ctx: AdminContext) {
     favorites,
     progress,
     activeToday: activeToday.count ?? 0,
+    publishedVideos: videos.count ?? 0,
   };
+}
+
+// Whole catalog including hidden videos; falls back to the bundled list before migration 004 is run.
+export async function getAdminVideos(ctx: AdminContext): Promise<VideoRow[]> {
+  const { data, error } = await ctx.admin
+    .from("videos")
+    .select("video_id, title, level, topic, duration, channel, is_published, sort_order")
+    .order("sort_order", { ascending: true });
+  if (!error && data && data.length > 0) return data as VideoRow[];
+  return CURATED_VIDEOS.map((v, i) => ({
+    video_id: v.videoId,
+    title: v.title,
+    level: v.level,
+    topic: v.topic,
+    duration: v.duration,
+    channel: v.channel ?? "",
+    is_published: true,
+    sort_order: i + 1,
+  }));
 }

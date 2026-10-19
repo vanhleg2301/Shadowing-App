@@ -18,7 +18,8 @@ async function Overview() {
   const tiles = [
     { label: "Users", value: stats.users },
     { label: "Active today", value: stats.activeToday },
-    { label: "Stored lessons", value: stats.lessons },
+    { label: "Published videos", value: stats.publishedVideos },
+    { label: "Stored transcripts", value: stats.lessons },
     { label: "Lessons started", value: stats.progress },
     { label: "Saved words", value: stats.savedWords },
     { label: "Favorites", value: stats.favorites },

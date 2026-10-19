@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { VideoCard } from "@/components/VideoCard";
-import { CURATED_VIDEOS } from "@/data/curated";
+import { getCatalog } from "@/lib/catalog";
 import { getFavorites, type FavoriteVideo } from "@/lib/user-data";
 
 export default function FavoritesPage() {
@@ -28,6 +28,7 @@ async function FavoritesList() {
     return <p className="mt-8 text-red-600">Couldn&apos;t load your favorites. Please try again later.</p>;
   }
 
+  const catalog = await getCatalog();
   if (!favorites) return <SignInPrompt message="Sign in to keep your favorite videos in one place." />;
   if (favorites.length === 0) {
     return (
@@ -43,7 +44,7 @@ async function FavoritesList() {
   return (
     <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {favorites.map((f) => {
-        const curated = CURATED_VIDEOS.find((v) => v.videoId === f.videoId);
+        const curated = catalog.find((v) => v.videoId === f.videoId);
         return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} isFavorite />;
       })}
     </div>

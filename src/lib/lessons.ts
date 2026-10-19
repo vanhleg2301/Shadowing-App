@@ -1,8 +1,10 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { fetchLessonFromYouTube } from "./captions";
 import type { Lesson, Sentence } from "./lesson";
 import { toLessonRow } from "./lesson-row";
 import { createAdminClient, createPublicClient } from "./supabase/admin";
+
+export const lessonTag = (videoId: string) => `lesson:${videoId}`;
 
 export type LessonResult = { lesson: Lesson; error?: never } | { lesson?: never; error: string };
 
@@ -40,6 +42,7 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
 export async function getLesson(videoId: string): Promise<LessonResult> {
   "use cache";
   cacheLife("days");
+  cacheTag(lessonTag(videoId));
 
   const stored = await readStoredLesson(videoId);
   if (stored) return { lesson: stored };

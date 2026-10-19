@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { deleteLesson, refetchLesson } from "@/app/admin/actions";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
-import { CURATED_VIDEOS } from "@/data/curated";
 import { AdminPagination, AdminSearchBox } from "@/components/admin/AdminListControls";
-import { ADMIN_PAGE_SIZE, parsePage, parseQuery, requireAdmin } from "@/lib/admin";
+import { ADMIN_PAGE_SIZE, getAdminVideos, parsePage, parseQuery, requireAdmin } from "@/lib/admin";
 
 export default function AdminLessonsPage({ searchParams }: PageProps<"/admin/lessons">) {
   return (
@@ -39,14 +38,19 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
     .range((page - 1) * ADMIN_PAGE_SIZE, page * ADMIN_PAGE_SIZE - 1);
   if (safeQuery) listQuery = listQuery.or(`title.ilike.%${safeQuery}%,video_id.ilike.%${safeQuery}%,author.ilike.%${safeQuery}%`);
 
-  const [{ data, count, error }, storedIds] = await Promise.all([listQuery, ctx.admin.from("lessons").select("video_id")]);
+  const [{ data, count, error }, storedIds, catalog] = await Promise.all([
+    listQuery,
+    ctx.admin.from("lessons").select("video_id"),
+    getAdminVideos(ctx),
+  ]);
+  const catalogIds = new Set(catalog.map((v) => v.video_id));
   if (error) return <p className="mt-8 text-red-600">Couldn&apos;t load lessons: {error.message}</p>;
 
   const lessons = (data ?? []) as LessonRow[];
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const stored = new Set(((storedIds.data ?? []) as { video_id: string }[]).map((l) => l.video_id));
-  const missing = CURATED_VIDEOS.filter((v) => !stored.has(v.videoId));
+  const missing = catalog.filter((v) => !stored.has(v.video_id));
   const pagination = (
     <AdminPagination basePath="/admin/lessons" page={page} totalPages={totalPages} total={total} query={query} />
   );
@@ -54,7 +58,7 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
   return (
     <div className="mt-8 space-y-6">
       <p className="text-sm text-muted">
-        {stored.size} stored transcripts. Curated videos missing a transcript: {missing.length}. “Refetch” asks YouTube
+        {stored.size} stored transcripts. Catalog videos missing a transcript: {missing.length}. “Refetch” asks YouTube
         again and only works from a connection YouTube doesn&apos;t block (usually not the deployed server).
       </p>
 
@@ -63,9 +67,9 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
           <h2 className="font-bold text-ink">Missing transcripts</h2>
           <ul className="mt-2 space-y-1 text-sm">
             {missing.map((v) => (
-              <li key={v.videoId} className="flex items-center justify-between gap-3">
+              <li key={v.video_id} className="flex items-center justify-between gap-3">
                 <span>{v.title}</span>
-                <AdminActionButton label="Fetch" action={refetchLesson} input={{ videoId: v.videoId }} />
+                <AdminActionButton label="Fetch" action={refetchLesson} input={{ videoId: v.video_id }} />
               </li>
             ))}
           </ul>
@@ -94,7 +98,7 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
                   </Link>
                   <p className="text-xs text-muted">
                     {l.author} · {l.video_id}
-                    {!CURATED_VIDEOS.some((v) => v.videoId === l.video_id) && " · pasted link"}
+                    {!catalogIds.has(l.video_id) && " · pasted link"}
                   </p>
                 </td>
                 <td className="px-4 py-3 text-muted">

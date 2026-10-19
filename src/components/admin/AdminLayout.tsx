@@ -5,7 +5,9 @@ import { AppShell } from "@/components/AppShell";
 const TABS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/lessons", label: "Lessons" },
+  { href: "/admin/videos", label: "Videos" },
+  { href: "/admin/lessons", label: "Transcripts" },
+  { href: "/admin/audit", label: "Activity" },
 ];
 
 interface AdminLayoutProps {
@@ -20,12 +22,12 @@ export function AdminLayout({ active, title, children }: AdminLayoutProps) {
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <p className="text-xs font-bold uppercase tracking-wide text-muted">Admin</p>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">{title}</h1>
-        <nav className="mt-4 flex gap-1 rounded-2xl border border-line bg-white p-1 sm:w-fit">
+        <nav className="no-scrollbar mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-1 sm:w-fit">
           {TABS.map((tab) => (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold transition-colors ${
+              className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-center text-sm font-semibold transition-colors ${
                 tab.href === active ? "bg-ink text-white" : "text-muted hover:text-ink"
               }`}
             >

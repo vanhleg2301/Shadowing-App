@@ -1,4 +1,5 @@
-// Stores the transcripts of all curated videos in Supabase (public.lessons).
+// Stores the transcripts of every catalog video in Supabase (public.lessons). The catalog is the videos
+// table when it exists, otherwise the bundled list in src/data/curated.ts.
 // Run from a home connection (YouTube blocks most cloud IPs):
 //   npm run seed:lessons            only videos not stored yet
 //   npm run seed:lessons -- --force refetch everything
@@ -24,7 +25,12 @@ async function main() {
   if (error) throw new Error(`Can't read lessons table: ${error.message}`);
   const stored = new Set(((existing ?? []) as { video_id: string }[]).map((r) => r.video_id));
   const isForce = process.argv.includes("--force");
-  const queue = CURATED_VIDEOS.filter((v) => isForce || !stored.has(v.videoId));
+  const { data: videoRows, error: videosError } = await admin.from("videos").select("video_id, title");
+  const catalog =
+    !videosError && videoRows && videoRows.length > 0
+      ? (videoRows as { video_id: string; title: string }[]).map((v) => ({ videoId: v.video_id, title: v.title }))
+      : CURATED_VIDEOS;
+  const queue = catalog.filter((v) => isForce || !stored.has(v.videoId));
   const total = queue.length;
   console.log(`${total} to fetch, ${stored.size} already stored`);
 

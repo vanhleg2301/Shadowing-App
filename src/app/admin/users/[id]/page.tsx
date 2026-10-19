@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { deleteUserFavorite, deleteUserWord, resetUserProgress } from "@/app/admin/actions";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
-import { CURATED_VIDEOS } from "@/data/curated";
-import { requireAdmin, summarizeUser } from "@/lib/admin";
+import { getAdminVideos, requireAdmin, summarizeUser } from "@/lib/admin";
 
 export default function AdminUserPage({ params }: PageProps<"/admin/users/[id]">) {
   return (
@@ -60,7 +59,8 @@ async function UserDetails({ id }: { id: string }) {
     favorites: favoriteRows.length,
     lessonsStarted: progressRows.length,
   });
-  const titleOf = (videoId: string) => CURATED_VIDEOS.find((v) => v.videoId === videoId)?.title ?? videoId;
+  const catalog = await getAdminVideos(ctx);
+  const titleOf = (videoId: string) => catalog.find((v) => v.video_id === videoId)?.title ?? videoId;
 
   return (
     <div className="mt-8 space-y-6">
