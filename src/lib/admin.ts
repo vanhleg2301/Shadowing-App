@@ -162,3 +162,60 @@ export async function getAdminVideos(ctx: AdminContext): Promise<VideoRow[]> {
     sort_order: i + 1,
   }));
 }
+
+const ANALYTICS_TIME_ZONE = "Asia/Ho_Chi_Minh";
+const dayFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: ANALYTICS_TIME_ZONE });
+const labelFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+
+function lastDays(count: number): string[] {
+  const today = new Date(`${dayFormatter.format(new Date())}T00:00:00Z`);
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - (count - 1 - i));
+    return d.toISOString().slice(0, 10);
+  });
+}
+
+function topCounts(values: string[], limit: number): { key: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  return [...counts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+export async function getAnalytics(ctx: AdminContext, days = 30) {
+  const range = lastDays(days);
+  const [users, study, progress, words, catalog] = await Promise.all([
+    getAllUsers(ctx),
+    ctx.admin.from("study_days").select("day").gte("day", range[0]),
+    ctx.admin.from("lesson_progress").select("video_id"),
+    ctx.admin.from("saved_words").select("word"),
+    getAdminVideos(ctx),
+  ]);
+
+  const signupDays = users.map((u) => dayFormatter.format(new Date(u.created_at)));
+  const activeDays = ((study.data ?? []) as { day: string }[]).map((r) => r.day);
+  const series = (dayList: string[]) =>
+    range.map((day) => ({
+      label: labelFormatter.format(new Date(`${day}T00:00:00Z`)),
+      value: dayList.filter((d) => d === day).length,
+    }));
+  const titleOf = (id: string) => catalog.find((v) => v.video_id === id)?.title ?? id;
+
+  return {
+    signups: series(signupDays),
+    // study_days has one row per learner per day, so a row count is a distinct-learner count.
+    activeLearners: series(activeDays),
+    topVideos: topCounts(((progress.data ?? []) as { video_id: string }[]).map((r) => r.video_id), 8).map((t) => ({
+      label: titleOf(t.key),
+      value: t.count,
+      href: `/watch/${t.key}`,
+    })),
+    topWords: topCounts(((words.data ?? []) as { word: string }[]).map((r) => r.word), 10).map((t) => ({
+      label: t.key,
+      value: t.count,
+    })),
+  };
+}
