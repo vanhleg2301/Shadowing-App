@@ -1,4 +1,4 @@
-import { cacheLife } from "next/cache";
+// Fetches and parses YouTube captions. Kept free of Next.js imports so scripts/seed-lessons.ts can reuse it.
 import type { Lesson, Sentence } from "./lesson";
 
 // Unofficial endpoint (the official Data API only serves captions to the video owner).
@@ -43,7 +43,11 @@ interface Cue {
   text: string;
 }
 
-export type LessonResult = { lesson: Lesson; error?: never } | { lesson?: never; error: string };
+export type CaptionSource = "human" | "asr";
+
+export type YouTubeLessonResult =
+  | { lesson: Lesson; source: CaptionSource; error?: never }
+  | { lesson?: never; source?: never; error: string };
 
 // Captions often start with credits (TED) or sound tags like [Music], which are not speech.
 const NON_SPEECH_CUE = /^[[(][^\])]*[\])]$|\b(Transcriber|Translator|Reviewer):/;
@@ -175,10 +179,7 @@ function attachTranslations(sentences: Sentence[], translated: Cue[]) {
   }
 }
 
-export async function getLesson(videoId: string): Promise<LessonResult> {
-  "use cache";
-  cacheLife("days");
-
+export async function fetchLessonFromYouTube(videoId: string): Promise<YouTubeLessonResult> {
   const player = await fetchPlayer(videoId);
   if (player.playabilityStatus?.status !== "OK" || !player.videoDetails) {
     return { error: "This video doesn't exist or can't be played" };
@@ -206,5 +207,6 @@ export async function getLesson(videoId: string): Promise<LessonResult> {
       sentences,
       hasTranslation: sentences.some((s) => s.translation),
     },
+    source: english.kind === "asr" ? "asr" : "human",
   };
 }

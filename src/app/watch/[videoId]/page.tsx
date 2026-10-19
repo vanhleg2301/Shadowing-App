@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LessonPlayer } from "@/components/LessonPlayer";
 import { getLessonUserState } from "@/lib/user-data";
-import { getLesson, type LessonResult } from "@/lib/youtube";
+import { getLesson, type LessonResult } from "@/lib/lessons";
 import { isValidVideoId } from "@/lib/youtube-url";
 
 export default function WatchPage({ params }: PageProps<"/watch/[videoId]">) {
