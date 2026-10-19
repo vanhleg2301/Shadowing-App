@@ -1,0 +1,44 @@
+import { Suspense } from "react";
+import { AppShell } from "@/components/AppShell";
+import { SavedWordCard } from "@/components/SavedWordCard";
+import { SignInPrompt } from "@/components/SignInPrompt";
+import { getSavedWords, type SavedWord } from "@/lib/user-data";
+
+export default function VocabularyPage() {
+  return (
+    <AppShell active="/vocabulary">
+      <main className="w-full max-w-6xl px-4 py-8 md:px-10">
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">My words</h1>
+        <p className="mt-2 text-muted">Words you saved while watching, with the sentence you met them in.</p>
+        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>
+          <WordList />
+        </Suspense>
+      </main>
+    </AppShell>
+  );
+}
+
+async function WordList() {
+  let words: SavedWord[] | null;
+  try {
+    words = await getSavedWords();
+  } catch {
+    return <p className="mt-8 text-red-600">Couldn&apos;t load your words. Please try again later.</p>;
+  }
+
+  if (!words) return <SignInPrompt message="Sign in to build your own word list as you watch." />;
+  if (words.length === 0) {
+    return <p className="mt-8 text-muted">No saved words yet. Tap a word in any transcript, then press “Save word”.</p>;
+  }
+
+  return (
+    <>
+      <p className="mt-6 text-sm font-semibold text-muted">{words.length} words</p>
+      <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {words.map((w) => (
+          <SavedWordCard key={w.word} item={w} />
+        ))}
+      </ul>
+    </>
+  );
+}

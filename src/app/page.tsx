@@ -7,7 +7,7 @@ import { CURATED_VIDEOS } from "@/data/curated";
 
 export default function HomePage() {
   return (
-    <AppShell>
+    <AppShell active="/">
       <header className="sticky top-0 z-30 border-b border-line bg-cream/90 px-4 py-4 backdrop-blur md:px-10">
         <div className="flex max-w-3xl items-start gap-3">
           <PasteLinkForm />

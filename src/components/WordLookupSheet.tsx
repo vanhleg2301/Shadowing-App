@@ -15,6 +15,8 @@ interface WordLookupSheetProps {
   lookup: WordLookupState;
   onClose: () => void;
   onRetry: () => void;
+  // Omitted when sign-in isn't configured, which hides the save button.
+  saved?: { isSaved: boolean; onToggle: () => void };
 }
 
 const ACCENTS: { accent: Accent; label: string }[] = [
@@ -22,7 +24,7 @@ const ACCENTS: { accent: Accent; label: string }[] = [
   { accent: "us", label: "US" },
 ];
 
-export function WordLookupSheet({ lookup, onClose, onRetry }: WordLookupSheetProps) {
+export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupSheetProps) {
   const { info } = lookup;
   const ipa = (accent: Accent) => (accent === "uk" ? info?.ipaUk : info?.ipaUs);
 
@@ -42,9 +44,21 @@ export function WordLookupSheet({ lookup, onClose, onRetry }: WordLookupSheetPro
               </p>
             )}
           </div>
-          <button type="button" aria-label="Close" className="rounded-full p-2 text-muted hover:bg-cream" onClick={onClose}>
-            <Icon name="close" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {saved && lookup.status === "found" && (
+              <button
+                type="button"
+                onClick={saved.onToggle}
+                aria-pressed={saved.isSaved}
+                className={`btn-3d px-3 py-2 text-sm ${saved.isSaved ? "btn-brand" : ""}`}
+              >
+                {saved.isSaved ? "Saved" : "Save word"}
+              </button>
+            )}
+            <button type="button" aria-label="Close" className="rounded-full p-2 text-muted hover:bg-cream" onClick={onClose}>
+              <Icon name="close" />
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">

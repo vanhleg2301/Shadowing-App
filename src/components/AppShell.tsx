@@ -14,15 +14,16 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Home", icon: "home", href: "/", iconClass: "text-orange-500" },
   { label: "Listening", icon: "headphones", iconClass: "text-sky-500" },
   { label: "Speaking", icon: "mic", iconClass: "text-teal-500" },
-  { label: "Vocabulary", icon: "book", iconClass: "text-pink-500" },
-  { label: "Favorites", icon: "heart", iconClass: "text-rose-500" },
+  { label: "Vocabulary", icon: "book", href: "/vocabulary", iconClass: "text-pink-500" },
+  { label: "Favorites", icon: "heart", href: "/favorites", iconClass: "text-rose-500" },
 ];
 
 interface AppShellProps {
+  active: string;
   children: ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ active, children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-white px-4 py-5 md:flex">
@@ -36,8 +37,17 @@ export function AppShell({ children }: AppShellProps) {
         <nav className="mt-8 flex flex-col gap-1.5">
           {NAV_ITEMS.map((item) =>
             item.href ? (
-              <Link key={item.label} href={item.href} className="btn-3d btn-brand justify-start px-4 py-3">
-                <Icon name={item.icon} className="size-6" />
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={item.href === active ? "page" : undefined}
+                className={
+                  item.href === active
+                    ? "btn-3d btn-brand justify-start px-4 py-3"
+                    : "flex items-center gap-1.5 rounded-2xl px-4 py-3 font-semibold text-ink hover:bg-cream"
+                }
+              >
+                <Icon name={item.icon} className={`size-6 ${item.href === active ? "" : item.iconClass}`} />
                 {item.label}
               </Link>
             ) : (
@@ -67,8 +77,9 @@ export function AppShell({ children }: AppShellProps) {
             key={item.label}
             href={item.href ?? "/"}
             aria-disabled={!item.href}
+            aria-current={item.href === active ? "page" : undefined}
             className={`flex flex-col items-center gap-0.5 px-2 text-[11px] font-semibold ${
-              item.href ? "text-brand" : "pointer-events-none text-muted/60"
+              !item.href ? "pointer-events-none text-muted/60" : item.href === active ? "text-brand" : "text-ink/70"
             }`}
           >
             <Icon name={item.icon} className={`size-6 ${item.href ? "" : item.iconClass + " opacity-50"}`} />

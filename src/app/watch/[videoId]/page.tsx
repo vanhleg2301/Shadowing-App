@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LessonPlayer } from "@/components/LessonPlayer";
+import { getLessonUserState } from "@/lib/user-data";
 import { getLesson, type LessonResult } from "@/lib/youtube";
 import { isValidVideoId } from "@/lib/youtube-url";
 
@@ -18,6 +19,7 @@ export default function WatchPage({ params }: PageProps<"/watch/[videoId]">) {
 async function LessonLoader({ videoId }: { videoId: string }) {
   if (!isValidVideoId(videoId)) notFound();
 
+  const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [] }));
   let result: LessonResult;
   try {
     result = await getLesson(videoId);
@@ -38,5 +40,12 @@ async function LessonLoader({ videoId }: { videoId: string }) {
     );
   }
 
-  return <LessonPlayer lesson={result.lesson} />;
+  const userState = await userStatePromise;
+  return (
+    <LessonPlayer
+      lesson={result.lesson}
+      initialIsFavorite={userState.isFavorite}
+      initialSavedWords={userState.savedWords}
+    />
+  );
 }

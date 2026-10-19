@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { setSavedWord } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
+import { useAuth } from "@/hooks/useAuth";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { normalizeWord, type WordInfo } from "@/lib/dictionary";
 import { findActiveIndex, formatTime, type Lesson } from "@/lib/lesson";
@@ -25,9 +28,13 @@ const MODES: { mode: Mode; label: string }[] = [
 
 interface LessonPlayerProps {
   lesson: Lesson;
+  initialIsFavorite: boolean;
+  initialSavedWords: string[];
 }
 
-export function LessonPlayer({ lesson }: LessonPlayerProps) {
+export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords }: LessonPlayerProps) {
+  const { isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
+  const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
   const { sentences } = lesson;
   const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(
     lesson.videoId,
@@ -124,6 +131,28 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
     );
   };
 
+  const handleToggleSave = async (current: WordLookupState) => {
+    const isSaved = !savedWords.has(current.word);
+    const update = (save: boolean) =>
+      setSavedWords((prev) => {
+        const next = new Set(prev);
+        if (save) next.add(current.word);
+        else next.delete(current.word);
+        return next;
+      });
+    update(isSaved);
+    const result = await setSavedWord({
+      word: current.word,
+      sentence: current.sentence,
+      videoId: lesson.videoId,
+      entry: current.info ? { ...current.info } : null,
+      isSaved,
+    });
+    if (result.ok) return;
+    update(!isSaved);
+    if (result.error === "signed-out") await signInWithGoogle();
+  };
+
   const handleWordClick = (token: string, sentence: string) => {
     const word = normalizeWord(token);
     if (!word) return;
@@ -141,6 +170,7 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
           <h1 className="truncate font-bold text-ink">{lesson.title}</h1>
           <p className="truncate text-sm text-muted">{lesson.author}</p>
         </div>
+        <FavoriteButton videoId={lesson.videoId} title={lesson.title} initialIsFavorite={initialIsFavorite} />
         <div className="flex w-full gap-1 rounded-2xl border border-line bg-white p-1 lg:w-auto lg:shrink-0">
           {MODES.map((m) => (
             <button
@@ -307,6 +337,7 @@ export function LessonPlayer({ lesson }: LessonPlayerProps) {
           lookup={lookup}
           onClose={() => setLookup(null)}
           onRetry={() => fetchLookup(lookup.word, lookup.sentence)}
+          saved={isAuthAvailable ? { isSaved: savedWords.has(lookup.word), onToggle: () => handleToggleSave(lookup) } : undefined}
         />
       )}
     </div>
