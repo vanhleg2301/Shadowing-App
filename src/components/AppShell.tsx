@@ -72,6 +72,14 @@ export function AppShell({ active, children }: AppShellProps) {
 
         <div className="mt-auto pt-6">
           <AuthButton variant="full" />
+          <div className="mt-3 flex gap-3 px-2 text-xs text-muted">
+            <Link href="/account" className="hover:text-ink">
+              Account
+            </Link>
+            <Link href="/privacy" className="hover:text-ink">
+              Privacy
+            </Link>
+          </div>
         </div>
       </aside>
 
