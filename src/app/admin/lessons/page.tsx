@@ -4,12 +4,15 @@ import { deleteLesson, refetchLesson } from "@/app/admin/actions";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
 import { CURATED_VIDEOS } from "@/data/curated";
-import { requireAdmin } from "@/lib/admin";
+import { AdminPagination, AdminSearchBox } from "@/components/admin/AdminListControls";
+import { ADMIN_PAGE_SIZE, parsePage, parseQuery, requireAdmin } from "@/lib/admin";
 
-export default function AdminLessonsPage() {
+export default function AdminLessonsPage({ searchParams }: PageProps<"/admin/lessons">) {
   return (
     <AdminLayout active="/admin/lessons" title="Lessons">
-      <LessonTable />
+      {searchParams.then((sp) => (
+        <LessonTable page={parsePage(sp.page)} query={parseQuery(sp.q)} />
+      ))}
     </AdminLayout>
   );
 }
@@ -23,23 +26,35 @@ interface LessonRow {
   updated_at: string;
 }
 
-async function LessonTable() {
+async function LessonTable({ page, query }: { page: number; query: string }) {
   const ctx = await requireAdmin();
   if (!ctx) notFound();
-  const { data, error } = await ctx.admin
+
+  // Characters that would break PostgREST's or() filter syntax are dropped from the search.
+  const safeQuery = query.replace(/[,()%*\\]/g, " ").trim();
+  let listQuery = ctx.admin
     .from("lessons")
-    .select("video_id, title, author, caption_source, has_translation, updated_at")
-    .order("updated_at", { ascending: false });
+    .select("video_id, title, author, caption_source, has_translation, updated_at", { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range((page - 1) * ADMIN_PAGE_SIZE, page * ADMIN_PAGE_SIZE - 1);
+  if (safeQuery) listQuery = listQuery.or(`title.ilike.%${safeQuery}%,video_id.ilike.%${safeQuery}%,author.ilike.%${safeQuery}%`);
+
+  const [{ data, count, error }, storedIds] = await Promise.all([listQuery, ctx.admin.from("lessons").select("video_id")]);
   if (error) return <p className="mt-8 text-red-600">Couldn&apos;t load lessons: {error.message}</p>;
 
   const lessons = (data ?? []) as LessonRow[];
-  const stored = new Set(lessons.map((l) => l.video_id));
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  const stored = new Set(((storedIds.data ?? []) as { video_id: string }[]).map((l) => l.video_id));
   const missing = CURATED_VIDEOS.filter((v) => !stored.has(v.videoId));
+  const pagination = (
+    <AdminPagination basePath="/admin/lessons" page={page} totalPages={totalPages} total={total} query={query} />
+  );
 
   return (
     <div className="mt-8 space-y-6">
       <p className="text-sm text-muted">
-        {lessons.length} stored transcripts. Curated videos missing a transcript: {missing.length}. “Refetch” asks YouTube
+        {stored.size} stored transcripts. Curated videos missing a transcript: {missing.length}. “Refetch” asks YouTube
         again and only works from a connection YouTube doesn&apos;t block (usually not the deployed server).
       </p>
 
@@ -56,6 +71,9 @@ async function LessonTable() {
           </ul>
         </section>
       )}
+
+      <AdminSearchBox action="/admin/lessons" query={query} placeholder="Search by title, channel or video ID" />
+      {pagination}
 
       <div className="overflow-x-auto rounded-3xl border border-line bg-white">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -100,7 +118,9 @@ async function LessonTable() {
             ))}
           </tbody>
         </table>
+        {lessons.length === 0 && <p className="p-6 text-muted">No lessons match this search.</p>}
       </div>
+      {totalPages > 1 && pagination}
     </div>
   );
 }

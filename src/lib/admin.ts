@@ -43,30 +43,77 @@ export function summarizeUser(user: User, counts: { savedWords: number; favorite
   } satisfies AdminUserSummary;
 }
 
-async function countByUser(ctx: AdminContext, table: "saved_words" | "favorites" | "lesson_progress") {
-  const { data } = await ctx.admin.from(table).select("user_id");
+export const ADMIN_PAGE_SIZE = 25;
+const MAX_USER_PAGES = 20;
+
+export interface Paged<T> {
+  items: T[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
+export function parsePage(value: string | string[] | undefined): number {
+  const page = Number(Array.isArray(value) ? value[0] : value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+export function parseQuery(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : value)?.trim().slice(0, 100) ?? "";
+}
+
+async function countByUser(ctx: AdminContext, table: "saved_words" | "favorites" | "lesson_progress", userIds: string[]) {
   const counts = new Map<string, number>();
+  if (userIds.length === 0) return counts;
+  const { data } = await ctx.admin.from(table).select("user_id").in("user_id", userIds);
   for (const row of (data ?? []) as { user_id: string }[]) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
   return counts;
 }
 
-export async function listUsers(ctx: AdminContext): Promise<AdminUserSummary[]> {
-  const [{ data, error }, words, favorites, progress] = await Promise.all([
-    ctx.admin.auth.admin.listUsers({ page: 1, perPage: PER_PAGE }),
-    countByUser(ctx, "saved_words"),
-    countByUser(ctx, "favorites"),
-    countByUser(ctx, "lesson_progress"),
+async function getAllUsers(ctx: AdminContext): Promise<User[]> {
+  const users: User[] = [];
+  for (let page = 1; page <= MAX_USER_PAGES; page++) {
+    const { data, error } = await ctx.admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+    if (error) throw error;
+    users.push(...data.users);
+    if (!data.nextPage) break;
+  }
+  return users;
+}
+
+// Supabase Auth can't search users, so filter and sort in memory (fine up to ~20k accounts), then page.
+export async function listUsers(ctx: AdminContext, page: number, query: string): Promise<Paged<AdminUserSummary>> {
+  const needle = query.toLowerCase();
+  const matching = (await getAllUsers(ctx))
+    .filter((u) => {
+      if (!needle) return true;
+      const name = (u.user_metadata.full_name as string | undefined) ?? "";
+      return (u.email ?? "").toLowerCase().includes(needle) || name.toLowerCase().includes(needle);
+    })
+    .sort((a, b) => (b.last_sign_in_at ?? b.created_at).localeCompare(a.last_sign_in_at ?? a.created_at));
+
+  const totalPages = Math.max(1, Math.ceil(matching.length / ADMIN_PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  const pageUsers = matching.slice((current - 1) * ADMIN_PAGE_SIZE, current * ADMIN_PAGE_SIZE);
+  const ids = pageUsers.map((u) => u.id);
+  const [words, favorites, progress] = await Promise.all([
+    countByUser(ctx, "saved_words", ids),
+    countByUser(ctx, "favorites", ids),
+    countByUser(ctx, "lesson_progress", ids),
   ]);
-  if (error) throw error;
-  return data.users
-    .map((u) =>
+
+  return {
+    items: pageUsers.map((u) =>
       summarizeUser(u, {
         savedWords: words.get(u.id) ?? 0,
         favorites: favorites.get(u.id) ?? 0,
         lessonsStarted: progress.get(u.id) ?? 0,
       }),
-    )
-    .sort((a, b) => (b.lastSignInAt ?? b.createdAt).localeCompare(a.lastSignInAt ?? a.createdAt));
+    ),
+    page: current,
+    totalPages,
+    total: matching.length,
+  };
 }
 
 export async function getOverview(ctx: AdminContext) {
