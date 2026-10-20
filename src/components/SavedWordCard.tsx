@@ -29,7 +29,7 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
   };
 
   return (
-    <li lang="en" className="rounded-3xl border border-line bg-white p-4 shadow-[0_4px_0_0_var(--color-line)]">
+    <li lang="en" className="rounded-3xl border border-line bg-surface p-4 shadow-[0_4px_0_0_var(--color-line)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xl font-extrabold text-ink">{item.word}</p>

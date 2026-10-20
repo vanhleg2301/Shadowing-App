@@ -14,7 +14,7 @@ export function RankedBars({ title, subtitle, emptyText, items }: RankedBarsProp
   const max = Math.max(1, ...items.map((i) => i.value));
 
   return (
-    <figure className="rounded-3xl border border-line bg-white p-5">
+    <figure className="rounded-3xl border border-line bg-surface p-5">
       <figcaption>
         <p className="font-bold text-ink">{title}</p>
         <p className="text-sm text-muted">{subtitle}</p>

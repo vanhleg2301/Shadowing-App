@@ -111,6 +111,28 @@ export async function getLibraryUserState(): Promise<LibraryUserState> {
 export interface Streak {
   days: number;
   hasStudiedToday: boolean;
+  longest: number;
+  // Monday to Sunday of the current local week.
+  week: { day: string; label: string; studied: boolean; isToday: boolean; isFuture: boolean }[];
+}
+
+const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+
+function addDays(day: string, delta: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + delta);
+  return date.toISOString().slice(0, 10);
+}
+
+function longestRun(days: string[]): number {
+  const sorted = [...days].sort();
+  let best = 0;
+  let run = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    run = i > 0 && addDays(sorted[i - 1], 1) === sorted[i] ? run + 1 : 1;
+    best = Math.max(best, run);
+  }
+  return best;
 }
 
 // Consecutive study days ending today, or yesterday if the learner hasn't studied yet today.
@@ -133,7 +155,13 @@ export async function getStreak(): Promise<Streak | null> {
     count++;
     cursor = previousDay(cursor);
   }
-  return { days: count, hasStudiedToday };
+  const mondayOffset = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const monday = addDays(today, -mondayOffset);
+  const week = WEEKDAY_LABELS.map((label, i) => {
+    const day = addDays(monday, i);
+    return { day, label, studied: days.has(day), isToday: day === today, isFuture: day > today };
+  });
+  return { days: count, hasStudiedToday, longest: longestRun([...days]), week };
 }
 
 export interface ReviewCard {

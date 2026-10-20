@@ -63,7 +63,7 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
       </p>
 
       {missing.length > 0 && (
-        <section className="rounded-3xl border border-orange-200 bg-orange-50 p-5">
+        <section className="rounded-3xl border border-accent/30 bg-accent-soft p-5">
           <h2 className="font-bold text-ink">Missing transcripts</h2>
           <ul className="mt-2 space-y-1 text-sm">
             {missing.map((v) => (
@@ -79,7 +79,7 @@ async function LessonTable({ page, query }: { page: number; query: string }) {
       <AdminSearchBox action="/admin/lessons" query={query} placeholder="Search by title, channel or video ID" />
       {pagination}
 
-      <div className="overflow-x-auto rounded-3xl border border-line bg-white">
+      <div className="overflow-x-auto rounded-3xl border border-line bg-surface">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-line bg-cream text-xs uppercase tracking-wide text-muted">
             <tr>

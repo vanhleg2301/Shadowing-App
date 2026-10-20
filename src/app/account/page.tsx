@@ -32,7 +32,7 @@ async function AccountDetails() {
 
   return (
     <div className="mt-8 space-y-6">
-      <section className="rounded-3xl border border-line bg-white p-5 shadow-[0_4px_0_0_var(--color-line)]">
+      <section className="rounded-3xl border border-line bg-surface p-5 shadow-[0_4px_0_0_var(--color-line)]">
         <p className="text-xl font-extrabold text-ink">{name}</p>
         <p className="text-sm text-muted">{ctx.user.email} · signed in with Google</p>
         {streak && (
@@ -42,7 +42,7 @@ async function AccountDetails() {
         )}
       </section>
 
-      <section className="rounded-3xl border border-line bg-white p-5">
+      <section className="rounded-3xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold text-ink">Delete account</h2>
         <p className="mt-1 text-sm text-muted">
           Removes your account and everything stored with it. Your voice recordings are never uploaded, so there is nothing

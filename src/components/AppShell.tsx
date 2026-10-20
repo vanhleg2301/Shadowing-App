@@ -2,23 +2,22 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { getUserContext } from "@/lib/user-data";
 
 interface NavItem {
   label: string;
+  shortLabel: string;
   icon: IconName;
-  href?: string;
-  iconClass: string;
+  href: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Home", icon: "home", href: "/", iconClass: "text-orange-500" },
-  { label: "Review", icon: "repeat", href: "/review", iconClass: "text-violet-500" },
-  { label: "Listening", icon: "headphones", iconClass: "text-sky-500" },
-  { label: "Speaking", icon: "mic", iconClass: "text-teal-500" },
-  { label: "Vocabulary", icon: "book", href: "/vocabulary", iconClass: "text-pink-500" },
-  { label: "Favorites", icon: "heart", href: "/favorites", iconClass: "text-rose-500" },
+  { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
+  { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
+  { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
+  { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites" },
 ];
 
 interface AppShellProps {
@@ -29,50 +28,42 @@ interface AppShellProps {
 export function AppShell({ active, children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-white px-4 py-5 md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-5 md:flex">
         <Link href="/" className="flex items-center gap-2 px-2">
-          <span className="grid size-10 place-items-center rounded-xl bg-brand text-white shadow-[0_3px_0_0_var(--color-brand-dark)]">
+          <span className="grid size-10 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
             <Icon name="mic" />
           </span>
-          <span className="text-xl font-extrabold text-brand">Shadowing</span>
+          <span className="text-xl font-extrabold text-ink">
+            Shadow<span className="text-brand">ing</span>
+          </span>
         </Link>
 
-        <nav className="mt-8 flex flex-col gap-1.5">
-          {NAV_ITEMS.map((item) =>
-            item.href ? (
+        <nav className="mt-8 flex flex-col gap-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.href === active;
+            return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
-                aria-current={item.href === active ? "page" : undefined}
-                className={
-                  item.href === active
-                    ? "btn-3d btn-brand justify-start px-4 py-3"
-                    : "flex items-center gap-1.5 rounded-2xl px-4 py-3 font-semibold text-ink transition-colors hover:bg-cream"
-                }
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ${
+                  isActive ? "bg-brand-soft text-brand" : "text-ink/80 hover:bg-cream hover:text-ink"
+                }`}
               >
-                <Icon name={item.icon} className={`size-6 ${item.href === active ? "" : item.iconClass}`} />
+                <Icon name={item.icon} className="size-5" />
                 {item.label}
               </Link>
-            ) : (
-              <span
-                key={item.label}
-                className="flex items-center gap-1.5 rounded-2xl px-4 py-3 font-semibold text-ink/60"
-                title="Coming soon"
-              >
-                <Icon name={item.icon} className={`size-6 ${item.iconClass}`} />
-                {item.label}
-                <span className="ml-auto rounded-full bg-cream px-2 py-0.5 text-[10px] font-medium text-muted">Soon</span>
-              </span>
-            ),
-          )}
+            );
+          })}
           <Suspense fallback={null}>
             <AdminNavLink isActive={active === "/admin"} />
           </Suspense>
         </nav>
 
-        <div className="mt-auto pt-6">
+        <div className="mt-auto space-y-3 pt-6">
+          <ThemeToggle />
           <AuthButton variant="full" />
-          <div className="mt-3 flex gap-3 px-2 text-xs text-muted">
+          <div className="flex gap-3 px-2 text-xs text-muted">
             <Link href="/account" className="hover:text-ink">
               Account
             </Link>
@@ -83,23 +74,29 @@ export function AppShell({ active, children }: AppShellProps) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">{children}</div>
+      {/* Leaves room for the floating tab bar plus the iPhone home indicator. */}
+      <div className="flex min-w-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom)+6rem)] md:pb-0">{children}</div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:hidden">
-        {NAV_ITEMS.filter((item) => item.href).map((item) => (
-          <Link
-            key={item.label}
-            href={item.href ?? "/"}
-            aria-disabled={!item.href}
-            aria-current={item.href === active ? "page" : undefined}
-            className={`flex flex-col items-center gap-0.5 px-2 text-[11px] font-semibold ${
-              !item.href ? "pointer-events-none text-muted/60" : item.href === active ? "text-brand" : "text-ink/70"
-            }`}
-          >
-            <Icon name={item.icon} className={`size-6 ${item.href ? "" : item.iconClass + " opacity-50"}`} />
-            {item.label}
-          </Link>
-        ))}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 flex justify-around rounded-[1.75rem] border border-line bg-surface/90 p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] backdrop-blur-xl md:hidden"
+      >
+        {NAV_ITEMS.map((item) => {
+          const isActive = item.href === active;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[1.4rem] py-2 text-[11px] font-semibold transition-colors ${
+                isActive ? "bg-brand-soft text-brand" : "text-muted active:bg-cream"
+              }`}
+            >
+              <Icon name={item.icon} className="size-6" />
+              {item.shortLabel}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
@@ -113,13 +110,11 @@ async function AdminNavLink({ isActive }: { isActive: boolean }) {
     <Link
       href="/admin"
       aria-current={isActive ? "page" : undefined}
-      className={
-        isActive
-          ? "btn-3d btn-dark mt-4 justify-start px-4 py-3"
-          : "mt-4 flex items-center gap-1.5 rounded-2xl border border-dashed border-line px-4 py-3 font-semibold text-ink transition-colors hover:bg-cream"
-      }
+      className={`mt-3 flex items-center gap-3 rounded-2xl border border-dashed px-4 py-3 font-semibold transition-colors ${
+        isActive ? "border-brand bg-brand-soft text-brand" : "border-line text-ink/80 hover:bg-cream"
+      }`}
     >
-      <Icon name="book" className="size-6" />
+      <Icon name="chart" className="size-5" />
       Admin
     </Link>
   );

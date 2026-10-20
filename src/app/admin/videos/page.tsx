@@ -46,7 +46,7 @@ async function VideoTable({ page, query }: { page: number; query: string }) {
       <AdminSearchBox action="/admin/videos" query={query} placeholder="Search by title, topic, level or ID" />
       {pagination}
 
-      <div className="overflow-x-auto rounded-3xl border border-line bg-white">
+      <div className="overflow-x-auto rounded-3xl border border-line bg-surface">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="border-b border-line bg-cream text-xs uppercase tracking-wide text-muted">
             <tr>

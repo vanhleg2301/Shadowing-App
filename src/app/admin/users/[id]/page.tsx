@@ -68,7 +68,7 @@ async function UserDetails({ id }: { id: string }) {
         ← All users
       </Link>
 
-      <section className="rounded-3xl border border-line bg-white p-5">
+      <section className="rounded-3xl border border-line bg-surface p-5">
         <p className="text-xl font-extrabold text-ink">{user.name || user.email}</p>
         <p className="text-sm text-muted">
           {user.email} · {user.provider} · joined {formatDate(user.createdAt)} · last sign-in {formatDate(user.lastSignInAt)}
@@ -79,7 +79,7 @@ async function UserDetails({ id }: { id: string }) {
         </p>
       </section>
 
-      <section className="rounded-3xl border border-line bg-white p-5">
+      <section className="rounded-3xl border border-line bg-surface p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-ink">Lesson progress</h2>
           {progressRows.length > 0 && (
@@ -105,7 +105,7 @@ async function UserDetails({ id }: { id: string }) {
         </ul>
       </section>
 
-      <section className="rounded-3xl border border-line bg-white p-5">
+      <section className="rounded-3xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold text-ink">Saved words</h2>
         <ul className="mt-3 divide-y divide-line text-sm">
           {wordRows.map((w) => (
@@ -121,7 +121,7 @@ async function UserDetails({ id }: { id: string }) {
         </ul>
       </section>
 
-      <section className="rounded-3xl border border-line bg-white p-5">
+      <section className="rounded-3xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold text-ink">Favorites</h2>
         <ul className="mt-3 divide-y divide-line text-sm">
           {favoriteRows.map((f) => (

@@ -48,7 +48,7 @@ export function ClozePanel({ sentence, index, total, onListen, onPrev, onNext, o
             if (isChecked && !isCorrect(i)) {
               return (
                 <span key={i}>
-                  <span className="rounded bg-red-100 px-1 text-red-700 line-through">{answers[i] || "—"}</span>{" "}
+                  <span className="rounded bg-red-100 px-1 text-red-700 dark:bg-red-500/20 dark:text-red-300 line-through">{answers[i] || "—"}</span>{" "}
                   <span className="font-semibold text-brand">{token.text}</span>{" "}
                 </span>
               );
@@ -65,7 +65,7 @@ export function ClozePanel({ sentence, index, total, onListen, onPrev, onNext, o
                   autoCapitalize="off"
                   aria-label={`Missing word ${blanks.indexOf(i) + 1}`}
                   style={{ width: `${Math.max(token.text.length, 3) + 1.5}ch` }}
-                  className={`rounded-lg border-b-2 bg-white px-1 text-center outline-none ${
+                  className={`rounded-lg border-b-2 bg-surface px-1 text-center outline-none ${
                     isChecked ? "border-brand font-semibold text-brand" : "border-brand/50 focus:border-brand"
                   }`}
                 />{" "}

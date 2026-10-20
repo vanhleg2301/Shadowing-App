@@ -12,6 +12,10 @@ export function PasteLinkForm() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!value.trim()) {
+      setError("Paste a YouTube link first");
+      return;
+    }
     const videoId = parseVideoId(value);
     if (!videoId) {
       setError("That's not a valid YouTube link");
@@ -20,26 +24,40 @@ export function PasteLinkForm() {
     router.push(`/watch/${videoId}`);
   };
 
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setValue(text);
+      setError(null);
+    } catch {
+      setError("Couldn't read the clipboard. Long-press the box and choose Paste.");
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex gap-3">
+      <div className="flex items-center gap-2 rounded-2xl border border-line bg-cream px-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-soft">
+        <Icon name="link" className="size-5 shrink-0 text-muted" />
         <input
-          type="text"
+          type="url"
           inputMode="url"
+          autoFocus
           value={value}
           onChange={(event) => {
             setValue(event.target.value);
             setError(null);
           }}
-          placeholder="Paste a YouTube link with English subtitles..."
-          className="min-w-0 flex-1 rounded-full border border-line bg-white px-5 py-3 text-ink outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft"
+          placeholder="youtube.com/watch?v=..."
+          className="min-w-0 flex-1 bg-transparent py-3.5 text-ink outline-none placeholder:text-muted"
         />
-        <button type="submit" className="btn-3d shrink-0 rounded-full px-4 py-3 sm:px-5">
-          <Icon name="plus" />
-          <span className="hidden sm:inline">Add video</span>
+        <button type="button" onClick={handlePaste} className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-brand hover:bg-brand-soft">
+          Paste
         </button>
       </div>
-      {error && <p className="mt-2 px-5 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <button type="submit" className="btn-3d btn-brand mt-4 w-full py-3.5">
+        Start learning
+      </button>
     </form>
   );
 }

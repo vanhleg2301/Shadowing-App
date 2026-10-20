@@ -22,7 +22,7 @@ export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardPr
     <div className="relative h-full">
       <Link
         href={`/watch/${video.videoId}`}
-        className="group block h-full animate-fade-up rounded-3xl border border-line bg-white p-3 shadow-[0_4px_0_0_var(--color-line)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_8px_0_0_var(--color-line)] active:translate-y-0 active:shadow-[0_2px_0_0_var(--color-line)]"
+        className="group block h-full animate-fade-up rounded-3xl border border-line bg-surface p-3 shadow-[0_4px_0_0_var(--color-line)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_8px_0_0_var(--color-line)] active:translate-y-0 active:shadow-[0_2px_0_0_var(--color-line)]"
       >
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-cream">
           <Image
@@ -33,19 +33,19 @@ export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardPr
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {video.level && (
-            <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full bg-ink/85 px-2.5 py-1 text-xs font-bold text-white">
+            <span className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-xs font-bold text-white">
               <span className={`size-1.5 rounded-full ${LEVEL_DOT[video.level]}`} />
               {video.level}
             </span>
           )}
           {video.duration && (
-            <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-ink/85 px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
               {video.duration}
             </span>
           )}
           {progress !== undefined && progress > 0 && (
             <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/30" aria-label={`${progress}% watched`}>
-              <div className={`h-full ${progress >= 100 ? "bg-green-400" : "bg-orange-400"}`} style={{ width: `${Math.min(progress, 100)}%` }} />
+              <div className={`h-full ${progress >= 100 ? "bg-green-400" : "bg-accent"}`} style={{ width: `${Math.min(progress, 100)}%` }} />
             </div>
           )}
         </div>

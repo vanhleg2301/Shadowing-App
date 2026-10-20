@@ -45,7 +45,7 @@ export function DictationPanel({ sentence, index, total, onListen, onPrev, onNex
         spellCheck={false}
         autoCapitalize="off"
         placeholder="Type the sentence, then press Enter"
-        className="mt-2 w-full resize-none rounded-2xl border border-line bg-white px-4 py-3 text-lg text-ink outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft"
+        className="mt-2 w-full resize-none rounded-2xl border border-line bg-surface px-4 py-3 text-lg text-ink outline-none placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand-soft"
       />
 
       {result && (
@@ -57,7 +57,7 @@ export function DictationPanel({ sentence, index, total, onListen, onPrev, onNex
             {result.words.map((w, i) => (
               <span
                 key={i}
-                className={w.isCorrect ? "text-brand" : "rounded bg-red-100 px-0.5 text-red-700 underline decoration-wavy"}
+                className={w.isCorrect ? "text-brand" : "rounded bg-red-100 px-0.5 text-red-700 dark:bg-red-500/20 dark:text-red-300 underline decoration-wavy"}
               >
                 {w.text}{" "}
               </span>

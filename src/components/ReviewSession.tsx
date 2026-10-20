@@ -36,7 +36,7 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
   const card = queue[0];
   if (!card) {
     return (
-      <div className="mt-8 max-w-xl animate-fade-up rounded-3xl border border-line bg-white p-8 text-center shadow-[0_4px_0_0_var(--color-line)]">
+      <div className="mt-8 max-w-xl animate-fade-up rounded-3xl border border-line bg-surface p-8 text-center shadow-[0_4px_0_0_var(--color-line)]">
         <p className="text-2xl font-extrabold text-ink">All done for now!</p>
         <p className="mt-2 text-muted">
           {reviewedCount > 0 ? `You reviewed ${reviewedCount} cards.` : "No words are due."} Come back later for the next ones.
@@ -71,7 +71,7 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
       <div
         key={`${card.word}-${reviewedCount}`}
         lang="en"
-        className="mt-2 animate-fade-up rounded-3xl border border-line bg-white p-6 shadow-[0_4px_0_0_var(--color-line)]"
+        className="mt-2 animate-fade-up rounded-3xl border border-line bg-surface p-6 shadow-[0_4px_0_0_var(--color-line)]"
       >
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-3xl font-extrabold text-ink">{card.word}</p>

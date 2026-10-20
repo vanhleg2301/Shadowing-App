@@ -13,7 +13,7 @@ export function StreakBadge({ streak }: StreakBadgeProps) {
   return (
     <span
       className={`flex animate-fade-in items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${
-        isActive ? "bg-orange-100 text-orange-700" : "bg-line/60 text-muted"
+        isActive ? "bg-accent-soft text-accent" : "bg-line/60 text-muted"
       }`}
     >
       <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden="true">

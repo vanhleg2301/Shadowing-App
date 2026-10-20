@@ -37,7 +37,7 @@ export function FavoriteButton({ videoId, title, initialIsFavorite, size = "md" 
       aria-pressed={isFavorite}
       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       className={`btn-3d shrink-0 rounded-full ${size === "sm" ? "size-9" : "size-10"} ${
-        isFavorite ? "border-rose-300 bg-rose-50 text-rose-500" : "text-muted"
+        isFavorite ? "border-rose-300 bg-rose-50 text-rose-500 dark:border-rose-500/40 dark:bg-rose-500/15" : "text-muted"
       }`}
     >
       <svg key={String(isFavorite)} viewBox="0 0 24 24" className={`size-5 ${isFavorite ? "animate-pop" : ""}`} fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} aria-hidden="true">

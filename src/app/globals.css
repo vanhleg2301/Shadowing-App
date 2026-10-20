@@ -1,17 +1,63 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the resolved theme on <html data-theme>, set before paint by ThemeScript. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* "Indigo night" palette. Light is a cool, slightly dim gray-lavender; dark is deep navy. */
+:root {
+  color-scheme: light;
+  --bg: #eef0f7;
+  --surface: #ffffff;
+  --ink: #161a2e;
+  --muted: #5f6684;
+  --line: #dde0ee;
+  --brand: #4f46e5;
+  --brand-dark: #3730a3;
+  --brand-soft: #e4e5fc;
+  --on-brand: #ffffff;
+  --accent: #e85d43;
+  --accent-soft: #fde6e0;
+  --highlight: #fde68a;
+  --highlight-ink: #241a00;
+  --shadow-strong: #0b0d1a;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0f1e;
+  --surface: #171a2f;
+  --ink: #e8eaf7;
+  --muted: #9ba1c2;
+  --line: #2a2e4a;
+  --brand: #818cf8;
+  --brand-dark: #4f46e5;
+  --brand-soft: #232653;
+  --on-brand: #0d0f1e;
+  --accent: #ff8a70;
+  --accent-soft: #3b2128;
+  --highlight: #b45309;
+  --highlight-ink: #fff8e6;
+  --shadow-strong: #000000;
+}
+
 @theme inline {
   --font-sans: var(--font-be-vietnam-pro);
+  --color-cream: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-ink: var(--highlight-ink);
 }
 
 @theme {
-  --color-cream: #fbf8f2;
-  --color-ink: #1f2b29;
-  --color-muted: #6b7471;
-  --color-line: #e7e1d5;
-  --color-brand: #1f6f62;
-  --color-brand-dark: #154f46;
-  --color-brand-soft: #e3f1ed;
 
   --animate-fade-up: fade-up 0.4s ease-out both;
   --animate-fade-in: fade-in 0.2s ease-out both;
@@ -85,15 +131,16 @@
 }
 
 body {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  background: var(--bg);
+  color: var(--ink);
+  transition: background-color 0.2s ease;
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* 4You-style "chunky" controls: a solid bottom edge that collapses on press. */
+/* "Chunky" controls: a solid bottom edge that collapses on press. */
 @layer components {
   .btn-3d {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-2xl border border-line bg-white font-semibold text-ink transition-[transform,box-shadow] duration-75 select-none;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-2xl border border-line bg-surface font-semibold text-ink transition-[transform,box-shadow,background-color] duration-75 select-none;
     box-shadow: 0 3px 0 0 var(--color-line);
   }
   .btn-3d:active:not(:disabled) {
@@ -104,18 +151,18 @@ body {
     @apply opacity-40;
   }
   .btn-brand {
-    @apply border-brand-dark bg-brand text-white;
+    @apply border-brand-dark bg-brand text-on-brand;
     box-shadow: 0 3px 0 0 var(--color-brand-dark);
   }
   .btn-brand:active:not(:disabled) {
     box-shadow: 0 1px 0 0 var(--color-brand-dark);
   }
   .btn-dark {
-    @apply border-ink bg-ink text-white;
-    box-shadow: 0 3px 0 0 #000;
+    @apply border-ink bg-ink text-cream;
+    box-shadow: 0 3px 0 0 var(--shadow-strong);
   }
   .btn-dark:active:not(:disabled) {
-    box-shadow: 0 1px 0 0 #000;
+    box-shadow: 0 1px 0 0 var(--shadow-strong);
   }
   .btn-soft {
     @apply border-brand/30 bg-brand-soft text-brand-dark;

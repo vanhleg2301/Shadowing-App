@@ -1,9 +1,7 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
-import { AuthButton } from "@/components/AuthButton";
-import { Icon } from "@/components/Icon";
-import { PasteLinkForm } from "@/components/PasteLinkForm";
-import { StreakBadge } from "@/components/StreakBadge";
+import { HomeHeader } from "@/components/HomeHeader";
+import { StreakCard } from "@/components/StreakCard";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import type { CuratedVideo } from "@/data/curated";
 import { getCatalog } from "@/lib/catalog";
@@ -11,37 +9,17 @@ import { getLibraryUserState, getStreak } from "@/lib/user-data";
 
 export default async function HomePage() {
   const videos = await getCatalog();
+
   return (
     <AppShell active="/">
-      <header className="sticky top-0 z-30 border-b border-line bg-cream/90 px-4 py-4 backdrop-blur md:px-10">
-        <div className="flex max-w-3xl items-start gap-3">
-          <PasteLinkForm />
-          <div className="shrink-0 md:hidden">
-            <AuthButton variant="compact" />
-          </div>
-        </div>
-      </header>
+      <HomeHeader />
 
-      <main className="w-full max-w-6xl px-4 py-8 md:px-10">
-        <h1 className="animate-fade-up text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Hi there, ready to practice?</h1>
-        <div className="mt-3 flex items-center gap-3">
-          <Suspense fallback={null}>
-            <StreakChip />
-          </Suspense>
-          <span className="text-muted">Learning English</span>
-        </div>
+      <main className="w-full max-w-6xl px-4 py-5 md:px-10 md:py-8">
+        <Suspense fallback={null}>
+          <StreakSection />
+        </Suspense>
 
-        <section className="mt-8 flex items-center gap-4 rounded-3xl border border-brand/20 bg-brand-soft px-5 py-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand text-white shadow-[0_3px_0_0_var(--color-brand-dark)]">
-            <Icon name="play" />
-          </span>
-          <p className="text-ink">
-            Everyday English for A1–B1 learners. Pick a topic, tap any word to see its meaning, then switch to{" "}
-            <b>Shadowing</b> to repeat each sentence.
-          </p>
-        </section>
-
-        <div className="mt-8">
+        <div className="mt-5">
           {/* The static shell shows the library right away; hearts and progress fill in once the user's data streams in. */}
           <Suspense fallback={<VideoLibrary videos={videos} userState={EMPTY_USER_STATE} />}>
             <LibraryWithUserState videos={videos} />
@@ -59,8 +37,17 @@ async function LibraryWithUserState({ videos }: { videos: CuratedVideo[] }) {
   return <VideoLibrary videos={videos} userState={userState} />;
 }
 
-async function StreakChip() {
+async function StreakSection() {
   const streak = await getStreak().catch(() => null);
-  if (!streak) return null;
-  return <StreakBadge streak={streak} />;
+  if (!streak) {
+    return (
+      <section className="animate-fade-up rounded-3xl border border-brand/20 bg-brand-soft px-5 py-4 text-ink">
+        <p className="font-bold">Everyday English for A1–B1 learners</p>
+        <p className="mt-1 text-sm text-ink/80">
+          Pick a video, tap any word for its meaning, then switch to <b>Shadowing</b> to repeat each sentence.
+        </p>
+      </section>
+    );
+  }
+  return <StreakCard streak={streak} />;
 }

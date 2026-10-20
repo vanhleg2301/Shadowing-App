@@ -29,7 +29,7 @@ async function UserTable({ page, query }: { page: number; query: string }) {
     <div className="mt-8 space-y-4">
       <AdminSearchBox action="/admin/users" query={query} placeholder="Search by email or name" />
       {pagination}
-      <div className="overflow-x-auto rounded-3xl border border-line bg-white">
+      <div className="overflow-x-auto rounded-3xl border border-line bg-surface">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="border-b border-line bg-cream text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -51,7 +51,7 @@ async function UserTable({ page, query }: { page: number; query: string }) {
                   </Link>
                   <p className="text-xs text-muted">
                     {u.email} · {u.provider}
-                    {u.isAdmin && <span className="ml-1 rounded bg-ink px-1.5 py-0.5 text-[10px] font-bold text-white">ADMIN</span>}
+                    {u.isAdmin && <span className="ml-1 rounded bg-ink px-1.5 py-0.5 text-[10px] font-bold text-cream">ADMIN</span>}
                     {u.isBanned && <span className="ml-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">BANNED</span>}
                   </p>
                 </td>

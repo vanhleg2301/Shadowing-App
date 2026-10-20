@@ -39,7 +39,7 @@ export function ColumnChart({ title, subtitle, unit, data }: ColumnChartProps) {
   const active = hovered === null ? null : data[hovered];
 
   return (
-    <figure className="rounded-3xl border border-line bg-white p-5">
+    <figure className="rounded-3xl border border-line bg-surface p-5">
       <figcaption>
         <p className="font-bold text-ink">{title}</p>
         <p className="text-sm text-muted">
@@ -53,8 +53,8 @@ export function ColumnChart({ title, subtitle, unit, data }: ColumnChartProps) {
             const y = HEIGHT - (t / max) * HEIGHT;
             return (
               <g key={t}>
-                <line x1={AXIS_WIDTH} x2={width} y1={y} y2={y} stroke="#e7e1d5" strokeWidth={1} />
-                <text x={AXIS_WIDTH - 6} y={y + 4} textAnchor="end" fontSize={11} fill="#6b7471">
+                <line x1={AXIS_WIDTH} x2={width} y1={y} y2={y} stroke="var(--color-line)" strokeWidth={1} />
+                <text x={AXIS_WIDTH - 6} y={y + 4} textAnchor="end" fontSize={11} fill="var(--color-muted)">
                   {t}
                 </text>
               </g>
@@ -86,7 +86,7 @@ export function ColumnChart({ title, subtitle, unit, data }: ColumnChartProps) {
                 y={HEIGHT + 15}
                 textAnchor={i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
                 fontSize={11}
-                fill="#6b7471"
+                fill="var(--color-muted)"
               >
                 {data[i].label}
               </text>
@@ -96,7 +96,7 @@ export function ColumnChart({ title, subtitle, unit, data }: ColumnChartProps) {
 
         {active && hovered !== null && (
           <div
-            className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs text-white shadow-lg"
+            className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-xs text-cream shadow-lg"
             style={{ left: `${((AXIS_WIDTH + hovered * slot + slot / 2) / width) * 100}%` }}
           >
             <p className="font-semibold">{active.label}</p>

@@ -7,9 +7,11 @@ import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
+import { LessonSettingsSheet } from "@/components/LessonSettingsSheet";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
+import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { normalizeWord, type WordInfo } from "@/lib/dictionary";
 import { findActiveIndex, findActiveWord, formatTime, type Lesson } from "@/lib/lesson";
@@ -18,6 +20,14 @@ const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
 // Progress is saved at most this often while the learner moves through sentences.
 const PROGRESS_INTERVAL_MS = 10000;
+// After the learner scrolls the transcript themselves, auto-scroll waits this long before following again.
+const MANUAL_SCROLL_PAUSE_MS = 6000;
+
+const TEXT_SIZE_CLASS: Record<TextSize, string> = {
+  sm: "text-[15px]",
+  md: "text-[17px]",
+  lg: "text-[20px] leading-relaxed",
+};
 
 type Mode = "watch" | "shadow" | "dictation" | "cloze";
 
@@ -52,7 +62,11 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   // In dictation and cloze the transcript stays hidden until the learner has answered that sentence.
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [speed, setSpeed] = useState(1);
-  const [showTranslation, setShowTranslation] = useState(lesson.hasTranslation);
+  const { prefs, updatePrefs } = useLessonPrefs();
+  const showTranslation = lesson.hasTranslation && prefs.showTranslation;
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isFollowPaused, setIsFollowPaused] = useState(false);
+  const manualScrollAtRef = useRef(0);
   const [lookup, setLookup] = useState<WordLookupState | null>(null);
   const stopAtRef = useRef<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
@@ -61,7 +75,8 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   const isPractice = mode !== "watch";
   const highlightIndex = isPractice ? practiceIndex : activeIndex;
   const currentIndex = isPractice ? practiceIndex : Math.max(activeIndex, 0);
-  const isMasked = (i: number) => (mode === "dictation" || mode === "cloze") && !revealed.has(i);
+  const isMasked = (i: number) =>
+    (mode === "dictation" || mode === "cloze" || (mode === "watch" && prefs.hideText)) && !revealed.has(i);
 
   useEffect(() => {
     const stopAt = stopAtRef.current;
@@ -91,9 +106,21 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   }, [currentIndex, user, lesson.videoId, sentences.length]);
 
   useEffect(() => {
-    if (highlightIndex < 0) return;
+    if (highlightIndex < 0 || !prefs.autoScroll) return;
+    if (Date.now() - manualScrollAtRef.current < MANUAL_SCROLL_PAUSE_MS) return;
     rowRefs.current.get(highlightIndex)?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [highlightIndex]);
+  }, [highlightIndex, prefs.autoScroll]);
+
+  const handleManualScroll = () => {
+    manualScrollAtRef.current = Date.now();
+    if (prefs.autoScroll && !isFollowPaused) setIsFollowPaused(true);
+  };
+
+  const jumpToCurrent = () => {
+    manualScrollAtRef.current = 0;
+    setIsFollowPaused(false);
+    rowRefs.current.get(Math.max(highlightIndex, 0))?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
 
   const playSentence = (index: number) => {
     seekTo(sentences[index].start);
@@ -105,6 +132,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   const replaySentence = (index: number) => {
     hasInteractedRef.current = true;
     setIsResumeVisible(false);
+    if (mode === "watch" && prefs.hideText) setRevealed((prev) => new Set(prev).add(index));
     if (isPractice) setPracticeIndex(index);
     seekTo(sentences[index].start);
     stopAtRef.current = sentences[index].end;
@@ -207,7 +235,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
         activeWord < 0
           ? ""
           : wordIndex === activeWord
-            ? "bg-amber-200 text-ink"
+            ? "bg-highlight text-highlight-ink"
             : wordIndex < activeWord
               ? "text-brand-dark"
               : "";
@@ -226,7 +254,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             event.stopPropagation();
             handleWordClick(token, text);
           }}
-          className={`rounded-md transition-colors duration-150 hover:bg-amber-200/70 hover:text-ink ${karaokeClass}`}
+          className={`rounded-md transition-colors duration-150 hover:bg-highlight/60 hover:text-ink ${karaokeClass}`}
         >
           {token}
         </button>
@@ -272,7 +300,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
-      <header className="flex flex-wrap items-center gap-3 border-b border-line bg-cream px-4 py-3 lg:col-span-2 lg:flex-nowrap lg:px-6">
+      <header className="relative flex flex-wrap items-center gap-2.5 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
         <Link href="/" aria-label="Back to home" className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
         </Link>
@@ -281,21 +309,36 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
           <p className="truncate text-sm text-muted">{lesson.author}</p>
         </div>
         <FavoriteButton videoId={lesson.videoId} title={lesson.title} initialIsFavorite={initialIsFavorite} />
-        <div className="flex w-full gap-1 rounded-2xl border border-line bg-white p-1 lg:w-auto lg:shrink-0">
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          aria-label="Display settings"
+          className="btn-3d size-10 shrink-0 rounded-full text-sm font-extrabold"
+        >
+          Aa
+        </button>
+        <div className="no-scrollbar flex w-full gap-1 overflow-x-auto rounded-2xl border border-line bg-surface p-1 lg:w-auto lg:shrink-0">
           {MODES.map((m) => (
             <button
               key={m.mode}
               type="button"
               onClick={() => handleModeChange(m.mode)}
-              className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`flex-1 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
                 mode === m.mode
-                  ? "bg-brand text-white shadow-[0_2px_0_0_var(--color-brand-dark)]"
+                  ? "bg-brand text-on-brand shadow-[0_2px_0_0_var(--color-brand-dark)]"
                   : "text-muted hover:text-ink"
               }`}
             >
               {m.label}
             </button>
           ))}
+        </div>
+        {/* Lesson progress: how far through the sentences the learner is. */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-line" aria-hidden="true">
+          <div
+            className="h-full bg-accent transition-[width] duration-300"
+            style={{ width: `${((currentIndex + 1) / sentences.length) * 100}%` }}
+          />
         </div>
       </header>
 
@@ -308,12 +351,21 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-white lg:px-4">
-        <p className="px-2 pb-2 text-xs font-bold uppercase tracking-wide text-muted">
-          Transcript · {sentences.length} sentences
-        </p>
+      <div
+        onWheel={handleManualScroll}
+        onTouchMove={handleManualScroll}
+        className="relative min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
+      >
+        <div className="flex items-center justify-between px-2 pb-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted">
+            Sentence {currentIndex + 1} / {sentences.length}
+          </p>
+          {mode === "watch" && prefs.hideText && (
+            <p className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand">Listen first · tap to reveal</p>
+          )}
+        </div>
         {isResumeVisible && (
-          <div className="mb-3 flex animate-fade-in items-center justify-between gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm">
+          <div className="mb-3 flex animate-fade-in items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm">
             <span className="text-ink">
               Continuing from sentence <b>{initialSentence + 1}</b>
             </span>
@@ -338,7 +390,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             className={`group/row mb-1.5 flex cursor-pointer gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
               i === highlightIndex
                 ? "border-brand/40 bg-brand-soft hover:border-brand/60"
-                : "border-transparent hover:border-line hover:bg-white lg:hover:bg-cream"
+                : "border-transparent hover:border-line hover:bg-surface lg:hover:bg-cream"
             }`}
           >
             <button
@@ -354,12 +406,12 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
               {formatTime(sentence.start)}
             </button>
             {isMasked(i) ? (
-              <p aria-label="Hidden until you answer" className="min-w-0 select-none text-[17px] leading-relaxed text-ink/60 blur-[6px]">
+              <p aria-label="Hidden until you answer" className={`min-w-0 select-none leading-relaxed text-ink/60 blur-[6px] ${TEXT_SIZE_CLASS[prefs.textSize]}`}>
                 {sentence.text}
               </p>
             ) : (
               <div className="min-w-0">
-                <p className={`text-[17px] leading-relaxed ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
+                <p className={`leading-relaxed ${TEXT_SIZE_CLASS[prefs.textSize]} ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
                   {renderWords(sentence.text, i === activeIndex ? findActiveWord(sentence, currentTime) : -1)}
                 </p>
                 {showTranslation && sentence.translation && (
@@ -369,9 +421,19 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             )}
           </div>
         ))}
+        {isFollowPaused && prefs.autoScroll && (
+          <button
+            type="button"
+            onClick={jumpToCurrent}
+            className="btn-3d btn-brand sticky bottom-3 left-1/2 mx-auto flex -translate-x-0 animate-fade-in rounded-full px-4 py-2 text-sm"
+          >
+            <Icon name="chevronDown" className="size-4" />
+            Back to current sentence
+          </button>
+        )}
       </div>
 
-      <div className="shrink-0 border-t border-line bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 lg:col-start-1 lg:row-start-3 lg:self-start lg:border-0 lg:bg-transparent lg:px-6 lg:pt-5">
+      <div className="shrink-0 border-t border-line bg-surface px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3.5 lg:col-start-1 lg:row-start-3 lg:self-start lg:border-0 lg:bg-transparent lg:px-6 lg:pt-5">
         {mode === "shadow" && (
           <ShadowingPanel
             key={practiceIndex}
@@ -410,7 +472,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
           />
         )}
         {mode === "watch" && (
-          <div className="grid grid-cols-6 gap-2 lg:max-w-xl">
+          <div className="grid grid-cols-5 gap-2 lg:max-w-xl">
             <button type="button" className="btn-3d py-3" onClick={() => goToSentence(currentIndex - 1)} aria-label="Previous sentence">
               <Icon name="prev" />
             </button>
@@ -437,16 +499,6 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
             <button type="button" className="btn-3d py-3 text-sm" onClick={handleSpeedChange} aria-label="Playback speed">
               {speed}x
             </button>
-            <button
-              type="button"
-              className={`btn-3d py-3 text-sm ${showTranslation ? "btn-soft" : ""}`}
-              onClick={() => setShowTranslation(!showTranslation)}
-              disabled={!lesson.hasTranslation}
-              aria-label="Show or hide Vietnamese translation"
-              aria-pressed={showTranslation}
-            >
-              VI
-            </button>
           </div>
         )}
         <p className="mt-3 hidden text-xs text-muted lg:block">
@@ -460,6 +512,15 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
           )}
         </p>
       </div>
+
+      {isSettingsOpen && (
+        <LessonSettingsSheet
+          prefs={prefs}
+          hasTranslation={lesson.hasTranslation}
+          onChange={updatePrefs}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
 
       {lookup && (
         <WordLookupSheet

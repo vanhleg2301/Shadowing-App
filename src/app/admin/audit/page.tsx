@@ -40,7 +40,7 @@ async function AuditLog({ page }: { page: number }) {
     <div className="mt-8 space-y-4">
       <p className="text-sm text-muted">Every change made in the admin panel, newest first.</p>
       <AdminPagination basePath="/admin/audit" page={page} totalPages={totalPages} total={total} query="" />
-      <ul className="divide-y divide-line rounded-3xl border border-line bg-white">
+      <ul className="divide-y divide-line rounded-3xl border border-line bg-surface">
         {rows.map((r) => (
           <li key={r.id} className="flex flex-col gap-1 px-4 py-3 text-sm md:flex-row md:items-center md:gap-4">
             <span className="shrink-0 text-muted md:w-44">{formatDate(r.created_at)}</span>

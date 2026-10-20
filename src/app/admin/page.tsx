@@ -31,7 +31,7 @@ async function Overview() {
     <div className="mt-8 space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {tiles.map((t) => (
-          <div key={t.label} className="animate-fade-up rounded-3xl border border-line bg-white p-5 shadow-[0_4px_0_0_var(--color-line)]">
+          <div key={t.label} className="animate-fade-up rounded-3xl border border-line bg-surface p-5 shadow-[0_4px_0_0_var(--color-line)]">
             <p className="text-sm font-semibold text-muted">{t.label}</p>
             <p className="mt-1 text-3xl font-extrabold text-ink">{t.value.toLocaleString("en-US")}</p>
           </div>

@@ -18,6 +18,11 @@ const PATHS = {
   chevronDown: "M6 9l6 6 6-6",
   chevronLeft: "M15 6l-6 6 6 6",
   chevronRight: "M9 6l6 6-6 6",
+  chart: "M4 20V10m6 10V4m6 16v-7m4 7H2",
+  search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4",
+  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0",
+  link: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
+  settings: "M4 7h10M18 7h2M4 17h4M12 17h8M14 4v6M8 14v6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

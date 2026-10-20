@@ -43,7 +43,7 @@ export function AuthButton({ variant }: AuthButtonProps) {
   const avatar = avatarUrl ? (
     <Image src={avatarUrl} alt={name} width={40} height={40} className="size-10 rounded-full" />
   ) : (
-    <span className="grid size-10 place-items-center rounded-full bg-brand font-bold text-white">
+    <span className="grid size-10 place-items-center rounded-full bg-brand font-bold text-on-brand">
       {name.charAt(0).toUpperCase()}
     </span>
   );

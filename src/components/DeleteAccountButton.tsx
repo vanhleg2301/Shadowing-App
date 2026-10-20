@@ -38,7 +38,7 @@ export function DeleteAccountButton() {
   }
 
   return (
-    <div className="animate-fade-in rounded-2xl border border-red-200 bg-red-50 p-4">
+    <div className="animate-fade-in rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10">
       <p className="text-sm text-ink">
         This permanently deletes your account, saved words, favorites, progress and streak. Type{" "}
         <b>{CONFIRM_WORD}</b> to confirm.
@@ -47,7 +47,7 @@ export function DeleteAccountButton() {
         value={typed}
         onChange={(event) => setTyped(event.target.value)}
         aria-label={`Type ${CONFIRM_WORD} to confirm`}
-        className="mt-3 w-full rounded-xl border border-red-200 bg-white px-3 py-2 outline-none focus:border-red-500"
+        className="mt-3 w-full rounded-xl border border-red-200 bg-surface px-3 py-2 outline-none focus:border-red-500"
       />
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       <div className="mt-3 flex gap-2">

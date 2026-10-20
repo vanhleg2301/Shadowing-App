@@ -33,10 +33,10 @@ export function AddVideoForm({ topics }: AddVideoFormProps) {
   };
 
   const fieldClass =
-    "rounded-xl border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft";
+    "rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand-soft";
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-3xl border border-line bg-white p-5">
+    <form onSubmit={handleSubmit} className="rounded-3xl border border-line bg-surface p-5">
       <h2 className="font-bold text-ink">Add a video</h2>
       <p className="mt-1 text-xs text-muted">
         Paste a YouTube link with English subtitles. The transcript is fetched and stored right away.
