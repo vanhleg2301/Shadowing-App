@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { HomeHeader } from "@/components/HomeHeader";
+import { Icon } from "@/components/Icon";
 import { StreakCard } from "@/components/StreakCard";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import type { CuratedVideo } from "@/data/curated";
@@ -18,6 +20,21 @@ export default async function HomePage() {
         <Suspense fallback={null}>
           <StreakSection />
         </Suspense>
+
+        <Link
+          href="/course"
+          className="group mt-4 flex items-center gap-4 rounded-3xl border border-brand/25 bg-gradient-to-r from-brand-soft to-surface p-4 transition-transform active:translate-y-0.5"
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
+            <Icon name="course" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-bold uppercase tracking-wide text-accent">7-day course · A2</span>
+            <span className="block font-bold text-ink">Speak A2 in 7 days</span>
+            <span className="block truncate text-sm text-muted">Already understand A2? Start speaking, 2–3 hours a day.</span>
+          </span>
+          <Icon name="chevronRight" className="size-5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+        </Link>
 
         <div className="mt-5">
           {/* The static shell shows the library right away; hearts and progress fill in once the user's data streams in. */}

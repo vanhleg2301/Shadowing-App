@@ -6,17 +6,38 @@ import { getLessonUserState } from "@/lib/user-data";
 import { getLesson, type LessonResult } from "@/lib/lessons";
 import { isValidVideoId } from "@/lib/youtube-url";
 
-export default function WatchPage({ params }: PageProps<"/watch/[videoId]">) {
+const MODES = ["watch", "shadow", "dictation", "cloze"] as const;
+type StartMode = (typeof MODES)[number];
+
+interface LessonOptions {
+  mode: StartMode;
+  isListenFirst: boolean;
+  backHref: string;
+}
+
+// Course links open a lesson in a given mode (?mode=shadow, ?listen=1) and return to the course day (?from=course-3).
+function parseOptions(sp: Record<string, string | string[] | undefined>): LessonOptions {
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const mode = first(sp.mode);
+  const courseDay = first(sp.from)?.match(/^course-(\d{1,2})$/)?.[1];
+  return {
+    mode: (MODES as readonly string[]).includes(mode ?? "") ? (mode as StartMode) : "watch",
+    isListenFirst: first(sp.listen) === "1",
+    backHref: courseDay ? `/course/${courseDay}` : "/",
+  };
+}
+
+export default function WatchPage({ params, searchParams }: PageProps<"/watch/[videoId]">) {
   return (
     <Suspense fallback={<p className="grid h-dvh place-items-center text-muted">Preparing your lesson...</p>}>
-      {params.then(({ videoId }) => (
-        <LessonLoader videoId={videoId} />
+      {Promise.all([params, searchParams]).then(([{ videoId }, sp]) => (
+        <LessonLoader videoId={videoId} options={parseOptions(sp)} />
       ))}
     </Suspense>
   );
 }
 
-async function LessonLoader({ videoId }: { videoId: string }) {
+async function LessonLoader({ videoId, options }: { videoId: string; options: LessonOptions }) {
   if (!isValidVideoId(videoId)) notFound();
 
   const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [], lastSentence: 0 }));
@@ -47,6 +68,9 @@ async function LessonLoader({ videoId }: { videoId: string }) {
       initialIsFavorite={userState.isFavorite}
       initialSavedWords={userState.savedWords}
       initialSentence={Math.min(userState.lastSentence, result.lesson.sentences.length - 1)}
+      initialMode={options.mode}
+      isListenFirst={options.isListenFirst}
+      backHref={options.backHref}
     />
   );
 }

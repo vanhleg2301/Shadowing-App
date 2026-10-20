@@ -140,3 +140,60 @@ export async function gradeWord(input: z.input<typeof GradeSchema>): Promise<Act
   revalidatePath("/review");
   return { ok: true };
 }
+
+const CourseBlockSchema = z.object({
+  courseId: z.string().min(1).max(40),
+  day: z.number().int().min(1).max(60),
+  blockId: z.string().min(1).max(40),
+  isDone: z.boolean(),
+});
+
+export async function setCourseBlockDone(input: z.input<typeof CourseBlockSchema>): Promise<ActionResult> {
+  const parsed = CourseBlockSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+
+  const { courseId, day, blockId, isDone } = parsed.data;
+  const { error } = isDone
+    ? await ctx.supabase
+        .from("course_progress")
+        .upsert({ user_id: ctx.user.id, course_id: courseId, day, block_id: blockId })
+    : await ctx.supabase.from("course_progress").delete().match({ course_id: courseId, day, block_id: blockId });
+  if (error) return { ok: false, error: "failed" };
+
+  if (isDone) await recordStudyDay(ctx);
+  revalidatePath("/course");
+  return { ok: true };
+}
+
+const PhraseListSchema = z.object({
+  phrases: z.array(z.object({ text: z.string().min(1).max(60), meaning: z.string().max(200), example: z.string().max(300) })).max(30),
+});
+
+// Adds a course day's phrases to the learner's word list so they show up in Review.
+export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema>): Promise<ActionResult> {
+  const parsed = PhraseListSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+
+  const rows = parsed.data.phrases.map((p) => ({
+    user_id: ctx.user.id,
+    word: p.text,
+    sentence: p.example,
+    video_id: null,
+    entry: {
+      word: p.text,
+      meanings: [{ partOfSpeech: "phrase", definition: p.meaning, example: p.example }],
+      phrases: [],
+      source: "free",
+    },
+  }));
+  // ignoreDuplicates keeps the review schedule of phrases the learner already saved.
+  const { error } = await ctx.supabase.from("saved_words").upsert(rows, { onConflict: "user_id,word", ignoreDuplicates: true });
+  if (error) return { ok: false, error: "failed" };
+  revalidatePath("/vocabulary");
+  revalidatePath("/review");
+  return { ok: true };
+}

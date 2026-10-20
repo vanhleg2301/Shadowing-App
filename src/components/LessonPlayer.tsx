@@ -43,9 +43,21 @@ interface LessonPlayerProps {
   initialIsFavorite: boolean;
   initialSavedWords: string[];
   initialSentence: number;
+  initialMode?: Mode;
+  // Course "listen first" blocks hide the transcript for this visit without changing the saved preference.
+  isListenFirst?: boolean;
+  backHref?: string;
 }
 
-export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, initialSentence }: LessonPlayerProps) {
+export function LessonPlayer({
+  lesson,
+  initialIsFavorite,
+  initialSavedWords,
+  initialSentence,
+  initialMode = "watch",
+  isListenFirst = false,
+  backHref = "/",
+}: LessonPlayerProps) {
   const { user, isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
   const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
   const { sentences } = lesson;
@@ -53,7 +65,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
     lesson.videoId,
     lesson.sentences[initialSentence]?.start ?? 0,
   );
-  const [mode, setMode] = useState<Mode>("watch");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [loopIndex, setLoopIndex] = useState<number | null>(null);
   const [practiceIndex, setPracticeIndex] = useState(initialSentence);
   const [isResumeVisible, setIsResumeVisible] = useState(initialSentence > 0);
@@ -64,6 +76,8 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   const [speed, setSpeed] = useState(1);
   const { prefs, updatePrefs } = useLessonPrefs();
   const showTranslation = lesson.hasTranslation && prefs.showTranslation;
+  const [isSessionListenFirst, setIsSessionListenFirst] = useState(isListenFirst);
+  const isHideText = prefs.hideText || isSessionListenFirst;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFollowPaused, setIsFollowPaused] = useState(false);
   const manualScrollAtRef = useRef(0);
@@ -76,7 +90,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   const highlightIndex = isPractice ? practiceIndex : activeIndex;
   const currentIndex = isPractice ? practiceIndex : Math.max(activeIndex, 0);
   const isMasked = (i: number) =>
-    (mode === "dictation" || mode === "cloze" || (mode === "watch" && prefs.hideText)) && !revealed.has(i);
+    (mode === "dictation" || mode === "cloze" || (mode === "watch" && isHideText)) && !revealed.has(i);
 
   useEffect(() => {
     const stopAt = stopAtRef.current;
@@ -132,7 +146,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   const replaySentence = (index: number) => {
     hasInteractedRef.current = true;
     setIsResumeVisible(false);
-    if (mode === "watch" && prefs.hideText) setRevealed((prev) => new Set(prev).add(index));
+    if (mode === "watch" && isHideText) setRevealed((prev) => new Set(prev).add(index));
     if (isPractice) setPracticeIndex(index);
     seekTo(sentences[index].start);
     stopAtRef.current = sentences[index].end;
@@ -301,7 +315,7 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
       <header className="relative flex flex-wrap items-center gap-2.5 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
-        <Link href="/" aria-label="Back to home" className="btn-3d size-10 shrink-0 rounded-full">
+        <Link href={backHref} aria-label={backHref === "/" ? "Back to home" : "Back to the course"} className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
         </Link>
         <div className="min-w-0 flex-1">
@@ -360,8 +374,17 @@ export function LessonPlayer({ lesson, initialIsFavorite, initialSavedWords, ini
           <p className="text-xs font-bold uppercase tracking-wide text-muted">
             Sentence {currentIndex + 1} / {sentences.length}
           </p>
-          {mode === "watch" && prefs.hideText && (
-            <p className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand">Listen first · tap to reveal</p>
+          {mode === "watch" && isHideText && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSessionListenFirst(false);
+                if (prefs.hideText) updatePrefs({ hideText: false });
+              }}
+              className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand"
+            >
+              Listen first · tap a line · show all
+            </button>
           )}
         </div>
         {isResumeVisible && (

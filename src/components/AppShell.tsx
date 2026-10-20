@@ -15,6 +15,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
+  { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
   { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites" },

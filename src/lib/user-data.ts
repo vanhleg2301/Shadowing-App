@@ -233,3 +233,14 @@ export async function getLessonUserState(videoId: string): Promise<LessonUserSta
     lastSentence: (progress.data as { last_sentence: number } | null)?.last_sentence ?? 0,
   };
 }
+
+// Finished blocks per day for a course, e.g. { 1: ["listen-1", "phrases"] }. null when signed out.
+export async function getCourseProgress(courseId: string): Promise<Record<number, string[]> | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { data, error } = await ctx.supabase.from("course_progress").select("day, block_id").eq("course_id", courseId);
+  if (error) return {};
+  const byDay: Record<number, string[]> = {};
+  for (const row of (data ?? []) as { day: number; block_id: string }[]) (byDay[row.day] ??= []).push(row.block_id);
+  return byDay;
+}
