@@ -82,7 +82,7 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
                 key={accent}
                 type="button"
                 onClick={() => speak(card.word, accent)}
-                className="rounded-lg bg-brand-soft px-2 py-1 text-xs font-semibold text-brand-dark hover:bg-brand/20"
+                className="min-h-9 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
               >
                 {accent.toUpperCase()}
                 {ipa && <span className="font-normal"> /{ipa}/</span>}

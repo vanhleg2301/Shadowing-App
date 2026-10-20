@@ -132,7 +132,7 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
                         key={accent}
                         type="button"
                         aria-label={`Listen to "${p.text}" in ${label} English`}
-                        className="rounded-lg px-2 py-1 text-xs font-bold text-brand hover:bg-brand-soft"
+                        className="min-h-9 min-w-10 rounded-lg px-2.5 text-xs font-bold text-brand hover:bg-brand-soft"
                         onClick={() => speak(p.text, accent)}
                       >
                         {label}

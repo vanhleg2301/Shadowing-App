@@ -210,7 +210,7 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
                       type="button"
                       onClick={() => speak(p.example, accent)}
                       aria-label={`Listen to the example in ${accent.toUpperCase()} English`}
-                      className="rounded-lg bg-brand-soft px-2 py-1 text-xs font-bold text-brand"
+                      className="min-h-9 min-w-10 rounded-lg bg-brand-soft px-2.5 text-xs font-bold text-brand"
                     >
                       {accent.toUpperCase()}
                     </button>

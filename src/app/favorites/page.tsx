@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SignInPrompt } from "@/components/SignInPrompt";
+import { ListSkeleton } from "@/components/Skeleton";
 import { VideoCard } from "@/components/VideoCard";
 import { getCatalog } from "@/lib/catalog";
 import { getFavorites, type FavoriteVideo } from "@/lib/user-data";
@@ -12,7 +13,7 @@ export default function FavoritesPage() {
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Favorites</h1>
         <p className="mt-2 text-muted">Videos you saved with the heart button.</p>
-        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>
+        <Suspense fallback={<ListSkeleton />}>
           <FavoritesList />
         </Suspense>
       </main>

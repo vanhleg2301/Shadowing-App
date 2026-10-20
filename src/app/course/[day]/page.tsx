@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CourseDayView } from "@/components/course/CourseDayView";
+import { ListSkeleton } from "@/components/Skeleton";
 import { COURSE_DAYS, COURSE_ID, getBlocks, getCourseDay } from "@/data/course-a2";
 import { getCourseProgress } from "@/lib/user-data";
 
@@ -14,7 +15,7 @@ export default function CourseDayPage({ params }: PageProps<"/course/[day]">) {
   return (
     <AppShell active="/course">
       <main className="w-full max-w-4xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.25rem)] md:px-10">
-        <Suspense fallback={<p className="text-muted">Loading...</p>}>
+        <Suspense fallback={<ListSkeleton rows={6} />}>
           {params.then(({ day }) => (
             <DayContent dayNumber={Number(day)} />
           ))}

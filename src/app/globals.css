@@ -101,6 +101,17 @@
 
 /* Tailwind's preflight resets buttons to the default arrow cursor. */
 @layer base {
+  html {
+    /* Keeps focused or anchored content clear of the sticky header. */
+    scroll-padding-top: 6rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Visible keyboard focus on every control (WCAG 2.4.7); mouse and touch clicks don't show it. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 0.75rem;
+  }
   button:not(:disabled),
   [role="button"],
   [role="radio"],

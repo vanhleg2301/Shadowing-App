@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { SignInPrompt } from "@/components/SignInPrompt";
+import { ListSkeleton } from "@/components/Skeleton";
 import { StreakBadge } from "@/components/StreakBadge";
 import { getStreak, getUserContext } from "@/lib/user-data";
 
@@ -11,7 +12,7 @@ export default function AccountPage() {
     <AppShell active="/account">
       <main className="w-full max-w-3xl px-4 py-8 md:px-10">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Account</h1>
-        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>
+        <Suspense fallback={<ListSkeleton rows={2} />}>
           <AccountDetails />
         </Suspense>
         <p className="mt-10 text-sm text-muted">

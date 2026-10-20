@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ReviewSession } from "@/components/ReviewSession";
 import { SignInPrompt } from "@/components/SignInPrompt";
+import { ListSkeleton } from "@/components/Skeleton";
 import { StreakBadge } from "@/components/StreakBadge";
 import { getDueWords, getStreak } from "@/lib/user-data";
 
@@ -13,7 +14,7 @@ export default function ReviewPage() {
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Review</h1>
         <p className="mt-2 text-muted">Flashcards for your saved words, shown again right before you would forget them.</p>
-        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>
+        <Suspense fallback={<ListSkeleton rows={2} />}>
           <ReviewContent />
         </Suspense>
       </main>

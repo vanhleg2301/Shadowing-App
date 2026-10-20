@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListSkeleton } from "@/components/Skeleton";
 
 const TABS = [
   { href: "/admin", label: "Overview" },
@@ -35,7 +36,7 @@ export function AdminLayout({ active, title, children }: AdminLayoutProps) {
             </Link>
           ))}
         </nav>
-        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>{children}</Suspense>
+        <Suspense fallback={<ListSkeleton />}>{children}</Suspense>
       </main>
     </AppShell>
   );

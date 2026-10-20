@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LessonPlayer } from "@/components/LessonPlayer";
-import { getLessonUserState } from "@/lib/user-data";
+import { LessonSkeleton } from "@/components/Skeleton";
 import { getLesson, type LessonResult } from "@/lib/lessons";
+import { getLessonUserState } from "@/lib/user-data";
 import { isValidVideoId } from "@/lib/youtube-url";
 
 const MODES = ["watch", "shadow", "dictation", "cloze"] as const;
@@ -29,7 +30,7 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
 
 export default function WatchPage({ params, searchParams }: PageProps<"/watch/[videoId]">) {
   return (
-    <Suspense fallback={<p className="grid h-dvh place-items-center text-muted">Preparing your lesson...</p>}>
+    <Suspense fallback={<LessonSkeleton />}>
       {Promise.all([params, searchParams]).then(([{ videoId }, sp]) => (
         <LessonLoader videoId={videoId} options={parseOptions(sp)} />
       ))}

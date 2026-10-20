@@ -42,7 +42,7 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
                   type="button"
                   onClick={() => speak(item.word, accent)}
                   aria-label={`Listen in ${accent.toUpperCase()} English`}
-                  className="rounded-lg bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
+                  className="min-h-9 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
                 >
                   {accent.toUpperCase()}
                   {ipa && <span className="font-normal"> /{ipa}/</span>}

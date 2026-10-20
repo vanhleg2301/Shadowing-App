@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { SavedWordCard } from "@/components/SavedWordCard";
 import { SignInPrompt } from "@/components/SignInPrompt";
+import { ListSkeleton } from "@/components/Skeleton";
 import { getSavedWords, type SavedWord } from "@/lib/user-data";
 
 export default function VocabularyPage() {
@@ -10,7 +11,7 @@ export default function VocabularyPage() {
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">My words</h1>
         <p className="mt-2 text-muted">Words you saved while watching, with the sentence you met them in.</p>
-        <Suspense fallback={<p className="mt-8 text-muted">Loading...</p>}>
+        <Suspense fallback={<ListSkeleton />}>
           <WordList />
         </Suspense>
       </main>
