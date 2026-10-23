@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { schedule } from "@/lib/srs";
-import { getLocalToday } from "@/lib/study-day";
+import { getLocalToday, getTimeZone } from "@/lib/study-day";
 import { getUserContext } from "@/lib/user-data";
 
 type UserContext = NonNullable<Awaited<ReturnType<typeof getUserContext>>>;
@@ -196,4 +196,68 @@ export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema
   revalidatePath("/vocabulary");
   revalidatePath("/review");
   return { ok: true };
+}
+
+const StudyTimeSchema = z.object({ seconds: z.number().int().min(1).max(300) });
+
+// Called every minute or so while the learner is actively studying.
+export async function addStudyTime(input: z.input<typeof StudyTimeSchema>): Promise<ActionResult> {
+  const parsed = StudyTimeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { error } = await ctx.supabase.rpc("add_study_seconds", { p_day: await getLocalToday(), p_seconds: parsed.data.seconds });
+  return error ? { ok: false, error: "failed" } : { ok: true };
+}
+
+const SettingsSchema = z.object({
+  dailyGoalMinutes: z.union([5, 10, 15, 20, 30, 45, 60].map((m) => z.literal(m))).optional(),
+  remindersEnabled: z.boolean().optional(),
+});
+
+export async function updateSettings(input: z.input<typeof SettingsSchema>): Promise<ActionResult> {
+  const parsed = SettingsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { dailyGoalMinutes, remindersEnabled } = parsed.data;
+  const { error } = await ctx.supabase.from("user_settings").upsert({
+    user_id: ctx.user.id,
+    ...(dailyGoalMinutes !== undefined && { daily_goal_minutes: dailyGoalMinutes }),
+    ...(remindersEnabled !== undefined && { reminders_enabled: remindersEnabled }),
+    time_zone: await getTimeZone(),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) return { ok: false, error: "failed" };
+  revalidatePath("/");
+  revalidatePath("/account");
+  return { ok: true };
+}
+
+const PushSubscriptionSchema = z.object({
+  endpoint: z.url().max(1000).startsWith("https://"),
+  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
+});
+
+export async function savePushSubscription(input: z.input<typeof PushSubscriptionSchema>): Promise<ActionResult> {
+  const parsed = PushSubscriptionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { endpoint, keys } = parsed.data;
+  const { error } = await ctx.supabase
+    .from("push_subscriptions")
+    .upsert({ endpoint, user_id: ctx.user.id, p256dh: keys.p256dh, auth: keys.auth });
+  if (error) return { ok: false, error: "failed" };
+  return updateSettings({ remindersEnabled: true });
+}
+
+export async function deletePushSubscription(input: { endpoint: string }): Promise<ActionResult> {
+  const parsed = z.object({ endpoint: z.string().max(1000) }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { error } = await ctx.supabase.from("push_subscriptions").delete().eq("endpoint", parsed.data.endpoint);
+  if (error) return { ok: false, error: "failed" };
+  return updateSettings({ remindersEnabled: false });
 }

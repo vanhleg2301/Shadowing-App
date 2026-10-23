@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { gradeWord } from "@/app/actions";
+import { StudyTimer } from "@/components/StudyTimer";
 import { speak, type Accent } from "@/lib/speech";
 import { formatDelay, schedule, type Grade } from "@/lib/srs";
 import type { ReviewCard } from "@/lib/user-data";
@@ -67,6 +68,7 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
 
   return (
     <div className="mt-8 max-w-xl">
+      <StudyTimer />
       <p className="text-sm font-semibold text-muted">{queue.length} left in this session</p>
       <div
         key={`${card.word}-${reviewedCount}`}

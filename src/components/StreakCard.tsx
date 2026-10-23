@@ -11,6 +11,45 @@ function Flame({ className }: { className: string }) {
   );
 }
 
+interface GoalRingProps {
+  minutes: number;
+  goal: number;
+}
+
+function GoalRing({ minutes, goal }: GoalRingProps) {
+  const ratio = Math.min(minutes / goal, 1);
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const isMet = minutes >= goal;
+  return (
+    <Link
+      href="/account#goal"
+      aria-label={`Today ${minutes} of ${goal} minutes. Change your daily goal`}
+      className="relative grid size-14 shrink-0 place-items-center"
+    >
+      <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" aria-hidden="true">
+        <circle cx="24" cy="24" r={radius} fill="none" stroke="var(--color-line)" strokeWidth="5" />
+        <circle
+          cx="24"
+          cy="24"
+          r={radius}
+          fill="none"
+          stroke="var(--color-brand)"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - ratio)}
+          className="transition-[stroke-dashoffset] duration-700"
+        />
+      </svg>
+      <span className="text-center leading-none">
+        <span className={`block text-sm font-extrabold ${isMet ? "text-brand" : "text-ink"}`}>{isMet ? "✓" : minutes}</span>
+        <span className="block text-[9px] font-bold text-muted">/{goal} min</span>
+      </span>
+    </Link>
+  );
+}
+
 interface StreakCardProps {
   streak: Streak;
 }
@@ -23,7 +62,7 @@ export function StreakCard({ streak }: StreakCardProps) {
 
   return (
     <section className="animate-fade-up rounded-3xl border border-accent/25 bg-gradient-to-br from-accent-soft to-surface p-4 sm:p-5">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="flex shrink-0 items-center gap-1.5">
           <Flame className={`size-9 ${streak.days > 0 ? "text-accent" : "text-muted/50"}`} />
           <div>
@@ -31,7 +70,8 @@ export function StreakCard({ streak }: StreakCardProps) {
             <p className="text-xs font-semibold text-muted">day streak</p>
           </div>
         </div>
-        <ol className="flex flex-1 justify-between gap-1" aria-label="This week">
+        <GoalRing minutes={Math.floor(streak.todaySeconds / 60)} goal={streak.goalMinutes} />
+        <ol className="flex min-w-60 flex-1 justify-between gap-1" aria-label="This week">
           {streak.week.map((d) => (
             <li key={d.day} className="flex flex-col items-center gap-1">
               <span className={`text-[11px] font-bold ${d.isToday ? "text-accent" : "text-muted"}`}>{d.label}</span>

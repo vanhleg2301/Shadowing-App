@@ -6,6 +6,7 @@ import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { PhraseQuiz } from "@/components/course/PhraseQuiz";
 import { RolePlay } from "@/components/course/RolePlay";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
+import { StudyTimer } from "@/components/StudyTimer";
 import { Icon, type IconName } from "@/components/Icon";
 import { COURSE_ID, type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
 import { COURSE_DIALOGUES } from "@/data/course-a2-dialogues";
@@ -109,6 +110,7 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
 
   return (
     <div className="space-y-8">
+      <StudyTimer />
       <section className="rounded-3xl border border-line bg-surface p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-extrabold text-ink">Today&apos;s plan</h2>

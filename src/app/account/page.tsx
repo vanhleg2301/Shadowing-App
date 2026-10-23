@@ -5,7 +5,9 @@ import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
 import { StreakBadge } from "@/components/StreakBadge";
-import { getStreak, getUserContext } from "@/lib/user-data";
+import { StudySettings } from "@/components/StudySettings";
+import { StudyStatsPanel } from "@/components/StudyStatsPanel";
+import { getStreak, getStudyStats, getUserContext, getUserSettings } from "@/lib/user-data";
 
 export default function AccountPage() {
   return (
@@ -28,7 +30,11 @@ export default function AccountPage() {
 async function AccountDetails() {
   const ctx = await getUserContext();
   if (!ctx) return <SignInPrompt message="Sign in to see your account." />;
-  const streak = await getStreak().catch(() => null);
+  const [streak, settings, stats] = await Promise.all([
+    getStreak().catch(() => null),
+    getUserSettings().catch(() => null),
+    getStudyStats().catch(() => null),
+  ]);
   const name = (ctx.user.user_metadata.full_name as string | undefined) ?? ctx.user.email;
 
   return (
@@ -42,6 +48,10 @@ async function AccountDetails() {
           </div>
         )}
       </section>
+
+      {stats && <StudyStatsPanel stats={stats} goalMinutes={settings?.dailyGoalMinutes ?? 15} />}
+
+      {settings && <StudySettings initial={settings} />}
 
       <section className="rounded-3xl border border-line bg-surface p-5">
         <h2 className="text-lg font-bold text-ink">Delete account</h2>

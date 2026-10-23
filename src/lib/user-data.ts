@@ -114,6 +114,23 @@ export interface Streak {
   longest: number;
   // Monday to Sunday of the current local week.
   week: { day: string; label: string; studied: boolean; isToday: boolean; isFuture: boolean }[];
+  todaySeconds: number;
+  goalMinutes: number;
+}
+
+export interface UserSettings {
+  dailyGoalMinutes: number;
+  remindersEnabled: boolean;
+}
+
+export const DEFAULT_GOAL_MINUTES = 15;
+
+export async function getUserSettings(): Promise<UserSettings | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { data } = await ctx.supabase.from("user_settings").select("daily_goal_minutes, reminders_enabled").maybeSingle();
+  const row = data as { daily_goal_minutes: number; reminders_enabled: boolean } | null;
+  return { dailyGoalMinutes: row?.daily_goal_minutes ?? DEFAULT_GOAL_MINUTES, remindersEnabled: row?.reminders_enabled ?? false };
 }
 
 const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -141,13 +158,15 @@ export async function getStreak(): Promise<Streak | null> {
   if (!ctx) return null;
   const { data, error } = await ctx.supabase
     .from("study_days")
-    .select("day")
+    .select("day, seconds")
     .order("day", { ascending: false })
     .limit(400);
   if (error) return null;
 
-  const days = new Set(((data ?? []) as { day: string }[]).map((r) => r.day));
+  const rows = (data ?? []) as { day: string; seconds: number }[];
+  const days = new Set(rows.map((r) => r.day));
   const today = await getLocalToday();
+  const settings = await getUserSettings();
   const hasStudiedToday = days.has(today);
   let cursor = hasStudiedToday ? today : previousDay(today);
   let count = 0;
@@ -161,7 +180,14 @@ export async function getStreak(): Promise<Streak | null> {
     const day = addDays(monday, i);
     return { day, label, studied: days.has(day), isToday: day === today, isFuture: day > today };
   });
-  return { days: count, hasStudiedToday, longest: longestRun([...days]), week };
+  return {
+    days: count,
+    hasStudiedToday,
+    longest: longestRun([...days]),
+    week,
+    todaySeconds: rows.find((r) => r.day === today)?.seconds ?? 0,
+    goalMinutes: settings?.dailyGoalMinutes ?? DEFAULT_GOAL_MINUTES,
+  };
 }
 
 export interface ReviewCard {
@@ -243,4 +269,49 @@ export async function getCourseProgress(courseId: string): Promise<Record<number
   const byDay: Record<number, string[]> = {};
   for (const row of (data ?? []) as { day: number; block_id: string }[]) (byDay[row.day] ??= []).push(row.block_id);
   return byDay;
+}
+
+export interface StudyStats {
+  totalMinutes: number;
+  activeDays: number;
+  lessonsCompleted: number;
+  wordsSaved: number;
+  wordsMastered: number;
+  // Oldest first; the last 12 weeks ending this week (Sunday), one entry per day.
+  calendar: { day: string; minutes: number; isFuture: boolean }[];
+}
+
+// A word counts as mastered once review spaces it three weeks apart.
+const MASTERED_INTERVAL_DAYS = 21;
+const CALENDAR_WEEKS = 12;
+
+export async function getStudyStats(): Promise<StudyStats | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const [days, completed, saved, mastered] = await Promise.all([
+    ctx.supabase.from("study_days").select("day, seconds").order("day", { ascending: false }).limit(1000),
+    ctx.supabase.from("lesson_progress").select("video_id", { count: "exact", head: true }).not("completed_at", "is", null),
+    ctx.supabase.from("saved_words").select("word", { count: "exact", head: true }),
+    ctx.supabase.from("saved_words").select("word", { count: "exact", head: true }).gte("interval_days", MASTERED_INTERVAL_DAYS),
+  ]);
+  if (days.error) return null;
+
+  const rows = (days.data ?? []) as { day: string; seconds: number }[];
+  const secondsByDay = new Map(rows.map((r) => [r.day, r.seconds]));
+  const today = await getLocalToday();
+  const sundayOffset = 6 - ((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7);
+  const lastDay = addDays(today, sundayOffset);
+  const calendar = Array.from({ length: CALENDAR_WEEKS * 7 }, (_, i) => {
+    const day = addDays(lastDay, i - CALENDAR_WEEKS * 7 + 1);
+    return { day, minutes: Math.floor((secondsByDay.get(day) ?? 0) / 60), isFuture: day > today };
+  });
+
+  return {
+    totalMinutes: Math.floor(rows.reduce((sum, r) => sum + r.seconds, 0) / 60),
+    activeDays: rows.length,
+    lessonsCompleted: completed.count ?? 0,
+    wordsSaved: saved.count ?? 0,
+    wordsMastered: mastered.count ?? 0,
+    calendar,
+  };
 }

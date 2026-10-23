@@ -1,5 +1,6 @@
 "use client";
 
+import { StudyTimer } from "@/components/StudyTimer";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordProgress, setSavedWord } from "@/app/actions";
@@ -314,6 +315,7 @@ export function LessonPlayer({
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
+      <StudyTimer isBusy={isPlaying} />
       <header className="relative flex flex-wrap items-center gap-2.5 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
         <Link href={backHref} aria-label={backHref === "/" ? "Back to home" : "Back to the course"} className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
