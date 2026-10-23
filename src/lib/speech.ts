@@ -15,12 +15,16 @@ function pickVoice(lang: string): SpeechSynthesisVoice | undefined {
   return voices.find((v) => v.localService) ?? voices[0];
 }
 
-export function speak(text: string, accent: Accent, rate = 0.9) {
+export function speak(text: string, accent: Accent, rate = 0.9, onEnd?: () => void) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = LANG[accent];
   const voice = pickVoice(LANG[accent]);
   if (voice) utterance.voice = voice;
   utterance.rate = rate;
+  if (onEnd) {
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
+  }
   speechSynthesis.cancel();
   speechSynthesis.speak(utterance);
 }

@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
+import { PhraseQuiz } from "@/components/course/PhraseQuiz";
+import { RolePlay } from "@/components/course/RolePlay";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
 import { Icon, type IconName } from "@/components/Icon";
 import { COURSE_ID, type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
+import { COURSE_DIALOGUES } from "@/data/course-a2-dialogues";
 import { useAuth } from "@/hooks/useAuth";
 import { speak, type Accent } from "@/lib/speech";
 
@@ -24,6 +27,8 @@ const KIND_ICON: Record<BlockKind, IconName> = {
   shadow: "mic",
   dictation: "settings",
   speak: "record",
+  roleplay: "user",
+  quiz: "chart",
   extra: "plus",
 };
 
@@ -97,6 +102,11 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
     if (next.size === day.speakingPrompts.length && !done.has("speak")) toggleBlock("speak", true);
   };
 
+  const dialogue = COURSE_DIALOGUES[day.day];
+  const markDone = (blockId: string) => {
+    if (isSignedIn && !done.has(blockId)) toggleBlock(blockId, true);
+  };
+
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-line bg-surface p-4 sm:p-5">
@@ -113,7 +123,7 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
           {blocks.map((block) => {
             const isDone = done.has(block.id);
             const href = blockHref(block, day.day);
-            const anchor = block.kind === "phrases" ? "#phrases" : block.kind === "speak" ? "#speak" : null;
+            const anchor = ["phrases", "speak", "roleplay", "quiz"].includes(block.kind) ? `#${block.kind}` : null;
             return (
               <li
                 key={block.id}
@@ -239,6 +249,24 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
           {recorded.size}/{day.speakingPrompts.length} answered
           {recorded.size === day.speakingPrompts.length ? " · speaking block done" : ""}
         </p>
+      </section>
+
+      {dialogue && (
+        <section id="roleplay" className="scroll-mt-24">
+          <h2 className="text-xl font-extrabold text-ink">Role-play</h2>
+          <p className="text-sm text-muted">Act out a real conversation. Listen to your partner, then record your reply.</p>
+          <div className="mt-4">
+            <RolePlay dialogue={dialogue} onComplete={() => markDone("roleplay")} />
+          </div>
+        </section>
+      )}
+
+      <section id="quiz" className="scroll-mt-24">
+        <h2 className="text-xl font-extrabold text-ink">Quiz</h2>
+        <p className="text-sm text-muted">10 quick questions on today&apos;s phrases. Get 8 right to finish the day.</p>
+        <div className="mt-4">
+          <PhraseQuiz phrases={day.phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
+        </div>
       </section>
     </div>
   );

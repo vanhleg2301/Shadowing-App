@@ -4,7 +4,7 @@
 
 export const COURSE_ID = "speak-a2-7";
 
-export type BlockKind = "review" | "listen" | "phrases" | "shadow" | "dictation" | "speak" | "extra";
+export type BlockKind = "review" | "listen" | "phrases" | "shadow" | "dictation" | "speak" | "roleplay" | "quiz" | "extra";
 
 export interface CourseBlock {
   id: string;
@@ -283,6 +283,8 @@ export function getBlocks(day: CourseDay): CourseBlock[] {
     { id: "listen-2", kind: "listen", title: `Listen first: ${second.title}`, minutes: 20, videoId: second.id },
     { id: "dictation-2", kind: "dictation", title: `Dictation: ${second.title}`, minutes: 20, videoId: second.id },
     { id: "speak", kind: "speak", title: "Speak: answer 5 questions out loud", minutes: 30 },
+    { id: "roleplay", kind: "roleplay", title: "Role-play: act out a real conversation", minutes: 20 },
+    { id: "quiz", kind: "quiz", title: "Quiz: check today's phrases", minutes: 10 },
     { id: "extra", kind: "extra", title: `Bonus shadowing: ${extra.title}`, minutes: 40, videoId: extra.id, isOptional: true },
   ];
 }
