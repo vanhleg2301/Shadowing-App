@@ -14,6 +14,7 @@ export interface SavedWord {
   videoId: string | null;
   entry: WordInfo | null;
   createdAt: string;
+  intervalDays: number;
 }
 
 interface FavoriteRow {
@@ -28,6 +29,7 @@ interface SavedWordRow {
   video_id: string | null;
   entry: WordInfo | null;
   created_at: string;
+  interval_days: number | null;
 }
 
 export async function getUserContext() {
@@ -56,7 +58,7 @@ export async function getSavedWords(): Promise<SavedWord[] | null> {
   if (!ctx) return null;
   const { data, error } = await ctx.supabase
     .from("saved_words")
-    .select("word, sentence, video_id, entry, created_at")
+    .select("word, sentence, video_id, entry, created_at, interval_days")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return ((data ?? []) as SavedWordRow[]).map((r) => ({
@@ -65,6 +67,7 @@ export async function getSavedWords(): Promise<SavedWord[] | null> {
     videoId: r.video_id,
     entry: r.entry,
     createdAt: r.created_at,
+    intervalDays: r.interval_days ?? 0,
   }));
 }
 
@@ -282,7 +285,7 @@ export interface StudyStats {
 }
 
 // A word counts as mastered once review spaces it three weeks apart.
-const MASTERED_INTERVAL_DAYS = 21;
+export const MASTERED_INTERVAL_DAYS = 21;
 const CALENDAR_WEEKS = 12;
 
 export async function getStudyStats(): Promise<StudyStats | null> {

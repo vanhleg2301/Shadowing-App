@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
-import { SavedWordCard } from "@/components/SavedWordCard";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
-import { getSavedWords, type SavedWord } from "@/lib/user-data";
+import { WordListView } from "@/components/WordListView";
+import { getSavedWords, MASTERED_INTERVAL_DAYS, type SavedWord } from "@/lib/user-data";
 
 export default function VocabularyPage() {
   return (
@@ -32,14 +32,5 @@ async function WordList() {
     return <p className="mt-8 text-muted">No saved words yet. Tap a word in any transcript, then press “Save word”.</p>;
   }
 
-  return (
-    <>
-      <p className="mt-6 text-sm font-semibold text-muted">{words.length} words</p>
-      <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {words.map((w) => (
-          <SavedWordCard key={w.word} item={w} />
-        ))}
-      </ul>
-    </>
-  );
+  return <WordListView words={words} masteredInterval={MASTERED_INTERVAL_DAYS} />;
 }

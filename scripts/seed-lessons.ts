@@ -3,6 +3,7 @@
 // Run from a home connection (YouTube blocks most cloud IPs):
 //   npm run seed:lessons            only videos not stored yet
 //   npm run seed:lessons -- --force refetch everything
+//   npm run seed:lessons -- --karaoke refetch stored lessons that have no word timings yet
 import { CURATED_VIDEOS } from "../src/data/curated";
 import { fetchLessonFromYouTube, type YouTubeLessonResult } from "../src/lib/captions";
 import { toLessonRow } from "../src/lib/lesson-row";
@@ -21,9 +22,12 @@ async function main() {
     process.exit(1);
   }
 
-  const { data: existing, error } = await admin.from("lessons").select("video_id");
+  const isKaraoke = process.argv.includes("--karaoke");
+  const { data: existing, error } = await admin.from("lessons").select(isKaraoke ? "video_id, sentences" : "video_id");
   if (error) throw new Error(`Can't read lessons table: ${error.message}`);
-  const stored = new Set(((existing ?? []) as { video_id: string }[]).map((r) => r.video_id));
+  const rows = (existing ?? []) as unknown as { video_id: string; sentences?: { wordStarts?: number[] }[] }[];
+  const hasTimings = (r: (typeof rows)[number]) => r.sentences?.some((s) => s.wordStarts && s.wordStarts.length > 0) ?? false;
+  const stored = new Set(rows.filter((r) => !isKaraoke || hasTimings(r)).map((r) => r.video_id));
   const isForce = process.argv.includes("--force");
   const { data: videoRows, error: videosError } = await admin.from("videos").select("video_id, title");
   const catalog =

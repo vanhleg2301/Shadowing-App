@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareStreakButton } from "@/components/ShareStreakButton";
 import type { Streak } from "@/lib/user-data";
 
 const MILESTONES = [3, 7, 14, 30, 60, 100, 365];
@@ -101,13 +102,16 @@ export function StreakCard({ streak }: StreakCardProps) {
               ? "Study today to keep your streak"
               : "Watch a lesson to start a streak"}
         </span>
-        {isBest ? (
-          <span className="shrink-0 rounded-full bg-highlight px-2 py-0.5 text-xs font-bold text-highlight-ink">Personal best</span>
-        ) : (
-          <Link href="/review" className="shrink-0 text-xs font-semibold text-brand">
-            Review words →
-          </Link>
-        )}
+        <span className="flex shrink-0 items-center gap-3">
+          {streak.days >= 2 && <ShareStreakButton days={streak.days} />}
+          {isBest ? (
+            <span className="shrink-0 rounded-full bg-highlight px-2 py-0.5 text-xs font-bold text-highlight-ink">Personal best</span>
+          ) : (
+            <Link href="/review" className="shrink-0 text-xs font-semibold text-brand">
+              Review words →
+            </Link>
+          )}
+        </span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
         <div className="h-full rounded-full bg-accent transition-[width] duration-700" style={{ width: `${progress}%` }} />

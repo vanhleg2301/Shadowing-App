@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { ScrollRow } from "@/components/ScrollRow";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
+import { LEVEL_STORAGE_KEY } from "@/data/placement";
 import { LEVELS, orderTopics, type CuratedVideo, type Level, type Topic } from "@/data/curated";
 import type { LibraryUserState } from "@/lib/user-data";
 
@@ -21,6 +22,22 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
   const [level, setLevel] = useState<Level | "all">("all");
   const [topic, setTopic] = useState<Topic | null>(null);
   const [query, setQuery] = useState("");
+  const [hasPlacement, setHasPlacement] = useState(true);
+
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(LEVEL_STORAGE_KEY);
+    } catch {
+      // Storage blocked: keep showing all levels.
+    }
+    const storedLevel = LEVELS.find((l) => l === stored);
+    // Reading localStorage only works after hydration.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (storedLevel) setLevel(storedLevel);
+    setHasPlacement(storedLevel !== undefined);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
 
   const continueVideos = continueIds
     .map((id) => videos.find((v) => v.videoId === id))
@@ -86,6 +103,19 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
             <p className="mt-1 line-clamp-2 font-bold leading-snug text-ink">{featured.title}</p>
             <p className="mt-1 text-sm text-muted">{progress[featured.videoId] ?? 0}% done</p>
           </div>
+        </Link>
+      )}
+
+      {!needle && !hasPlacement && (
+        <Link
+          href="/placement"
+          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-brand/25 bg-brand-soft px-4 py-3 transition-colors hover:border-brand"
+        >
+          <span>
+            <span className="block font-bold text-ink">Not sure which level to pick?</span>
+            <span className="block text-sm text-muted">Take a 3-minute test and we&apos;ll show the right videos.</span>
+          </span>
+          <Icon name="next" className="size-5 shrink-0 text-brand" />
         </Link>
       )}
 

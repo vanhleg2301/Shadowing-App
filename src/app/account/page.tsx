@@ -49,7 +49,7 @@ async function AccountDetails() {
         )}
       </section>
 
-      {stats && <StudyStatsPanel stats={stats} goalMinutes={settings?.dailyGoalMinutes ?? 15} />}
+      {stats && <StudyStatsPanel stats={stats} goalMinutes={settings?.dailyGoalMinutes ?? 15} longestStreak={streak?.longest ?? 0} />}
 
       {settings && <StudySettings initial={settings} />}
 

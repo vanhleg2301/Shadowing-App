@@ -3,6 +3,28 @@ import type { StudyStats } from "@/lib/user-data";
 interface StudyStatsPanelProps {
   stats: StudyStats;
   goalMinutes: number;
+  longestStreak: number;
+}
+
+interface Badge {
+  label: string;
+  hint: string;
+  isEarned: boolean;
+}
+
+function getBadges(stats: StudyStats, longestStreak: number): Badge[] {
+  return [
+    { label: "First lesson", hint: "Finish 1 lesson", isEarned: stats.lessonsCompleted >= 1 },
+    { label: "3-day streak", hint: "Study 3 days in a row", isEarned: longestStreak >= 3 },
+    { label: "Week warrior", hint: "Study 7 days in a row", isEarned: longestStreak >= 7 },
+    { label: "Month of English", hint: "Study 30 days in a row", isEarned: longestStreak >= 30 },
+    { label: "100 days", hint: "Study 100 days in a row", isEarned: longestStreak >= 100 },
+    { label: "10 lessons", hint: "Finish 10 lessons", isEarned: stats.lessonsCompleted >= 10 },
+    { label: "50 lessons", hint: "Finish 50 lessons", isEarned: stats.lessonsCompleted >= 50 },
+    { label: "Word collector", hint: "Save 50 words", isEarned: stats.wordsSaved >= 50 },
+    { label: "Memory master", hint: "Master 25 words", isEarned: stats.wordsMastered >= 25 },
+    { label: "10 hours", hint: "Study 10 hours in total", isEarned: stats.totalMinutes >= 600 },
+  ];
 }
 
 const DAY_LABELS = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
@@ -19,7 +41,9 @@ function formatHours(minutes: number): string {
   return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }
 
-export function StudyStatsPanel({ stats, goalMinutes }: StudyStatsPanelProps) {
+export function StudyStatsPanel({ stats, goalMinutes, longestStreak }: StudyStatsPanelProps) {
+  const badges = getBadges(stats, longestStreak);
+  const earnedCount = badges.filter((b) => b.isEarned).length;
   const tiles = [
     { label: "Study time", value: formatHours(stats.totalMinutes) },
     { label: "Days studied", value: stats.activeDays },
@@ -73,6 +97,24 @@ export function StudyStatsPanel({ stats, goalMinutes }: StudyStatsPanelProps) {
         ))}
         <span>Goal met</span>
       </div>
+
+      <h3 className="mt-6 text-sm font-bold text-ink">
+        Badges · {earnedCount}/{badges.length}
+      </h3>
+      <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {badges.map((b) => (
+          <li
+            key={b.label}
+            className={`rounded-2xl border p-3 text-center ${b.isEarned ? "border-accent/40 bg-accent-soft" : "border-dashed border-line opacity-60"}`}
+          >
+            <span aria-hidden="true" className={`mx-auto grid size-9 place-items-center rounded-full text-base font-extrabold ${b.isEarned ? "bg-accent text-white" : "bg-line text-muted"}`}>
+              {b.isEarned ? "★" : "?"}
+            </span>
+            <p className="mt-1.5 text-xs font-bold text-ink">{b.label}</p>
+            <p className="text-[11px] text-muted">{b.isEarned ? "Earned" : b.hint}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
