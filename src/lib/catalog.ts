@@ -54,7 +54,12 @@ export async function getCatalog(): Promise<CuratedVideo[]> {
     .eq("is_published", true)
     .order("sort_order", { ascending: true });
   if (error || !data || data.length === 0) return BUNDLED_VIDEOS;
-  return (data as VideoRow[]).map(toCatalogVideo);
+  // Videos whose transcript isn't stored yet would fail on the server (YouTube blocks cloud IPs), so they
+  // stay hidden until scripts/seed-lessons.ts has stored them.
+  const { data: lessonRows, error: lessonsError } = await supabase.from("lessons").select("video_id");
+  const stored = new Set(((lessonRows ?? []) as { video_id: string }[]).map((r) => r.video_id));
+  const rows = data as VideoRow[];
+  return (lessonsError ? rows : rows.filter((r) => stored.has(r.video_id))).map(toCatalogVideo);
 }
 
 export async function getCollectionVideos(collection: CollectionId): Promise<CuratedVideo[]> {
