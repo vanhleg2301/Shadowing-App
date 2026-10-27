@@ -7,6 +7,7 @@
 import { CURATED_VIDEOS } from "../src/data/curated";
 import { fetchLessonFromYouTube, type YouTubeLessonResult } from "../src/lib/captions";
 import { toLessonRow } from "../src/lib/lesson-row";
+import { isHostedLesson } from "../src/lib/media";
 import { createAdminClient } from "../src/lib/supabase/admin";
 
 // YouTube answers 429 after a few hundred quick caption requests, so stay gentle.
@@ -34,7 +35,8 @@ async function main() {
     !videosError && videoRows && videoRows.length > 0
       ? (videoRows as { video_id: string; title: string }[]).map((v) => ({ videoId: v.video_id, title: v.title }))
       : CURATED_VIDEOS;
-  const queue = catalog.filter((v) => isForce || !stored.has(v.videoId));
+  // Hosted-audio lessons come from scripts/voa/import_voa.py, not YouTube.
+  const queue = catalog.filter((v) => !isHostedLesson(v.videoId) && (isForce || !stored.has(v.videoId)));
   const total = queue.length;
   console.log(`${total} to fetch, ${stored.size} already stored`);
 

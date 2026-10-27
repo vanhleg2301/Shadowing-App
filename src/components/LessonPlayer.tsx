@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { recordProgress, setSavedWord } from "@/app/actions";
@@ -15,6 +16,7 @@ import { TranscriptRow } from "@/components/TranscriptRow";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { normalizeWord, type WordInfo } from "@/lib/dictionary";
 import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
@@ -64,10 +66,12 @@ export function LessonPlayer({
   const { user, isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
   const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
   const { sentences } = lesson;
-  const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate } = useYouTubePlayer(
-    lesson.videoId,
-    lesson.sentences[initialSentence]?.start ?? 0,
-  );
+  const startSeconds = lesson.sentences[initialSentence]?.start ?? 0;
+  // Both hooks are always called; only the one matching the lesson's media mounts a player.
+  const youTube = useYouTubePlayer(lesson.media ? null : lesson.videoId, startSeconds);
+  const audio = useAudioPlayer(lesson.media?.audioUrl ?? null, startSeconds);
+  const { containerRef } = youTube;
+  const { isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate } = lesson.media ? audio : youTube;
   const [mode, setMode] = useState<Mode>(initialMode);
   const [loopIndex, setLoopIndex] = useState<number | null>(null);
   const [practiceIndex, setPracticeIndex] = useState(initialSentence);
@@ -330,7 +334,23 @@ export function LessonPlayer({
 
       <div className="shrink-0 lg:px-6 lg:pt-6">
         <div className="relative aspect-video w-full overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
-          <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+          {lesson.media ? (
+            <button
+              type="button"
+              onClick={isPlaying ? pause : play}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="group absolute inset-0"
+            >
+              <Image src={lesson.media.imageUrl} alt="" fill sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover opacity-80" />
+              <span className="absolute inset-0 grid place-items-center">
+                <span className="grid size-16 place-items-center rounded-full bg-brand text-on-brand shadow-lg transition-transform group-active:scale-95">
+                  <Icon name={isPlaying ? "pause" : "play"} className="size-7" />
+                </span>
+              </span>
+            </button>
+          ) : (
+            <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+          )}
           {!isReady && (
             <p className="absolute inset-0 grid place-items-center text-sm text-white/60">Loading video...</p>
           )}

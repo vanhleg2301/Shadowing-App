@@ -2,7 +2,7 @@
 // favorites, progress and the 7-day course all follow that choice.
 import type { CuratedVideo } from "./curated";
 
-export const COLLECTION_IDS = ["sponge", "bob", "super-easy", "bbc", "easy-street"] as const;
+export const COLLECTION_IDS = ["sponge", "voa", "bob", "super-easy", "bbc", "easy-street"] as const;
 export type CollectionId = (typeof COLLECTION_IDS)[number];
 export const DEFAULT_COLLECTION: CollectionId = "sponge";
 
@@ -25,6 +25,15 @@ export const COLLECTIONS: Collection[] = [
     speedLabel: "Slow",
     levels: "A1–B1",
     description: "Slow, clear stories told with pictures. Best if fast English still feels hard to follow.",
+  },
+  {
+    id: "voa",
+    name: "VOA Learning English",
+    channel: "VOA Learning English",
+    speed: "slow",
+    speedLabel: "Slow",
+    levels: "A1–B1",
+    description: "American English read slowly and clearly: Let's Learn English lessons, a podcast and short grammar tips.",
   },
   {
     id: "bob",

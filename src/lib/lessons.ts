@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { fetchLessonFromYouTube } from "./captions";
 import type { Lesson, LessonSummary, Sentence } from "./lesson";
 import { toLessonRow } from "./lesson-row";
+import { getHostedMedia, isHostedLesson } from "./media";
 import { createAdminClient, createPublicClient } from "./supabase/admin";
 
 export const lessonTag = (videoId: string) => `lesson:${videoId}`;
@@ -36,6 +37,7 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
     sentences: row.sentences,
     hasTranslation: row.has_translation,
     summary: row.summary ?? undefined,
+    media: getHostedMedia(row.video_id) ?? undefined,
   };
 }
 
@@ -48,6 +50,7 @@ export async function getLesson(videoId: string): Promise<LessonResult> {
 
   const stored = await readStoredLesson(videoId);
   if (stored) return { lesson: stored };
+  if (isHostedLesson(videoId)) return { error: "This lesson isn't available yet." };
 
   const fetched = await fetchLessonFromYouTube(videoId);
   if (fetched.error !== undefined) return { error: fetched.error };

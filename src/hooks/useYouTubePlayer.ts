@@ -29,7 +29,8 @@ function loadYouTubeApi(): Promise<void> {
 }
 
 // startSeconds cues the video at that point without autoplaying (used to resume a lesson).
-export function useYouTubePlayer(videoId: string, startSeconds = 0) {
+// A null videoId mounts nothing (hosted-audio lessons use useAudioPlayer instead).
+export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -39,7 +40,7 @@ export function useYouTubePlayer(videoId: string, startSeconds = 0) {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !videoId) return;
     let isCancelled = false;
 
     const mount = async () => {

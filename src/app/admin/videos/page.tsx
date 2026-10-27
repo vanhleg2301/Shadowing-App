@@ -7,6 +7,7 @@ import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPagination, AdminSearchBox } from "@/components/admin/AdminListControls";
 import { orderTopics } from "@/data/curated";
+import { getThumbnailUrl } from "@/lib/media";
 import { ADMIN_PAGE_SIZE, getAdminVideos, parsePage, parseQuery, requireAdmin } from "@/lib/admin";
 
 export default function AdminVideosPage({ searchParams }: PageProps<"/admin/videos">) {
@@ -63,7 +64,7 @@ async function VideoTable({ page, query }: { page: number; query: string }) {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Image
-                      src={`https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`}
+                      src={getThumbnailUrl(v.video_id)}
                       alt=""
                       width={96}
                       height={54}

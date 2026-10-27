@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { CHANNEL_NAME, type CuratedVideo, type Level } from "@/data/curated";
+import { getThumbnailUrl } from "@/lib/media";
 
 export const LEVEL_DOT: Record<Level, string> = {
   A1: "bg-green-400",
@@ -26,7 +27,7 @@ export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardPr
       >
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-cream">
           <Image
-            src={`https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`}
+            src={getThumbnailUrl(video.videoId)}
             alt={video.title}
             fill
             sizes="(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 80vw"

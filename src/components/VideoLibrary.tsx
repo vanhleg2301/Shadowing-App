@@ -8,6 +8,7 @@ import { ScrollRow } from "@/components/ScrollRow";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
 import { LEVEL_STORAGE_KEY } from "@/data/placement";
 import { LEVELS, orderTopics, type CuratedVideo, type Level, type Topic } from "@/data/curated";
+import { getThumbnailUrl } from "@/lib/media";
 import type { LibraryUserState } from "@/lib/user-data";
 
 interface VideoLibraryProps {
@@ -82,7 +83,7 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
         >
           <div className="relative aspect-video w-36 shrink-0 overflow-hidden rounded-2xl sm:w-48">
             <Image
-              src={`https://i.ytimg.com/vi/${featured.videoId}/mqdefault.jpg`}
+              src={getThumbnailUrl(featured.videoId)}
               alt=""
               fill
               sizes="200px"

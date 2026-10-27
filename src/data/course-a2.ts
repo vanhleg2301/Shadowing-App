@@ -281,7 +281,8 @@ export const COURSE_DAYS: CourseDay[] = [
 
 // Blocks are generated from the day's content so every day has the same rhythm.
 // The same phrases, dialogues and quiz for every collection; only the videos change.
-const COLLECTION_DAY_VIDEOS: Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>> = {
+// Collections without their own picks (VOA, whose lessons are imported later) use the English Sponge videos.
+const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>>> = {
   "super-easy": {
     1: [
       { id: "W7mkL-Oz8nI", title: "How Native Speakers Greet Each Other" },
@@ -433,7 +434,7 @@ const COLLECTION_DAY_VIDEOS: Record<Exclude<CollectionId, "sponge">, Record<numb
 };
 
 export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDay["videos"] {
-  return collection === "sponge" ? day.videos : (COLLECTION_DAY_VIDEOS[collection][day.day] ?? day.videos);
+  return collection === "sponge" ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
 }
 
 export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {

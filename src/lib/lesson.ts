@@ -15,6 +15,8 @@ export interface Lesson {
   sentences: Sentence[];
   hasTranslation: boolean;
   summary?: LessonSummary;
+  // Set for lessons with hosted audio (src/lib/media.ts) instead of a YouTube video.
+  media?: { audioUrl: string; imageUrl: string };
 }
 
 export interface LessonSummary {
