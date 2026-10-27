@@ -103,6 +103,12 @@ def fetch_html(url: str) -> str:
     time.sleep(PAGE_PAUSE_S)
     res = session.get(url, timeout=30)
     res.raise_for_status()
+    # Dry runs keep the pages (uploaded as a workflow artifact) so the parser can be checked offline.
+    dump_dir = os.environ.get("DUMP_DIR")
+    if dump_dir:
+        Path(dump_dir).mkdir(parents=True, exist_ok=True)
+        name = re.sub(r"[^A-Za-z0-9.-]+", "_", url.split("://", 1)[-1])[:150]
+        Path(dump_dir, f"{name}.html").write_text(res.text, encoding="utf-8")
     return res.text
 
 

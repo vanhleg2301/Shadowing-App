@@ -61,3 +61,12 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           URLS: ${{ inputs.urls }}
           DRY_RUN: ${{ inputs.dry_run }}
+          DUMP_DIR: ${{ inputs.dry_run && format('{0}/voa-pages', runner.temp) || '' }}
+      - name: Upload fetched pages (dry run)
+        if: ${{ always() && inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: voa-pages
+          path: ${{ runner.temp }}/voa-pages
+          if-no-files-found: ignore
+          retention-days: 7
