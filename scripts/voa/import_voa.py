@@ -80,7 +80,8 @@ TOPIC_KEYWORDS: list[tuple[str, str]] = [
 ]
 
 ARTICLE_LINK = re.compile(r"/a/(?:[^/\"'?#]+/)?(\d{7})\.html")
-MEDIA_URL = re.compile(r"https?://[^\s\"'<>\\]+?\.(?:mp3|mp4)(?:\?[^\s\"'<>\\]*)?", re.I)
+MEDIA_HINT = re.compile(r"(?:src|href|data-[\w-]+)=\"([^\"]*(?:akamai|video|audio|media|player|embed)[^\"]*)\"", re.I)
+MEDIA_URL = re.compile(r"(?:https?:)?//[^\s\"'<>\\]+?\.(?:mp3|mp4|m3u8)(?:\?[^\s\"'<>\\]*)?", re.I)
 # Text after these on an article page is not read in the audio.
 CUT_MARKERS = re.compile(
     r"^(words in this story|words in the story|new words|vocabulary|quiz\b|test yourself|try it\b|_{3,}|do you have a question)",
@@ -169,13 +170,17 @@ class Article:
 
 
 def pick_media_url(html: str) -> str | None:
-    urls = list(dict.fromkeys(MEDIA_URL.findall(html)))
+    # Player settings are often JSON inside the page, with escaped slashes.
+    text = html.replace("\\/", "/")
+    urls = list(dict.fromkeys(u if u.startswith("http") else "https:" + u for u in MEDIA_URL.findall(text)))
     mp3 = [u for u in urls if re.search(r"\.mp3", u, re.I)]
     if mp3:
         return mp3[0]
     mp4 = [u for u in urls if re.search(r"\.mp4", u, re.I)]
     if not mp4:
-        return None
+        # ffmpeg reads HLS playlists directly.
+        hls = [u for u in urls if re.search(r"\.m3u8", u, re.I)]
+        return hls[0] if hls else None
     # Smallest video rendition is enough for the soundtrack.
     def resolution(u: str) -> int:
         m = re.search(r"_(\d{3,4})p?\.mp4", u)
@@ -196,6 +201,9 @@ def parse_article(article_id: int, url: str) -> Article | None:
     media_url = pick_media_url(html)
     if not title or not media_url:
         log(f"  {article_id}: no {'title' if not title else 'audio or video'}, skipped")
+        # Shows how the page embeds its player, to extend pick_media_url.
+        for hint in list(dict.fromkeys(MEDIA_HINT.findall(html)))[:15]:
+            log(f"    hint: {hint[:200]}")
         return None
 
     body = soup.select_one("div.wsw") or soup.select_one("article") or soup.body
@@ -220,20 +228,28 @@ def parse_article(article_id: int, url: str) -> Article | None:
 # ---------- audio and alignment ----------
 
 
+def encode_mp3(source: str, out_path: Path) -> None:
+    http_options = ["-user_agent", USER_AGENT] if source.startswith("http") else []
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", *http_options, "-i", source, "-vn", "-ac", "1", "-ar", "22050", "-b:a", "48k", str(out_path)],
+        check=True,
+    )
+
+
 def prepare_audio(media_url: str, out_path: Path) -> float:
-    with tempfile.NamedTemporaryFile(suffix=Path(urlparse(media_url).path).suffix, delete=False) as raw:
-        with session.get(media_url, timeout=120, stream=True) as res:
-            res.raise_for_status()
-            for chunk in res.iter_content(1 << 16):
-                raw.write(chunk)
-        raw_path = raw.name
-    try:
-        subprocess.run(
-            ["ffmpeg", "-y", "-loglevel", "error", "-i", raw_path, "-vn", "-ac", "1", "-ar", "22050", "-b:a", "48k", str(out_path)],
-            check=True,
-        )
-    finally:
-        os.unlink(raw_path)
+    if re.search(r"\.m3u8", media_url, re.I):
+        encode_mp3(media_url, out_path)
+    else:
+        with tempfile.NamedTemporaryFile(suffix=Path(urlparse(media_url).path).suffix, delete=False) as raw:
+            with session.get(media_url, timeout=120, stream=True) as res:
+                res.raise_for_status()
+                for chunk in res.iter_content(1 << 16):
+                    raw.write(chunk)
+            raw_path = raw.name
+        try:
+            encode_mp3(raw_path, out_path)
+        finally:
+            os.unlink(raw_path)
     probe = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(out_path)],
         check=True,

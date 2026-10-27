@@ -40,8 +40,13 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: scripts/voa/requirements.txt
+      # The first run spent 30+ minutes here; skipping recommended packages and the man-db rebuild keeps it short.
       - name: Install ffmpeg
-        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+        run: |
+          command -v ffmpeg && exit 0
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pip install -r scripts/voa/requirements.txt
       - uses: actions/cache@v4
         with:
