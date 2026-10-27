@@ -18,6 +18,7 @@ export const TOPICS = [
   "Free Time",
   "Weather & Outdoors",
   "Talking About Yourself",
+  "Work",
   "Travel",
 ] as const;
 

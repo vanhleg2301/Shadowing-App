@@ -141,6 +141,14 @@
   }
 }
 
+/* Scroll areas still scroll (wheel, touch, keyboard), but no scrollbar is drawn anywhere. */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
