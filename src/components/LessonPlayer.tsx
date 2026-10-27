@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { recordProgress, setSavedWord } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
@@ -11,12 +11,13 @@ import { LessonSettingsSheet } from "@/components/LessonSettingsSheet";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { StudyTimer } from "@/components/StudyTimer";
 import { SummaryPanel } from "@/components/SummaryPanel";
+import { TranscriptRow } from "@/components/TranscriptRow";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { normalizeWord, type WordInfo } from "@/lib/dictionary";
-import { findActiveIndex, findActiveWord, formatTime, type Lesson } from "@/lib/lesson";
+import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
@@ -63,7 +64,7 @@ export function LessonPlayer({
   const { user, isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
   const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
   const { sentences } = lesson;
-  const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(
+  const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate } = useYouTubePlayer(
     lesson.videoId,
     lesson.sentences[initialSentence]?.start ?? 0,
   );
@@ -85,7 +86,6 @@ export function LessonPlayer({
   const [isFollowPaused, setIsFollowPaused] = useState(false);
   const manualScrollAtRef = useRef(0);
   const [lookup, setLookup] = useState<WordLookupState | null>(null);
-  const stopAtRef = useRef<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
 
   const activeIndex = findActiveIndex(sentences, currentTime);
@@ -96,16 +96,10 @@ export function LessonPlayer({
     (mode === "dictation" || mode === "cloze" || (mode === "watch" && isHideText)) && !revealed.has(i);
 
   useEffect(() => {
-    const stopAt = stopAtRef.current;
-    if (stopAt !== null && currentTime >= stopAt) {
-      stopAtRef.current = null;
-      pause();
-      return;
-    }
     if (loopIndex !== null && currentTime >= sentences[loopIndex].end) {
       seekTo(sentences[loopIndex].start);
     }
-  }, [currentTime, loopIndex, sentences, pause, seekTo]);
+  }, [currentTime, loopIndex, sentences, seekTo]);
 
   useEffect(() => {
     if (isPlaying) hasInteractedRef.current = true;
@@ -139,10 +133,11 @@ export function LessonPlayer({
     rowRefs.current.get(Math.max(highlightIndex, 0))?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
-  const playSentence = (index: number) => {
+  const playSentence = (index: number): Promise<void> => {
+    if (isPractice) return playSegment(sentences[index].start, sentences[index].end);
     seekTo(sentences[index].start);
-    stopAtRef.current = isPractice ? sentences[index].end : null;
     play();
+    return Promise.resolve();
   };
 
   // Clicking a transcript row plays just that sentence once, in every mode.
@@ -151,9 +146,7 @@ export function LessonPlayer({
     setIsResumeVisible(false);
     if (mode === "watch" && isHideText) setRevealed((prev) => new Set(prev).add(index));
     if (isPractice) setPracticeIndex(index);
-    seekTo(sentences[index].start);
-    stopAtRef.current = sentences[index].end;
-    play();
+    playSegment(sentences[index].start, sentences[index].end);
   };
 
   const goToSentence = (index: number) => {
@@ -173,7 +166,6 @@ export function LessonPlayer({
   const handleModeChange = (next: Mode) => {
     setMode(next);
     setLoopIndex(null);
-    stopAtRef.current = null;
     setRevealed(new Set());
     if (next !== "watch") {
       setPracticeIndex(Math.max(activeIndex, 0));
@@ -242,49 +234,25 @@ export function LessonPlayer({
     if (result.error === "signed-out") await signInWithGoogle();
   };
 
-  // Karaoke: words already spoken turn green and the current word is highlighted (auto-caption videos only).
-  const renderWords = (text: string, activeWord: number) => {
-    let wordIndex = -1;
-    return text.split(/(\s+)/).map((token, j) => {
-      if (token === "" || /\s/.test(token)) return token;
-      wordIndex++;
-      const karaokeClass =
-        activeWord < 0
-          ? ""
-          : wordIndex === activeWord
-            ? "bg-highlight text-highlight-ink"
-            : wordIndex < activeWord
-              ? "text-brand-dark"
-              : "";
-      if (!normalizeWord(token)) {
-        return (
-          <span key={j} className={karaokeClass}>
-            {token}
-          </span>
-        );
-      }
-      return (
-        <button
-          key={j}
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleWordClick(token, text);
-          }}
-          className={`rounded-md transition-colors duration-150 hover:bg-highlight/60 hover:text-ink ${karaokeClass}`}
-        >
-          {token}
-        </button>
-      );
-    });
-  };
-
   const handleWordClick = (token: string, sentence: string) => {
     const word = normalizeWord(token);
     if (!word) return;
     pause();
     fetchLookup(word, sentence);
   };
+
+  // Stable callbacks for the memoised transcript rows; they call the latest handlers through a ref.
+  const rowActionsRef = useRef({ replaySentence, goToSentence, handleWordClick });
+  useEffect(() => {
+    rowActionsRef.current = { replaySentence, goToSentence, handleWordClick };
+  });
+  const onReplayRow = useCallback((index: number) => rowActionsRef.current.replaySentence(index), []);
+  const onPlayFromRow = useCallback((index: number) => rowActionsRef.current.goToSentence(index), []);
+  const onWordClick = useCallback((token: string, text: string) => rowActionsRef.current.handleWordClick(token, text), []);
+  const registerRow = useCallback((index: number, el: HTMLDivElement | null) => {
+    if (el) rowRefs.current.set(index, el);
+    else rowRefs.current.delete(index);
+  }, []);
 
   // Desktop shortcuts. The handler is replaced every render so it always sees the current state.
   const shortcutRef = useRef<(event: KeyboardEvent) => void>(() => {});
@@ -424,51 +392,20 @@ export function LessonPlayer({
             </div>
           )}
           {sentences.map((sentence, i) => (
-            <div
+            <TranscriptRow
               key={i}
-              ref={(el) => {
-                if (el) rowRefs.current.set(i, el);
-                else rowRefs.current.delete(i);
-              }}
-              onClick={() => {
-                // Don't hijack a text selection (e.g. copying a sentence).
-                if (window.getSelection()?.toString()) return;
-                replaySentence(i);
-              }}
-              title="Click to replay this sentence"
-              className={`group/row mb-1.5 flex cursor-pointer gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
-                i === highlightIndex
-                  ? "border-brand/40 bg-brand-soft hover:border-brand/60"
-                  : "border-transparent hover:border-line hover:bg-surface lg:hover:bg-cream"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  goToSentence(i);
-                }}
-                aria-label={`Play from sentence ${i + 1}`}
-                title="Play from here"
-                className="mt-0.5 h-fit shrink-0 rounded-lg px-1.5 py-0.5 font-mono text-xs font-semibold text-brand hover:bg-brand-soft"
-              >
-                {formatTime(sentence.start)}
-              </button>
-              {isMasked(i) ? (
-                <p aria-label="Hidden until you answer" className={`min-w-0 select-none leading-relaxed text-ink/60 blur-[6px] ${TEXT_SIZE_CLASS[prefs.textSize]}`}>
-                  {sentence.text}
-                </p>
-              ) : (
-                <div className="min-w-0">
-                  <p className={`leading-relaxed ${TEXT_SIZE_CLASS[prefs.textSize]} ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
-                    {renderWords(sentence.text, i === activeIndex ? findActiveWord(sentence, currentTime) : -1)}
-                  </p>
-                  {showTranslation && sentence.translation && (
-                    <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
-                  )}
-                </div>
-              )}
-            </div>
+              sentence={sentence}
+              index={i}
+              isHighlighted={i === highlightIndex}
+              activeWord={i === activeIndex ? findActiveWord(sentence, currentTime) : -1}
+              isMasked={isMasked(i)}
+              textSizeClass={TEXT_SIZE_CLASS[prefs.textSize]}
+              showTranslation={showTranslation}
+              registerRow={registerRow}
+              onReplay={onReplayRow}
+              onPlayFrom={onPlayFromRow}
+              onWordClick={onWordClick}
+            />
           ))}
           {isFollowPaused && prefs.autoScroll && (
             <button

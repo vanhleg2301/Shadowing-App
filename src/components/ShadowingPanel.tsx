@@ -9,7 +9,7 @@ interface ShadowingPanelProps {
   index: number;
   total: number;
   showTranslation: boolean;
-  onPlaySentence: () => void;
+  onPlaySentence: () => Promise<void> | void;
   onPrev: () => void;
   onNext: () => void;
   onBeforeRecord: () => void;
@@ -45,6 +45,7 @@ export function ShadowingPanel({
           originalDurationSec={sentence.end - sentence.start}
           onBeforeRecord={onBeforeRecord}
           recordLabel="Record yourself"
+          hasAutoCycle
         />
       </div>
 

@@ -1,22 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { RecordingPlayer, playBlob } from "@/components/RecordingPlayer";
 import { useRecorder } from "@/hooks/useRecorder";
+import { prewarmMic } from "@/lib/mic";
 import { checkDictation } from "@/lib/practice";
 import { isSpeechRecognitionSupported } from "@/lib/speech-recognition";
 
 interface VoiceRecorderProps {
   // When set, what the learner said is compared word by word with this sentence.
   target?: string;
-  // Plays the original sentence; used by "Compare" before playing the learner's take.
-  onPlayOriginal?: () => void;
+  // Plays the original sentence and resolves when it ends; used by "Compare" and the auto cycle.
+  onPlayOriginal?: () => Promise<void> | void;
   originalDurationSec?: number;
   onBeforeRecord?: () => void;
   onRecorded?: () => void;
   recordLabel?: string;
+  // Shows "Listen & repeat": original, then a timed recording, then your take, hands-free.
+  hasAutoCycle?: boolean;
 }
+
+type AutoPhase = "idle" | "listening" | "recording";
 
 export function VoiceRecorder({
   target,
@@ -25,17 +30,67 @@ export function VoiceRecorder({
   onBeforeRecord,
   onRecorded,
   recordLabel = "Record",
+  hasAutoCycle = false,
 }: VoiceRecorderProps) {
   const [canTranscribe, setCanTranscribe] = useState(false);
   const { isRecording, audioBlob, error, level, seconds, transcript, start, stop } = useRecorder({ transcribe: canTranscribe });
+
+  const [autoPhase, setAutoPhase] = useState<AutoPhase>("idle");
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoRunRef = useRef(0);
+  const blobBeforeAutoRef = useRef<Blob | null>(null);
 
   useEffect(() => {
     // Feature detection only works in the browser.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCanTranscribe(isSpeechRecognitionSupported());
-  }, []);
+    if (target) prewarmMic();
+  }, [target]);
+
+  useEffect(
+    () => () => {
+      autoRunRef.current++;
+      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    },
+    [],
+  );
+
+  // The auto cycle plays your take as soon as its timed recording is saved.
+  useEffect(() => {
+    if (autoPhase !== "recording" || isRecording || !audioBlob || audioBlob === blobBeforeAutoRef.current) return;
+    setAutoPhase("idle");
+    playBlob(audioBlob);
+  }, [autoPhase, isRecording, audioBlob]);
+
+  const cancelAuto = () => {
+    autoRunRef.current++;
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    autoTimerRef.current = null;
+    setAutoPhase("idle");
+  };
+
+  const handleAutoCycle = async () => {
+    if (autoPhase !== "idle") {
+      cancelAuto();
+      if (isRecording) stop();
+      return;
+    }
+    const run = ++autoRunRef.current;
+    setAutoPhase("listening");
+    await onPlayOriginal?.();
+    if (run !== autoRunRef.current) return;
+    blobBeforeAutoRef.current = audioBlob;
+    setAutoPhase("recording");
+    onBeforeRecord?.();
+    await start();
+    // Enough time to repeat the sentence at a relaxed pace.
+    autoTimerRef.current = setTimeout(() => {
+      if (run === autoRunRef.current) stop();
+    }, (originalDurationSec * 1.5 + 1.2) * 1000);
+  };
 
   const handleRecord = () => {
+    if (autoPhase !== "idle") cancelAuto();
     if (isRecording) {
       stop();
       onRecorded?.();
@@ -46,10 +101,13 @@ export function VoiceRecorder({
   };
 
   // Original first, then the learner's take, so the difference is easy to hear.
-  const handleCompare = () => {
+  const handleCompare = async () => {
     if (!audioBlob || !onPlayOriginal) return;
-    onPlayOriginal();
-    setTimeout(() => playBlob(audioBlob), (originalDurationSec + 0.6) * 1000);
+    const played = onPlayOriginal();
+    if (played) await played;
+    else await new Promise((resolve) => setTimeout(resolve, (originalDurationSec + 0.6) * 1000));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    playBlob(audioBlob);
   };
 
   const result = target && transcript && !isRecording ? checkDictation(target, transcript) : null;
@@ -79,9 +137,15 @@ export function VoiceRecorder({
           {isRecording ? (
             <>
               <p className="font-semibold text-ink">
-                Recording… <span className="font-mono text-muted">{seconds}s</span>
+                {autoPhase === "recording" ? "Your turn, repeat now" : "Recording…"}{" "}
+                <span className="font-mono text-muted">{seconds}s</span>
               </p>
               <p className="truncate text-sm text-muted">{transcript || "Speak now, then tap stop."}</p>
+            </>
+          ) : autoPhase === "listening" ? (
+            <>
+              <p className="font-semibold text-ink">Listen carefully…</p>
+              <p className="text-sm text-muted">Recording starts when the sentence ends.</p>
             </>
           ) : (
             <>
@@ -99,6 +163,18 @@ export function VoiceRecorder({
           </button>
         )}
       </div>
+
+      {hasAutoCycle && onPlayOriginal && (
+        <button
+          type="button"
+          onClick={handleAutoCycle}
+          aria-pressed={autoPhase !== "idle"}
+          className={`btn-3d w-full py-2.5 text-sm ${autoPhase !== "idle" ? "" : "btn-soft"}`}
+        >
+          <Icon name={autoPhase !== "idle" ? "stop" : "repeat"} className="size-4" />
+          {autoPhase !== "idle" ? "Stop" : "Listen & repeat (hands-free)"}
+        </button>
+      )}
 
       {audioBlob && !isRecording && <RecordingPlayer blob={audioBlob} label="Your voice" />}
 

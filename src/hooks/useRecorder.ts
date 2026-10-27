@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { acquireMic, releaseMic } from "@/lib/mic";
 import { startTranscriber, type Transcriber } from "@/lib/speech-recognition";
 
 const MAX_SECONDS = 90;
@@ -34,45 +35,53 @@ export function useRecorder({ transcribe = false }: RecorderOptions = {}) {
   const start = async () => {
     setError(null);
     setTranscript("");
-    let stream: MediaStream;
+    let mic: Awaited<ReturnType<typeof acquireMic>>;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
-      });
+      mic = await acquireMic();
     } catch {
       setError("Can't access the microphone. Please allow microphone access in your browser.");
       return;
     }
 
     const mimeType = MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    const recorder = new MediaRecorder(mic.stream, mimeType ? { mimeType } : undefined);
     const chunks: Blob[] = [];
 
-    // Live input level for the meter, from a Web Audio analyser on the same stream.
-    const audioContext = new AudioContext();
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    audioContext.createMediaStreamSource(stream).connect(analyser);
-    const samples = new Uint8Array(analyser.fftSize);
+    // Live input level for the meter. State only changes when the level moves visibly or a new
+    // second starts, so the component doesn't re-render on every animation frame.
+    const samples = new Uint8Array(mic.analyser.fftSize);
     let frame = 0;
-    const startedAt = Date.now();
+    let shownLevel = 0;
+    let shownSeconds = 0;
+    const startedAt = performance.now();
     const tick = () => {
-      analyser.getByteTimeDomainData(samples);
+      mic.analyser.getByteTimeDomainData(samples);
       let peak = 0;
       for (const s of samples) peak = Math.max(peak, Math.abs(s - 128) / 128);
-      setLevel(Math.min(1, peak * 1.6));
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setSeconds(elapsed);
+      const nextLevel = Math.round(Math.min(1, peak * 1.6) * 10) / 10;
+      if (nextLevel !== shownLevel) {
+        shownLevel = nextLevel;
+        setLevel(nextLevel);
+      }
+      const elapsed = Math.floor((performance.now() - startedAt) / 1000);
+      if (elapsed !== shownSeconds) {
+        shownSeconds = elapsed;
+        setSeconds(elapsed);
+      }
       if (elapsed >= MAX_SECONDS) stop();
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
 
+    let isReleased = false;
     cleanupRef.current = () => {
       cancelAnimationFrame(frame);
-      stream.getTracks().forEach((track) => track.stop());
-      audioContext.close();
       transcriberRef.current?.stop();
+      if (recorder.state === "recording") recorder.stop();
+      if (!isReleased) {
+        isReleased = true;
+        releaseMic();
+      }
     };
 
     recorder.ondataavailable = (event) => chunks.push(event.data);
