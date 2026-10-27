@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { BBC_VIDEOS, BOB_VIDEOS, DEFAULT_COLLECTION, isCollectionId, type CollectionId } from "@/data/collections";
+import { BBC_VIDEOS, BOB_VIDEOS, DEFAULT_COLLECTION, EASY_STREET_VIDEOS, SUPER_EASY_VIDEOS, isCollectionId, type CollectionId } from "@/data/collections";
 import { CURATED_VIDEOS, LEVELS, type CuratedVideo, type Level } from "@/data/curated";
 import { createPublicClient } from "./supabase/admin";
 
@@ -22,6 +22,8 @@ const BUNDLED_VIDEOS: CuratedVideo[] = [
   ...CURATED_VIDEOS,
   ...BOB_VIDEOS.map((v) => ({ ...v, collection: "bob" as const, channel: "Learn English with Bob the Canadian" })),
   ...BBC_VIDEOS.map((v) => ({ ...v, collection: "bbc" as const, channel: "BBC Learning English" })),
+  ...SUPER_EASY_VIDEOS.map((v) => ({ ...v, collection: "super-easy" as const, channel: "Easy English" })),
+  ...EASY_STREET_VIDEOS.map((v) => ({ ...v, collection: "easy-street" as const, channel: "Easy English" })),
 ];
 
 export function getVideoCollection(video: CuratedVideo): CollectionId {

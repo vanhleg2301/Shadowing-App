@@ -282,6 +282,80 @@ export const COURSE_DAYS: CourseDay[] = [
 // Blocks are generated from the day's content so every day has the same rhythm.
 // The same phrases, dialogues and quiz for every collection; only the videos change.
 const COLLECTION_DAY_VIDEOS: Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>> = {
+  "super-easy": {
+    1: [
+      { id: "W7mkL-Oz8nI", title: "How Native Speakers Greet Each Other" },
+      { id: "dCOHe0PNXLA", title: "Questions About Greetings" },
+      { id: "bzQyR5RJzT8", title: "At the University" },
+    ],
+    2: [
+      { id: "QdBrS0MQJbg", title: "A Dog's Daily Routine" },
+      { id: "BRdTUrxiXKs", title: "Things and Rooms in a House" },
+      { id: "gK_fJhxeDpE", title: "What's in a Canadian Garage?" },
+    ],
+    3: [
+      { id: "LLLJwE6vr2k", title: "A Restaurant Conversation" },
+      { id: "zvYLQdLoYjw", title: "Simple Words to Describe Food" },
+      { id: "_T0yxFHtdpA", title: "More Words to Describe Food" },
+    ],
+    4: [
+      { id: "fxcOpbzUK4Q", title: "At the Mall" },
+      { id: "3LoDWINL9Rw", title: "Common Clothing Words" },
+      { id: "9iLcj6kfn_0", title: "50 Words and Their Opposites" },
+    ],
+    5: [
+      { id: "q9qbH6rw9lg", title: "Essential Car Words" },
+      { id: "PiU-AJ0IaT0", title: "On the Streets of Cologne" },
+      { id: "92ozftd0RzU", title: "At the Central Library" },
+    ],
+    6: [
+      { id: "LAYbOaKn8DY", title: "At the Doctor and the Hospital" },
+      { id: "SN6751ig2QI", title: "Worrying About the Future" },
+      { id: "PCm7lkzLFH4", title: "Nature Words" },
+    ],
+    7: [
+      { id: "-OknSRRyFJE", title: "Conversations at the Airport" },
+      { id: "2eXHcmbqFFg", title: "Conversations at a Hotel" },
+      { id: "nVf2XMwZwGk", title: "Movie Genres" },
+    ],
+  },
+  "easy-street": {
+    1: [
+      { id: "TwBYlBjbokU", title: "Everyday Conversations With Strangers" },
+      { id: "rPgykzyHg6I", title: "Small Talk Advice" },
+      { id: "-WB_SGqeJo8", title: "What Do You Do for a Living?" },
+    ],
+    2: [
+      { id: "yUdhPFXRFmM", title: "What Are Your Plans Today?" },
+      { id: "0cPmzcW5l1I", title: "What Are Your Plans Today? (Part 2)" },
+      { id: "JjEJQzRQFa0", title: "Conversations in the Past, Present and Future" },
+    ],
+    3: [
+      { id: "Y48ATz0pGT8", title: "What Do Brits Eat for Breakfast?" },
+      { id: "7WvW2KZm8S0", title: "Favourite Food" },
+      { id: "nvhcPK_IsIQ", title: "Why Do British People Love the Pub?" },
+    ],
+    4: [
+      { id: "b7WcAmzNZ88", title: "Everyday Conversations for Shopping" },
+      { id: "yl--RTTtKLs", title: "Conversations for Shopping" },
+      { id: "mgYE-v02kds", title: "Real Phone Conversations" },
+    ],
+    5: [
+      { id: "S3gaSvXqLH0", title: "Advice for Travelling by Train" },
+      { id: "v8ecvyglvJ8", title: "Conversations for Tourists" },
+      { id: "HU9wGpwUa4U", title: "Conversations and Words for Tourists" },
+    ],
+    6: [
+      { id: "yb21A3vrsOM", title: "What Makes People Happy?" },
+      { id: "H3zJIP3BJ6Y", title: "Advice on Mental Health" },
+      { id: "ScO8_gSXqJQ", title: "What Are Your Phobias?" },
+    ],
+    7: [
+      { id: "mW2zRTStOMM", title: "10 Tips for Travelling to the UK" },
+      { id: "ogNynYq1IxE", title: "Where Do Brits Go on Summer Holiday?" },
+      { id: "09UdFZcPdqs", title: "Holiday Destinations" },
+    ],
+  },
   bob: {
     1: [
       { id: "ovl9kM46r10", title: "How to Describe Yourself" },

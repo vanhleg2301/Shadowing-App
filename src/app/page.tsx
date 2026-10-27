@@ -69,6 +69,12 @@ async function HomeContent() {
         </Link>
       </div>
 
+      {videos.length === 0 && (
+        <p className="mt-5 rounded-2xl border border-line bg-surface px-4 py-3 text-muted">
+          Videos for this collection are still being prepared. Please check back soon, or pick another collection.
+        </p>
+      )}
+
       <div className="mt-5">
         <Suspense fallback={<VideoLibrary videos={videos} userState={EMPTY_USER_STATE} />}>
           <LibraryWithUserState videos={videos} />
