@@ -57,12 +57,12 @@ class Program:
 
 
 PROGRAMS: dict[str, Program] = {
-    "lets-learn-english-1": Program(["Let's Learn English - Level 1", "Let's Learn English Level 1", "Let's Learn English"], "A1", "Everyday Words"),
+    # Programs whose pages carry a transcript next to the audio (the podcast and English in a Minute don't).
+    "lets-learn-english-1": Program(["Let's Learn English - Level 1", "Let's Learn English Level 1"], "A1", "Everyday Words"),
     "lets-learn-english-2": Program(["Let's Learn English - Level 2", "Let's Learn English Level 2"], "A2", "Everyday Words"),
-    "learning-english-podcast": Program(["Learning English Podcast"], "A2", "Talking About Yourself"),
-    "english-in-a-minute": Program(["English in a Minute"], "A2", "Everyday Words"),
     "everyday-grammar": Program(["Everyday Grammar"], "B1", "Everyday Words"),
     "health-lifestyle": Program(["Health & Lifestyle", "Health and Lifestyle"], "B1", "Health"),
+    "words-and-their-stories": Program(["Words & Their Stories", "Words and Their Stories"], "B1", "Everyday Words"),
 }
 
 TOPIC_KEYWORDS: list[tuple[str, str]] = [
@@ -80,7 +80,7 @@ TOPIC_KEYWORDS: list[tuple[str, str]] = [
 ]
 
 ARTICLE_LINK = re.compile(r"/a/(?:[^/\"'?#]+/)?(\d{7})\.html")
-MEDIA_HINT = re.compile(r"(?:src|href|data-[\w-]+)=\"([^\"]*(?:akamai|video|audio|media|player|embed)[^\"]*)\"", re.I)
+LESSON_LINK = re.compile(r"/a/[^/\"'?#]+/(\d{7})\.html")
 MEDIA_URL = re.compile(r"(?:https?:)?//[^\s\"'<>\\]+?\.(?:mp3|mp4|m3u8)(?:\?[^\s\"'<>\\]*)?", re.I)
 # Text after these on an article page is not read in the audio.
 CUT_MARKERS = re.compile(
@@ -89,6 +89,7 @@ CUT_MARKERS = re.compile(
 )
 SPEAKER_LABEL = re.compile(r"^([A-Z][\w.'’-]*(?: [A-Z][\w.'’-]*){0,2}):\s+")
 NON_SPEECH = re.compile(r"\[[^\]]*\]|\((?:[A-Z ]+|music|sound[^)]*|laughter)\)", re.I)
+TITLE_ABBREVIATIONS = {"Mr.", "Mrs.", "Ms.", "Dr.", "St.", "Prof."}
 SENTENCE_END = re.compile(r"(?<=[.!?])[\"”’)]?\s+(?=[\"“‘(]?[A-Z0-9])")
 
 session = requests.Session()
@@ -146,6 +147,8 @@ def find_section_urls(wanted: list[str]) -> dict[str, str]:
 
 
 def list_section_articles(section_url: str) -> list[int]:
+    # Program pages (/p/) list their lessons once, with a slug; bare /a/<id>.html links there are guides.
+    is_program_page = "/p/" in section_url
     ids: set[int] = set()
     for page in range(MAX_SECTION_PAGES):
         url = section_url if page == 0 else f"{section_url}?p={page}"
@@ -154,7 +157,7 @@ def list_section_articles(section_url: str) -> list[int]:
         except requests.HTTPError as error:
             log(f"  {url}: {error}")
             break
-        page_ids = {int(m) for m in ARTICLE_LINK.findall(html)}
+        page_ids = {int(m) for m in (LESSON_LINK if is_program_page else ARTICLE_LINK).findall(html)}
         if not page_ids - ids:
             break
         ids |= page_ids
@@ -204,30 +207,44 @@ def parse_article(article_id: int, url: str) -> Article | None:
     image_url = og_image.get("content") if og_image else None
     if image_url:
         image_url = re.sub(r"_w\d+_", "_w640_", image_url)
-    media_url = pick_media_url(html)
-    if not title or not media_url:
-        log(f"  {article_id}: no {'title' if not title else 'audio or video'}, skipped")
-        # Shows how the page embeds its player, to extend pick_media_url.
-        for hint in list(dict.fromkeys(MEDIA_HINT.findall(html)))[:15]:
-            log(f"    hint: {hint[:200]}")
+    section_paths = re.findall(r"/[zp]/\d+", html)
+    body = soup.select_one("div.wsw")
+    if not title or not body:
+        log(f"  {article_id}: no {'title' if not title else 'article text'}, skipped")
         return None
 
-    body = soup.select_one("div.wsw") or soup.select_one("article") or soup.body
-    paragraphs: list[str] = []
-    for el in body.find_all(["p", "h2", "h3", "h4"]) if body else []:
-        text = re.sub(r"\s+", " ", el.get_text(" ", strip=True)).strip()
-        if not text:
+    # The text that follows a player (up to the next heading) is that player's transcript: news-style
+    # pages have one audio player and the story, Let's Learn English pages have several videos and a
+    # "Conversation" audio followed by the dialogue. The player with the most text wins.
+    segments: list[tuple[str | None, list[str]]] = [(None, [])]
+    for el in body.find_all(True):
+        classes = " ".join(el.get("class", []))
+        if el.find_parent(class_="media-pholder"):
             continue
+        if "media-pholder" in classes:
+            segments.append((pick_media_url(str(el)), []))
+            continue
+        if el.name in ("h2", "h3", "h4"):
+            if CUT_MARKERS.match(el.get_text(" ", strip=True)):
+                break
+            segments.append((None, []))
+            continue
+        if el.name not in ("p", "div") or el.find(["p", "div"]):
+            continue
+        text = re.sub(r"\s+", " ", el.get_text(" ", strip=True)).strip()
         if CUT_MARKERS.match(text):
             break
-        if el.name != "p":
-            continue
-        text = NON_SPEECH.sub(" ", text)
-        text = SPEAKER_LABEL.sub("", text)
-        text = re.sub(r"\s+", " ", text).strip()
+        text = re.sub(r"\s+", " ", SPEAKER_LABEL.sub("", NON_SPEECH.sub(" ", text))).strip()
         if len(re.findall(r"[A-Za-z]", text)) >= 2:
-            paragraphs.append(text)
-    section_paths = re.findall(r"/[zp]/\d+", html)
+            segments[-1][1].append(text)
+    # Text before any player belongs to the page's main player (outside the article body).
+    lead_media, lead_text = segments[0]
+    segments[0] = (lead_media or pick_media_url(html), lead_text)
+    with_media = [(m, t) for m, t in segments if m and t]
+    if not with_media:
+        log(f"  {article_id}: no audio or video with a transcript, skipped")
+        return None
+    media_url, paragraphs = max(with_media, key=lambda seg: sum(len(p.split()) for p in seg[1]))
     return Article(article_id, url, title, image_url, media_url, paragraphs, section_paths)
 
 
@@ -291,9 +308,12 @@ def transcribe_words(audio_path: Path) -> list[tuple[str, float, float]]:
 def split_sentences(paragraphs: list[str]) -> list[list[str]]:
     sentences: list[list[str]] = []
     for paragraph in paragraphs:
-        for sentence in SENTENCE_END.split(paragraph):
-            tokens = sentence.split()
-            if tokens:
+        parts = [p.split() for p in SENTENCE_END.split(paragraph) if p.strip()]
+        for tokens in parts:
+            # "Ms. Weaver" is not two sentences.
+            if sentences and sentences[-1][-1] in TITLE_ABBREVIATIONS:
+                sentences[-1].extend(tokens)
+            else:
                 sentences.append(tokens)
     return sentences
 
@@ -516,13 +536,16 @@ def main() -> int:
             if m:
                 direct.append((wanted[0], int(m.group(1)), u, None))
             else:
-                direct += [(wanted[0], i, f"{SITE}/a/{i}.html", urlparse(u).path) for i in list_section_articles(u)]
+                check_path = None if "/p/" in u else urlparse(u).path
+                direct += [(wanted[0], i, f"{SITE}/a/{i}.html", check_path) for i in list_section_articles(u)]
         queues.append(direct)
     else:
         for key, section in find_section_urls(wanted).items():
             ids = list_section_articles(section)
             log(f"{key}: {section} lists {len(ids)} articles")
-            queues.append([(key, i, f"{SITE}/a/{i}.html", urlparse(section).path) for i in ids])
+            # Lessons on a program page don't link back to it, so only /z/ sections are checked.
+            check_path = None if "/p/" in section else urlparse(section).path
+            queues.append([(key, i, f"{SITE}/a/{i}.html", check_path) for i in ids])
 
     imported: list[dict] = []
     failures = 0
