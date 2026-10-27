@@ -19,7 +19,7 @@ const CARD_WIDTH = "w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]";
 
 export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
   const { favoriteIds, progress, continueIds } = userState;
-  const [level, setLevel] = useState<Level | "all">("all");
+  const [chosenLevel, setLevel] = useState<Level | "all">("all");
   const [topic, setTopic] = useState<Topic | null>(null);
   const [query, setQuery] = useState("");
   const [hasPlacement, setHasPlacement] = useState(true);
@@ -31,13 +31,13 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
     } catch {
       // Storage blocked: keep showing all levels.
     }
-    const storedLevel = LEVELS.find((l) => l === stored);
+    const storedLevel = LEVELS.find((l) => l === stored && videos.some((v) => v.level === l));
     // Reading localStorage only works after hydration.
     /* eslint-disable react-hooks/set-state-in-effect */
     if (storedLevel) setLevel(storedLevel);
-    setHasPlacement(storedLevel !== undefined);
+    setHasPlacement(LEVELS.some((l) => l === stored));
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
+  }, [videos]);
 
   const continueVideos = continueIds
     .map((id) => videos.find((v) => v.videoId === id))
@@ -45,6 +45,8 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
   const [featured, ...moreToContinue] = continueVideos;
 
   const needle = query.trim().toLowerCase();
+  // A level the current collection doesn't have (after switching collection) falls back to all.
+  const level = videos.some((v) => v.level === chosenLevel) ? chosenLevel : "all";
   const byLevel = videos.filter((v) => level === "all" || v.level === level);
   const sections = orderTopics(videos.map((v) => v.topic))
     .map((t) => ({ topic: t, items: byLevel.filter((v) => v.topic === t) }))
@@ -121,7 +123,7 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
 
       <div className="no-scrollbar -mx-4 mt-5 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
         <div role="radiogroup" aria-label="Level" className="flex shrink-0 rounded-2xl border border-line bg-surface p-1">
-          {(["all", ...LEVELS] as const).map((l) => (
+          {(["all", ...LEVELS.filter((l) => videos.some((v) => v.level === l))] as const).map((l) => (
             <button
               key={l}
               type="button"

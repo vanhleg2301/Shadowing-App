@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { z } from "zod";
+import { COLLECTION_IDS } from "@/data/collections";
+import { COLLECTION_COOKIE } from "@/lib/collection";
 import { schedule } from "@/lib/srs";
 import { getLocalToday, getTimeZone } from "@/lib/study-day";
 import { getUserContext } from "@/lib/user-data";
@@ -260,4 +263,27 @@ export async function deletePushSubscription(input: { endpoint: string }): Promi
   const { error } = await ctx.supabase.from("push_subscriptions").delete().eq("endpoint", parsed.data.endpoint);
   if (error) return { ok: false, error: "failed" };
   return updateSettings({ remindersEnabled: false });
+}
+
+const CollectionSchema = z.object({ collection: z.enum(COLLECTION_IDS) });
+
+// Remembers the chosen collection on this device (cookie) and, when signed in, on the account.
+export async function selectCollection(input: z.input<typeof CollectionSchema>): Promise<ActionResult> {
+  const parsed = CollectionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const { collection } = parsed.data;
+  const cookieStore = await cookies();
+  cookieStore.set(COLLECTION_COOKIE, collection, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+
+  const ctx = await getUserContext();
+  if (ctx) {
+    await ctx.supabase.from("user_settings").upsert({
+      user_id: ctx.user.id,
+      collection_id: collection,
+      time_zone: await getTimeZone(),
+      updated_at: new Date().toISOString(),
+    });
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

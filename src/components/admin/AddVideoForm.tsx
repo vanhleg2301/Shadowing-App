@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { addVideo } from "@/app/admin/actions";
+import { COLLECTIONS, type CollectionId } from "@/data/collections";
 import { LEVELS, type Level } from "@/data/curated";
 
 interface AddVideoFormProps {
@@ -13,6 +14,7 @@ export function AddVideoForm({ topics }: AddVideoFormProps) {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [level, setLevel] = useState<Level>("A2");
+  const [collection, setCollection] = useState<CollectionId>("sponge");
   const [topic, setTopic] = useState(topics[0] ?? "");
   const [message, setMessage] = useState<{ isError: boolean; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -21,7 +23,7 @@ export function AddVideoForm({ topics }: AddVideoFormProps) {
     event.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const result = await addVideo({ url, level, topic });
+      const result = await addVideo({ url, level, topic, collection });
       if (!result.ok) {
         setMessage({ isError: true, text: result.error });
         return;
@@ -49,6 +51,13 @@ export function AddVideoForm({ topics }: AddVideoFormProps) {
           required
           className={`${fieldClass} min-w-0 flex-1`}
         />
+        <select value={collection} onChange={(event) => setCollection(event.target.value as CollectionId)} className={fieldClass} aria-label="Collection">
+          {COLLECTIONS.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
         <select value={level} onChange={(event) => setLevel(event.target.value as Level)} className={fieldClass}>
           {LEVELS.map((l) => (
             <option key={l}>{l}</option>

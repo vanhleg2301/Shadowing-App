@@ -8,13 +8,14 @@ import { RolePlay } from "@/components/course/RolePlay";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
 import { StudyTimer } from "@/components/StudyTimer";
 import { Icon, type IconName } from "@/components/Icon";
-import { COURSE_ID, type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
+import { type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
 import { COURSE_DIALOGUES } from "@/data/course-a2-dialogues";
 import { useAuth } from "@/hooks/useAuth";
 import { speak, type Accent } from "@/lib/speech";
 
 interface CourseDayViewProps {
   day: CourseDay;
+  courseId: string;
   blocks: CourseBlock[];
   initialDone: string[];
   isSignedIn: boolean;
@@ -44,7 +45,7 @@ function blockHref(block: CourseBlock, day: number): string | null {
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
+export function CourseDayView({ day, courseId, blocks, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(() => new Set(initialDone));
   const [recorded, setRecorded] = useState(() => new Set<number>());
@@ -68,7 +69,7 @@ export function CourseDayView({ day, blocks, initialDone, isSignedIn, hasNextDay
       return next;
     });
     startTransition(async () => {
-      const result = await setCourseBlockDone({ courseId: COURSE_ID, day: day.day, blockId, isDone });
+      const result = await setCourseBlockDone({ courseId, day: day.day, blockId, isDone });
       if (!result.ok) {
         setDone((prev) => {
           const next = new Set(prev);

@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
+import { COLLECTION_IDS } from "@/data/collections";
 import { requireAdmin, type AdminContext } from "@/lib/admin";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { fetchLessonFromYouTube } from "@/lib/captions";
@@ -128,6 +129,7 @@ export async function refetchLesson(input: { videoId: string }) {
 
 const level = z.enum(["A1", "A2", "B1"]);
 const topic = z.string().trim().min(1).max(60);
+const collection = z.enum(COLLECTION_IDS);
 
 function formatDuration(totalSec: number): string {
   const h = Math.floor(totalSec / 3600);
@@ -137,7 +139,7 @@ function formatDuration(totalSec: number): string {
   return `${h > 0 ? `${h}:` : ""}${minutes}:${String(s).padStart(2, "0")}`;
 }
 
-const AddVideoSchema = z.object({ url: z.string().min(1).max(300), level, topic });
+const AddVideoSchema = z.object({ url: z.string().min(1).max(300), level, topic, collection });
 
 // Adds a video and stores its transcript in one go. Needs YouTube to answer, so it may fail on cloud hosts.
 export async function addVideo(input: z.input<typeof AddVideoSchema>) {
@@ -168,6 +170,7 @@ export async function addVideo(input: z.input<typeof AddVideoSchema>) {
         title: result.lesson.title.slice(0, 200),
         level: data.level,
         topic: data.topic,
+        collection_id: data.collection,
         duration: formatDuration(result.lesson.durationSec),
         channel: result.lesson.author.slice(0, 100),
         sort_order: ((last as { sort_order: number } | null)?.sort_order ?? 0) + 1,
@@ -186,6 +189,7 @@ const UpdateVideoSchema = z.object({
   title: z.string().trim().min(1).max(200),
   level,
   topic,
+  collection,
   duration: z.string().trim().max(10),
   channel: z.string().trim().max(100),
   isPublished: z.boolean(),
@@ -199,6 +203,7 @@ export async function updateVideo(input: z.input<typeof UpdateVideoSchema>) {
         title: data.title,
         level: data.level,
         topic: data.topic,
+        collection_id: data.collection,
         duration: data.duration,
         channel: data.channel,
         is_published: data.isPublished,

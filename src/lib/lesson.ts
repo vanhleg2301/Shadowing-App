@@ -14,6 +14,14 @@ export interface Lesson {
   durationSec: number;
   sentences: Sentence[];
   hasTranslation: boolean;
+  summary?: LessonSummary;
+}
+
+export interface LessonSummary {
+  overview: string;
+  keyPoints: string[];
+  keyWords: { word: string; meaning: string }[];
+  source: "ai" | "free";
 }
 
 export function findActiveIndex(sentences: Sentence[], time: number): number {

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/seed-lessons.ts"
+    "seed:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/seed-lessons.ts",
+    "summarize:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/summarize-lessons.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

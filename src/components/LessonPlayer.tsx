@@ -1,6 +1,5 @@
 "use client";
 
-import { StudyTimer } from "@/components/StudyTimer";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { recordProgress, setSavedWord } from "@/app/actions";
@@ -10,6 +9,8 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { LessonSettingsSheet } from "@/components/LessonSettingsSheet";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
+import { StudyTimer } from "@/components/StudyTimer";
+import { SummaryPanel } from "@/components/SummaryPanel";
 import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
@@ -80,6 +81,7 @@ export function LessonPlayer({
   const [isSessionListenFirst, setIsSessionListenFirst] = useState(isListenFirst);
   const isHideText = prefs.hideText || isSessionListenFirst;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
   const manualScrollAtRef = useRef(0);
   const [lookup, setLookup] = useState<WordLookupState | null>(null);
@@ -372,11 +374,29 @@ export function LessonPlayer({
         onTouchMove={handleManualScroll}
         className="relative min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
       >
-        <div className="flex items-center justify-between px-2 pb-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted">
-            Sentence {currentIndex + 1} / {sentences.length}
-          </p>
-          {mode === "watch" && isHideText && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2">
+          <div role="tablist" aria-label="Lesson panel" className="flex rounded-xl border border-line bg-surface p-0.5">
+            {(["transcript", "summary"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                role="tab"
+                aria-selected={panel === p}
+                onClick={() => setPanel(p)}
+                className={`rounded-lg px-3 py-1 text-xs font-bold capitalize transition-colors ${
+                  panel === p ? "bg-brand text-on-brand" : "text-muted hover:text-ink"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          {panel === "transcript" && (
+            <p className="text-xs font-bold uppercase tracking-wide text-muted">
+              Sentence {currentIndex + 1} / {sentences.length}
+            </p>
+          )}
+          {panel === "transcript" && mode === "watch" && isHideText && (
             <button
               type="button"
               onClick={() => {
@@ -389,72 +409,78 @@ export function LessonPlayer({
             </button>
           )}
         </div>
-        {isResumeVisible && (
-          <div className="mb-3 flex animate-fade-in items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm">
-            <span className="text-ink">
-              Continuing from sentence <b>{initialSentence + 1}</b>
-            </span>
-            <button type="button" onClick={handleStartOver} className="shrink-0 font-semibold text-brand hover:text-brand-dark">
-              Start over
-            </button>
-          </div>
-        )}
-        {sentences.map((sentence, i) => (
-          <div
-            key={i}
-            ref={(el) => {
-              if (el) rowRefs.current.set(i, el);
-              else rowRefs.current.delete(i);
-            }}
-            onClick={() => {
-              // Don't hijack a text selection (e.g. copying a sentence).
-              if (window.getSelection()?.toString()) return;
-              replaySentence(i);
-            }}
-            title="Click to replay this sentence"
-            className={`group/row mb-1.5 flex cursor-pointer gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
-              i === highlightIndex
-                ? "border-brand/40 bg-brand-soft hover:border-brand/60"
-                : "border-transparent hover:border-line hover:bg-surface lg:hover:bg-cream"
-            }`}
-          >
+        {panel === "summary" ? (
+          <SummaryPanel lesson={lesson} onPlaySentence={replaySentence} />
+        ) : (
+          <>
+          {isResumeVisible && (
+            <div className="mb-3 flex animate-fade-in items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm">
+              <span className="text-ink">
+                Continuing from sentence <b>{initialSentence + 1}</b>
+              </span>
+              <button type="button" onClick={handleStartOver} className="shrink-0 font-semibold text-brand hover:text-brand-dark">
+                Start over
+              </button>
+            </div>
+          )}
+          {sentences.map((sentence, i) => (
+            <div
+              key={i}
+              ref={(el) => {
+                if (el) rowRefs.current.set(i, el);
+                else rowRefs.current.delete(i);
+              }}
+              onClick={() => {
+                // Don't hijack a text selection (e.g. copying a sentence).
+                if (window.getSelection()?.toString()) return;
+                replaySentence(i);
+              }}
+              title="Click to replay this sentence"
+              className={`group/row mb-1.5 flex cursor-pointer gap-2 rounded-2xl border px-2 py-2.5 transition-colors ${
+                i === highlightIndex
+                  ? "border-brand/40 bg-brand-soft hover:border-brand/60"
+                  : "border-transparent hover:border-line hover:bg-surface lg:hover:bg-cream"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  goToSentence(i);
+                }}
+                aria-label={`Play from sentence ${i + 1}`}
+                title="Play from here"
+                className="mt-0.5 h-fit shrink-0 rounded-lg px-1.5 py-0.5 font-mono text-xs font-semibold text-brand hover:bg-brand-soft"
+              >
+                {formatTime(sentence.start)}
+              </button>
+              {isMasked(i) ? (
+                <p aria-label="Hidden until you answer" className={`min-w-0 select-none leading-relaxed text-ink/60 blur-[6px] ${TEXT_SIZE_CLASS[prefs.textSize]}`}>
+                  {sentence.text}
+                </p>
+              ) : (
+                <div className="min-w-0">
+                  <p className={`leading-relaxed ${TEXT_SIZE_CLASS[prefs.textSize]} ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
+                    {renderWords(sentence.text, i === activeIndex ? findActiveWord(sentence, currentTime) : -1)}
+                  </p>
+                  {showTranslation && sentence.translation && (
+                    <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {isFollowPaused && prefs.autoScroll && (
             <button
               type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                goToSentence(i);
-              }}
-              aria-label={`Play from sentence ${i + 1}`}
-              title="Play from here"
-              className="mt-0.5 h-fit shrink-0 rounded-lg px-1.5 py-0.5 font-mono text-xs font-semibold text-brand hover:bg-brand-soft"
+              onClick={jumpToCurrent}
+              className="btn-3d btn-brand sticky bottom-3 left-1/2 mx-auto flex -translate-x-0 animate-fade-in rounded-full px-4 py-2 text-sm"
             >
-              {formatTime(sentence.start)}
+              <Icon name="chevronDown" className="size-4" />
+              Back to current sentence
             </button>
-            {isMasked(i) ? (
-              <p aria-label="Hidden until you answer" className={`min-w-0 select-none leading-relaxed text-ink/60 blur-[6px] ${TEXT_SIZE_CLASS[prefs.textSize]}`}>
-                {sentence.text}
-              </p>
-            ) : (
-              <div className="min-w-0">
-                <p className={`leading-relaxed ${TEXT_SIZE_CLASS[prefs.textSize]} ${i === highlightIndex ? "text-ink" : "text-ink/70"}`}>
-                  {renderWords(sentence.text, i === activeIndex ? findActiveWord(sentence, currentTime) : -1)}
-                </p>
-                {showTranslation && sentence.translation && (
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{sentence.translation}</p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        {isFollowPaused && prefs.autoScroll && (
-          <button
-            type="button"
-            onClick={jumpToCurrent}
-            className="btn-3d btn-brand sticky bottom-3 left-1/2 mx-auto flex -translate-x-0 animate-fade-in rounded-full px-4 py-2 text-sm"
-          >
-            <Icon name="chevronDown" className="size-4" />
-            Back to current sentence
-          </button>
+          )}
+          </>
         )}
       </div>
 

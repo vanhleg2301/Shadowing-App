@@ -4,7 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
 import { VideoCard } from "@/components/VideoCard";
-import { getCatalog } from "@/lib/catalog";
+import { CollectionSwitcher } from "@/components/CollectionSwitcher";
+import { getCatalog, getVideoCollection } from "@/lib/catalog";
+import { getSelectedCollection } from "@/lib/collection";
 import { getFavorites, type FavoriteVideo } from "@/lib/user-data";
 
 export default function FavoritesPage() {
@@ -29,8 +31,13 @@ async function FavoritesList() {
     return <p className="mt-8 text-red-600">Couldn&apos;t load your favorites. Please try again later.</p>;
   }
 
-  const catalog = await getCatalog();
+  const [catalog, collection] = await Promise.all([getCatalog(), getSelectedCollection().catch(() => null)]);
   if (!favorites) return <SignInPrompt message="Sign in to keep your favorite videos in one place." />;
+  // Favorites from other collections are kept but hidden; pasted videos (not in any collection) always show.
+  const visible = favorites.filter((f) => {
+    const curated = catalog.find((v) => v.videoId === f.videoId);
+    return !curated || !collection || getVideoCollection(curated) === collection;
+  });
   if (favorites.length === 0) {
     return (
       <p className="mt-8 text-muted">
@@ -43,11 +50,22 @@ async function FavoritesList() {
   }
 
   return (
-    <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-      {favorites.map((f) => {
-        const curated = catalog.find((v) => v.videoId === f.videoId);
-        return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} isFavorite />;
-      })}
-    </div>
+    <>
+      {collection && (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <CollectionSwitcher current={collection} />
+          <span className="text-sm text-muted">
+            {visible.length} of {favorites.length} favorites
+          </span>
+        </div>
+      )}
+      {visible.length === 0 && <p className="mt-6 text-muted">No favorites in this collection yet.</p>}
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {visible.map((f) => {
+          const curated = catalog.find((v) => v.videoId === f.videoId);
+          return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} isFavorite />;
+        })}
+      </div>
+    </>
   );
 }

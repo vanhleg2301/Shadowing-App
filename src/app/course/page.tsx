@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Icon } from "@/components/Icon";
-import { COURSE_DAYS, COURSE_ID, getBlocks } from "@/data/course-a2";
+import { CollectionSwitcher } from "@/components/CollectionSwitcher";
+import { DEFAULT_COLLECTION } from "@/data/collections";
+import { COURSE_DAYS, getBlocks, getCourseId } from "@/data/course-a2";
+import { getSelectedCollection } from "@/lib/collection";
 import { getCourseProgress } from "@/lib/user-data";
 
 export default function CoursePage() {
@@ -38,8 +41,17 @@ export default function CoursePage() {
 }
 
 async function DayListWithProgress() {
-  const progress = await getCourseProgress(COURSE_ID).catch(() => null);
-  return <DayList progress={progress} />;
+  const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
+  const progress = await getCourseProgress(getCourseId(collection)).catch(() => null);
+  return (
+    <>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <CollectionSwitcher current={collection} />
+        <p className="min-w-0 flex-1 basis-56 text-sm text-muted">Videos come from this collection. Each collection keeps its own progress.</p>
+      </div>
+      <DayList progress={progress} />
+    </>
+  );
 }
 
 function DayList({ progress }: { progress: Record<number, string[]> | null }) {

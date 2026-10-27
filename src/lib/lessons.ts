@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { fetchLessonFromYouTube } from "./captions";
-import type { Lesson, Sentence } from "./lesson";
+import type { Lesson, LessonSummary, Sentence } from "./lesson";
 import { toLessonRow } from "./lesson-row";
 import { createAdminClient, createPublicClient } from "./supabase/admin";
 
@@ -15,6 +15,7 @@ interface LessonRow {
   duration_sec: number;
   sentences: Sentence[];
   has_translation: boolean;
+  summary: LessonSummary | null;
 }
 
 async function readStoredLesson(videoId: string): Promise<Lesson | null> {
@@ -22,7 +23,7 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("lessons")
-    .select("video_id, title, author, duration_sec, sentences, has_translation")
+    .select("video_id, title, author, duration_sec, sentences, has_translation, summary")
     .eq("video_id", videoId)
     .maybeSingle();
   if (error || !data) return null;
@@ -34,6 +35,7 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
     durationSec: row.duration_sec,
     sentences: row.sentences,
     hasTranslation: row.has_translation,
+    summary: row.summary ?? undefined,
   };
 }
 

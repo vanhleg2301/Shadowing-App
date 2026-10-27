@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { updateVideo } from "@/app/admin/actions";
+import { COLLECTIONS, isCollectionId, type CollectionId } from "@/data/collections";
 import { LEVELS, type Level } from "@/data/curated";
 import type { VideoRow } from "@/lib/catalog";
 
@@ -15,6 +16,7 @@ export function EditVideoForm({ video, topics }: EditVideoFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(video.title);
   const [level, setLevel] = useState(video.level as Level);
+  const [collection, setCollection] = useState<CollectionId>(isCollectionId(video.collection_id) ? video.collection_id : "sponge");
   const [topic, setTopic] = useState(video.topic);
   const [duration, setDuration] = useState(video.duration);
   const [channel, setChannel] = useState(video.channel);
@@ -26,7 +28,7 @@ export function EditVideoForm({ video, topics }: EditVideoFormProps) {
     event.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await updateVideo({ videoId: video.video_id, title, level, topic, duration, channel, isPublished });
+      const result = await updateVideo({ videoId: video.video_id, title, level, topic, collection, duration, channel, isPublished });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -45,6 +47,16 @@ export function EditVideoForm({ video, topics }: EditVideoFormProps) {
       <label className={labelClass}>
         Title
         <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} className={`${fieldClass} mt-1`} />
+      </label>
+      <label className={labelClass}>
+        Collection
+        <select value={collection} onChange={(e) => setCollection(e.target.value as CollectionId)} className={`${fieldClass} mt-1`}>
+          {COLLECTIONS.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className={labelClass}>

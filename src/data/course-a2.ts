@@ -2,7 +2,14 @@
 // Time goes mostly to output (shadowing, speaking prompts); input is short and targeted.
 // Content is written by hand, so the course costs nothing to run.
 
+import type { CollectionId } from "./collections";
+
 export const COURSE_ID = "speak-a2-7";
+
+// English Sponge keeps the original id so earlier progress still counts; other collections get their own.
+export function getCourseId(collection: CollectionId): string {
+  return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
+}
 
 export type BlockKind = "review" | "listen" | "phrases" | "shadow" | "dictation" | "speak" | "roleplay" | "quiz" | "extra";
 
@@ -273,8 +280,90 @@ export const COURSE_DAYS: CourseDay[] = [
 ];
 
 // Blocks are generated from the day's content so every day has the same rhythm.
-export function getBlocks(day: CourseDay): CourseBlock[] {
-  const [main, second, extra] = day.videos;
+// The same phrases, dialogues and quiz for every collection; only the videos change.
+const COLLECTION_DAY_VIDEOS: Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>> = {
+  bob: {
+    1: [
+      { id: "ovl9kM46r10", title: "How to Describe Yourself" },
+      { id: "amxeGGNwwzE", title: "English Greetings" },
+      { id: "2PHMBn4QeQo", title: "How to Describe Yourself, Part 2" },
+    ],
+    2: [
+      { id: "ecF1y2bI2T4", title: "How to Talk About Your Daily Routine" },
+      { id: "t78zZyF3Pq4", title: "Your Daily Routine, Part 2" },
+      { id: "yW-YeEc_ULg", title: "How to Describe a Day Off" },
+    ],
+    3: [
+      { id: "uUMPULuwdLI", title: "How to Order Food at a Restaurant" },
+      { id: "fx4Db7QD8yU", title: "English You Will Hear at a Restaurant" },
+      { id: "IINRthI72-A", title: "How to Order and Describe Food" },
+    ],
+    4: [
+      { id: "HQUW4T0w2zY", title: "At the Shopping Mall" },
+      { id: "DYpqs413zB8", title: "Money Phrases" },
+      { id: "Do9ikN_NqtE", title: "Clothing and How People Dress" },
+    ],
+    5: [
+      { id: "_UwT0tC5JTk", title: "Describing Location and Motion" },
+      { id: "SmSRH7kpdYA", title: "How to Describe Places" },
+      { id: "KLnH1HHzaho", title: "Talking About Towns and Cities" },
+    ],
+    6: [
+      { id: "tVhyq-PD8lk", title: "What to Do and Say When You Are Sick" },
+      { id: "cs5US0Tpi1A", title: "How to Describe Being Sick" },
+      { id: "oO4y4d-3Eus", title: "Injuries, Health Care and Medicine" },
+    ],
+    7: [
+      { id: "43xsHPFMMOU", title: "At the Airport" },
+      { id: "MYX7RVOf3Yc", title: "At a Hotel" },
+      { id: "9MkngoRI2Lk", title: "Travel and Tourism at Niagara Falls" },
+    ],
+  },
+  bbc: {
+    1: [
+      { id: "I_tRSrPru94", title: "How to Introduce Yourself" },
+      { id: "31y2Bq1RYQA", title: "Saying Where You're From" },
+      { id: "v9EU41cuhHY", title: "How to Describe Your Family" },
+    ],
+    2: [
+      { id: "bq6GBbh3uhU", title: "How to Talk About Your Daily Routine" },
+      { id: "sJ7sRSK2in4", title: "Talking About Routines" },
+      { id: "kTf0V4HyFtM", title: "What You Did Last Weekend" },
+    ],
+    3: [
+      { id: "bVRIpmjTSxM", title: "Talking About Restaurants" },
+      { id: "4C4wlOAscvY", title: "Talking About Food" },
+      { id: "BFJsSnEEGrI", title: "How Do You Take Your Coffee?" },
+    ],
+    4: [
+      { id: "2mnL9jPVzsk", title: "Clothes Shopping" },
+      { id: "E3G-dsvZHGU", title: "When Is It OK to Complain?" },
+      { id: "n0rrgJ4MGdY", title: "A Conversation About Hair" },
+    ],
+    5: [
+      { id: "SHXPpsIJTb0", title: "Asking for and Giving Directions" },
+      { id: "Fxi4uYmCrPo", title: "Talking About Public Transport" },
+      { id: "JgB6-RWnV9M", title: "Talking About Travel" },
+    ],
+    6: [
+      { id: "yLu_M4yiCho", title: "Talking About Sleep" },
+      { id: "R3oVOu-sxHE", title: "Talking About Exercise" },
+      { id: "qfQ61oYIbxY", title: "Are You in a Good or Bad Mood?" },
+    ],
+    7: [
+      { id: "0W6PymVdXVw", title: "Flying and Airports" },
+      { id: "KHimUkNBDiQ", title: "Favourite Famous Sites" },
+      { id: "S7mfygW40Cs", title: "Talking About Days Out" },
+    ],
+  },
+};
+
+export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDay["videos"] {
+  return collection === "sponge" ? day.videos : (COLLECTION_DAY_VIDEOS[collection][day.day] ?? day.videos);
+}
+
+export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
+  const [main, second, extra] = getDayVideos(day, collection);
   return [
     ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: review yesterday's phrases", minutes: 15 }] : []),
     { id: "listen-1", kind: "listen", title: `Listen first: ${main.title}`, minutes: 25, videoId: main.id },

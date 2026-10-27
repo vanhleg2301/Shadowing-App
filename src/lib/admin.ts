@@ -148,7 +148,7 @@ export async function getOverview(ctx: AdminContext) {
 export async function getAdminVideos(ctx: AdminContext): Promise<VideoRow[]> {
   const { data, error } = await ctx.admin
     .from("videos")
-    .select("video_id, title, level, topic, duration, channel, is_published, sort_order")
+    .select("video_id, title, level, topic, duration, channel, is_published, sort_order, collection_id")
     .order("sort_order", { ascending: true });
   if (!error && data && data.length > 0) return data as VideoRow[];
   return CURATED_VIDEOS.map((v, i) => ({

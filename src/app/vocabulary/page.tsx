@@ -3,6 +3,8 @@ import { AppShell } from "@/components/AppShell";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
 import { WordListView } from "@/components/WordListView";
+import { getCatalog, getVideoCollection } from "@/lib/catalog";
+import { getSelectedCollection } from "@/lib/collection";
 import { getSavedWords, MASTERED_INTERVAL_DAYS, type SavedWord } from "@/lib/user-data";
 
 export default function VocabularyPage() {
@@ -32,5 +34,13 @@ async function WordList() {
     return <p className="mt-8 text-muted">No saved words yet. Tap a word in any transcript, then press “Save word”.</p>;
   }
 
-  return <WordListView words={words} masteredInterval={MASTERED_INTERVAL_DAYS} />;
+  // Words saved from another collection's videos stay in Review but are hidden here; course phrases and
+  // words from pasted videos always show.
+  const [catalog, collection] = await Promise.all([getCatalog(), getSelectedCollection().catch(() => null)]);
+  const collectionOf = new Map(catalog.map((v) => [v.videoId, getVideoCollection(v)]));
+  const visible = words.filter((w) => {
+    const owner = w.videoId ? collectionOf.get(w.videoId) : undefined;
+    return !collection || !owner || owner === collection;
+  });
+  return <WordListView words={visible} masteredInterval={MASTERED_INTERVAL_DAYS} />;
 }

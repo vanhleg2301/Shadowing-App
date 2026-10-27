@@ -1,6 +1,8 @@
 // Everyday-English videos from the English Sponge channel (A1, A2 and B1 "Comprehensible Input" playlists),
 // grouped by daily-life topic. Entertainment episodes (anime, games, films) are left out.
 // The live catalog is the videos table (managed in /admin/videos); this list seeded it and is the fallback.
+import type { CollectionId } from "./collections";
+
 export const LEVELS = ["A1", "A2", "B1"] as const;
 
 export type Level = (typeof LEVELS)[number];
@@ -36,6 +38,8 @@ export interface CuratedVideo {
   topic: Topic;
   duration: string;
   channel?: string;
+  // Missing means English Sponge, the original collection.
+  collection?: CollectionId;
 }
 
 export const CHANNEL_NAME = "English Sponge";
