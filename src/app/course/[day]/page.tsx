@@ -6,7 +6,8 @@ import { CourseDayView } from "@/components/course/CourseDayView";
 import { ListSkeleton } from "@/components/Skeleton";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
-import { COURSE_DAYS, getBlocks, getCourseDay, getCourseId } from "@/data/course-a2";
+import { COURSE_DAYS } from "@/data/course-a2";
+import { getCourse } from "@/data/courses";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseProgress } from "@/lib/user-data";
@@ -30,13 +31,14 @@ export default function CourseDayPage({ params }: PageProps<"/course/[day]">) {
 }
 
 async function DayContent({ dayNumber }: { dayNumber: number }) {
-  const day = getCourseDay(dayNumber);
-  if (!day) notFound();
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
+  const course = getCourse(collection);
+  const day = course.days.find((d) => d.day === dayNumber);
+  if (!day) notFound();
   const counts = await getCollectionCounts();
-  const courseId = getCourseId(collection);
+  const courseId = course.getId(collection);
   const progress = await getCourseProgress(courseId).catch(() => null);
-  const blocks = getBlocks(day, collection);
+  const blocks = course.getBlocks(day, collection);
 
   return (
     <>
@@ -56,9 +58,10 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           day={day}
           courseId={courseId}
           blocks={blocks}
+          dialogue={course.dialogues[day.day]}
           initialDone={progress?.[day.day] ?? []}
           isSignedIn={progress !== null}
-          hasNextDay={day.day < COURSE_DAYS.length}
+          hasNextDay={day.day < course.days.length}
         />
       </div>
     </>

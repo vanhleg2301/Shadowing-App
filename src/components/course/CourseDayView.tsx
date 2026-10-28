@@ -9,7 +9,7 @@ import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
 import { StudyTimer } from "@/components/StudyTimer";
 import { Icon, type IconName } from "@/components/Icon";
 import { type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
-import { COURSE_DIALOGUES } from "@/data/course-a2-dialogues";
+import type { CourseDialogue } from "@/data/course-a2-dialogues";
 import { useAuth } from "@/hooks/useAuth";
 import { speak, type Accent } from "@/lib/speech";
 
@@ -17,6 +17,7 @@ interface CourseDayViewProps {
   day: CourseDay;
   courseId: string;
   blocks: CourseBlock[];
+  dialogue: CourseDialogue | undefined;
   initialDone: string[];
   isSignedIn: boolean;
   hasNextDay: boolean;
@@ -45,7 +46,7 @@ function blockHref(block: CourseBlock, day: number): string | null {
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-export function CourseDayView({ day, courseId, blocks, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
+export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(() => new Set(initialDone));
   const [recorded, setRecorded] = useState(() => new Set<number>());
@@ -104,7 +105,6 @@ export function CourseDayView({ day, courseId, blocks, initialDone, isSignedIn, 
     if (next.size === day.speakingPrompts.length && !done.has("speak")) toggleBlock("speak", true);
   };
 
-  const dialogue = COURSE_DIALOGUES[day.day];
   const markDone = (blockId: string) => {
     if (isSignedIn && !done.has(blockId)) toggleBlock(blockId, true);
   };

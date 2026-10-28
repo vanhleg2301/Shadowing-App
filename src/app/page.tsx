@@ -8,6 +8,7 @@ import { Icon } from "@/components/Icon";
 import { ListSkeleton } from "@/components/Skeleton";
 import { StreakCard } from "@/components/StreakCard";
 import { VideoLibrary } from "@/components/VideoLibrary";
+import { getCourse } from "@/data/courses";
 import type { CuratedVideo } from "@/data/curated";
 import { getCollectionCounts, getCollectionVideos } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
@@ -45,6 +46,7 @@ async function HomeContent() {
     );
   }
   const videos = await getCollectionVideos(collection);
+  const course = getCourse(collection);
 
   return (
     <>
@@ -62,9 +64,9 @@ async function HomeContent() {
             <Icon name="course" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-bold uppercase tracking-wide text-accent">7-day course · A2</span>
-            <span className="block font-bold text-ink">Speak A2 in 7 days</span>
-            <span className="block truncate text-sm text-muted">Already understand A2? Start speaking, 2–3 hours a day.</span>
+            <span className="block text-xs font-bold uppercase tracking-wide text-accent">7-day course · {course.level}</span>
+            <span className="block font-bold text-ink">{course.title}</span>
+            <span className="block truncate text-sm text-muted">{course.tagline}</span>
           </span>
           <Icon name="chevronRight" className="size-5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
         </Link>
