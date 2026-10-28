@@ -52,11 +52,15 @@ export type YouTubeLessonResult =
 // Captions often start with credits (TED) or sound tags like [Music], which are not speech.
 const NON_SPEECH_CUE = /^[[(][^\])]*[\])]$|\b(Transcriber|Translator|Reviewer):/;
 
+// YouTube sometimes holds a throttled connection open instead of answering.
+const FETCH_TIMEOUT_MS = 20_000;
+
 async function fetchPlayer(videoId: string): Promise<PlayerResponse> {
   const res = await fetch(PLAYER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ context: { client: CLIENT }, videoId }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`YouTube player request failed: ${res.status}`);
   return res.json();
@@ -64,7 +68,7 @@ async function fetchPlayer(videoId: string): Promise<PlayerResponse> {
 
 async function fetchJson3(track: CaptionTrack): Promise<Json3> {
   const url = `${track.baseUrl.replace(/&fmt=[^&]*/, "")}&fmt=json3`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`Caption request failed: ${res.status}`);
   return res.json();
 }

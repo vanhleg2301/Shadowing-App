@@ -13,6 +13,8 @@ import { createAdminClient } from "../src/lib/supabase/admin";
 // YouTube answers 429 after a few hundred quick caption requests, so stay gentle.
 const CONCURRENCY = 1;
 const PAUSE_MS = 6000;
+// Stop after this many 429s in a row: retrying only extends the block.
+const MAX_RATE_LIMITED_IN_A_ROW = 3;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -42,17 +44,24 @@ async function main() {
 
   const failures: string[] = [];
   let done = 0;
+  let rateLimitedInARow = 0;
   await Promise.all(
     Array.from({ length: CONCURRENCY }, async () => {
-      for (let video = queue.shift(); video; video = queue.shift()) {
+      for (let video = queue.shift(); video && rateLimitedInARow < MAX_RATE_LIMITED_IN_A_ROW; video = queue.shift()) {
         await sleep(PAUSE_MS);
         const result: YouTubeLessonResult = await fetchLessonFromYouTube(video.videoId).catch((e: unknown) => ({
           error: String(e),
         }));
         if (result.error !== undefined) {
           failures.push(`${video.videoId} ${video.title}: ${result.error}`);
+          console.log(`  failed: ${video.title} - ${result.error}`);
+          rateLimitedInARow = result.error.includes("429") ? rateLimitedInARow + 1 : 0;
+          if (rateLimitedInARow === MAX_RATE_LIMITED_IN_A_ROW) {
+            console.log(`YouTube is rate limiting (429 ${MAX_RATE_LIMITED_IN_A_ROW} times in a row). Stopping; try again in a few hours.`);
+          }
           continue;
         }
+        rateLimitedInARow = 0;
         const { error: upsertError } = await admin
           .from("lessons")
           .upsert({ ...toLessonRow(result.lesson, result.source), updated_at: new Date().toISOString() });
