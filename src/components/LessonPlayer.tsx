@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
 import { recordProgress, setSavedWord } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
@@ -25,8 +25,6 @@ const SPEEDS = [0.5, 0.75, 1, 1.25];
 const LOOKUP_TIMEOUT_MS = 20000;
 // Progress is saved at most this often while the learner moves through sentences.
 const PROGRESS_INTERVAL_MS = 10000;
-// After the learner scrolls the transcript themselves, auto-scroll waits this long before following again.
-const MANUAL_SCROLL_PAUSE_MS = 6000;
 
 const TEXT_SIZE_CLASS: Record<TextSize, string> = {
   sm: "text-[15px]",
@@ -88,7 +86,6 @@ export function LessonPlayer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
-  const manualScrollAtRef = useRef(0);
   const [lookup, setLookup] = useState<WordLookupState | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
 
@@ -121,18 +118,25 @@ export function LessonPlayer({
   }, [currentIndex, user, lesson.videoId, sentences.length]);
 
   useEffect(() => {
-    if (highlightIndex < 0 || !prefs.autoScroll) return;
-    if (Date.now() - manualScrollAtRef.current < MANUAL_SCROLL_PAUSE_MS) return;
+    if (highlightIndex < 0 || !prefs.autoScroll || isFollowPaused) return;
     rowRefs.current.get(highlightIndex)?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [highlightIndex, prefs.autoScroll]);
+  }, [highlightIndex, prefs.autoScroll, isFollowPaused]);
 
+  // Once the learner scrolls away, the transcript stays where they left it until they tap
+  // "Back to current sentence" or scroll the playing sentence back into view themselves.
   const handleManualScroll = () => {
-    manualScrollAtRef.current = Date.now();
-    if (prefs.autoScroll && !isFollowPaused) setIsFollowPaused(true);
+    if (!isFollowPaused) setIsFollowPaused(true);
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const row = rowRefs.current.get(highlightIndex);
+    if (!isFollowPaused || !row) return;
+    const view = event.currentTarget.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    if (box.top >= view.top && box.bottom <= view.bottom) setIsFollowPaused(false);
   };
 
   const jumpToCurrent = () => {
-    manualScrollAtRef.current = 0;
     setIsFollowPaused(false);
     rowRefs.current.get(Math.max(highlightIndex, 0))?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
@@ -332,8 +336,9 @@ export function LessonPlayer({
         </div>
       </header>
 
-      <div className="shrink-0 lg:px-6 lg:pt-6">
-        <div className="relative aspect-video w-full overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
+      {/* Listening comes first: on phones the video gets more of the screen than the transcript. */}
+      <div className="flex min-h-0 flex-[3] flex-col bg-black lg:flex-none lg:bg-transparent lg:px-6 lg:pt-6">
+        <div className="relative min-h-[56.25vw] w-full flex-1 overflow-hidden bg-black lg:aspect-video lg:min-h-0 lg:flex-none lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
           {lesson.media ? (
             <button
               type="button"
@@ -360,7 +365,8 @@ export function LessonPlayer({
       <div
         onWheel={handleManualScroll}
         onTouchMove={handleManualScroll}
-        className="relative min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
+        onScroll={handleScroll}
+        className="relative min-h-0 flex-[2] overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2">
           <div role="tablist" aria-label="Lesson panel" className="flex rounded-xl border border-line bg-surface p-0.5">
@@ -427,7 +433,7 @@ export function LessonPlayer({
               onWordClick={onWordClick}
             />
           ))}
-          {isFollowPaused && prefs.autoScroll && (
+          {isFollowPaused && (
             <button
               type="button"
               onClick={jumpToCurrent}
