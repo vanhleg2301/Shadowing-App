@@ -11,8 +11,8 @@ import { isHostedLesson } from "../src/lib/media";
 import { createAdminClient } from "../src/lib/supabase/admin";
 
 // YouTube answers 429 after a few hundred quick caption requests, so stay gentle.
-const CONCURRENCY = 2;
-const PAUSE_MS = 1500;
+const CONCURRENCY = 1;
+const PAUSE_MS = 6000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
