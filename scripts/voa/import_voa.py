@@ -295,7 +295,16 @@ def transcribe_words(audio_path: Path) -> list[tuple[str, float, float]]:
         from faster_whisper import WhisperModel
 
         _model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
-    segments, _ = _model.transcribe(str(audio_path), language="en", word_timestamps=True, beam_size=1)
+    # Decoded with ffmpeg rather than faster-whisper's PyAV path, which breaks on PyAV 15.
+    import numpy as np
+
+    pcm = subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-i", str(audio_path), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+        check=True,
+        capture_output=True,
+    ).stdout
+    audio = np.frombuffer(pcm, dtype=np.int16).astype(np.float32) / 32768.0
+    segments, _ = _model.transcribe(audio, language="en", word_timestamps=True, beam_size=1)
     words: list[tuple[str, float, float]] = []
     for segment in segments:
         for w in segment.words or []:
