@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { COURSE_DAYS, getBlocks, getCourseId } from "@/data/course-a2";
+import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseProgress } from "@/lib/user-data";
 
@@ -42,11 +43,12 @@ export default function CoursePage() {
 
 async function DayListWithProgress() {
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
+  const counts = await getCollectionCounts();
   const progress = await getCourseProgress(getCourseId(collection)).catch(() => null);
   return (
     <>
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <CollectionSwitcher current={collection} />
+        <CollectionSwitcher current={collection} counts={counts} />
         <p className="min-w-0 flex-1 basis-56 text-sm text-muted">Videos come from this collection. Each collection keeps its own progress.</p>
       </div>
       <DayList progress={progress} />

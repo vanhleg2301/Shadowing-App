@@ -9,7 +9,7 @@ import { ListSkeleton } from "@/components/Skeleton";
 import { StreakCard } from "@/components/StreakCard";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import type { CuratedVideo } from "@/data/curated";
-import { getCollectionVideos } from "@/lib/catalog";
+import { getCollectionCounts, getCollectionVideos } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getLibraryUserState, getStreak } from "@/lib/user-data";
 
@@ -29,6 +29,7 @@ export default function HomePage() {
 
 async function HomeContent() {
   const collection = await getSelectedCollection().catch(() => null);
+  const counts = await getCollectionCounts();
   if (!collection) {
     return (
       <section className="animate-fade-up">
@@ -38,7 +39,7 @@ async function HomeContent() {
           Pick a video collection. Slow is easier to follow; natural speed trains you for real conversations.
         </p>
         <div className="mt-5">
-          <CollectionPicker current={null} />
+          <CollectionPicker current={null} counts={counts} />
         </div>
       </section>
     );
@@ -52,7 +53,7 @@ async function HomeContent() {
       </Suspense>
 
       <div className="mt-4 flex flex-wrap items-stretch gap-3">
-        <CollectionSwitcher current={collection} />
+        <CollectionSwitcher current={collection} counts={counts} />
         <Link
           href="/course"
           className="group flex min-w-0 flex-1 basis-72 items-center gap-4 rounded-3xl border border-brand/25 bg-gradient-to-r from-brand-soft to-surface p-4 transition-transform active:translate-y-0.5"

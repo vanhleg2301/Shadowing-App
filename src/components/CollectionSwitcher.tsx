@@ -5,12 +5,14 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { CollectionPicker } from "@/components/CollectionPicker";
 import { Icon } from "@/components/Icon";
 import { getCollection, type CollectionId } from "@/data/collections";
+import type { CollectionCounts } from "@/lib/catalog";
 
 interface CollectionSwitcherProps {
   current: CollectionId;
+  counts: CollectionCounts;
 }
 
-export function CollectionSwitcher({ current }: CollectionSwitcherProps) {
+export function CollectionSwitcher({ current, counts }: CollectionSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const collection = getCollection(current);
 
@@ -30,7 +32,7 @@ export function CollectionSwitcher({ current }: CollectionSwitcherProps) {
       </button>
       {isOpen && (
         <BottomSheet title="Choose your videos" onClose={() => setIsOpen(false)}>
-          <CollectionPicker current={current} onDone={() => setIsOpen(false)} isStacked />
+          <CollectionPicker current={current} counts={counts} onDone={() => setIsOpen(false)} isStacked />
         </BottomSheet>
       )}
     </>

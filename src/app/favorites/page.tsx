@@ -5,7 +5,7 @@ import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
 import { VideoCard } from "@/components/VideoCard";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
-import { getCatalog, getVideoCollection } from "@/lib/catalog";
+import { getCatalog, getCollectionCounts, getVideoCollection } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getFavorites, type FavoriteVideo } from "@/lib/user-data";
 
@@ -31,7 +31,11 @@ async function FavoritesList() {
     return <p className="mt-8 text-red-600">Couldn&apos;t load your favorites. Please try again later.</p>;
   }
 
-  const [catalog, collection] = await Promise.all([getCatalog(), getSelectedCollection().catch(() => null)]);
+  const [catalog, collection, counts] = await Promise.all([
+    getCatalog(),
+    getSelectedCollection().catch(() => null),
+    getCollectionCounts(),
+  ]);
   if (!favorites) return <SignInPrompt message="Sign in to keep your favorite videos in one place." />;
   // Favorites from other collections are kept but hidden; pasted videos (not in any collection) always show.
   const visible = favorites.filter((f) => {
@@ -53,7 +57,7 @@ async function FavoritesList() {
     <>
       {collection && (
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <CollectionSwitcher current={collection} />
+          <CollectionSwitcher current={collection} counts={counts} />
           <span className="text-sm text-muted">
             {visible.length} of {favorites.length} favorites
           </span>

@@ -7,6 +7,7 @@ import { ListSkeleton } from "@/components/Skeleton";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { COURSE_DAYS, getBlocks, getCourseDay, getCourseId } from "@/data/course-a2";
+import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseProgress } from "@/lib/user-data";
 
@@ -32,6 +33,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
   const day = getCourseDay(dayNumber);
   if (!day) notFound();
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
+  const counts = await getCollectionCounts();
   const courseId = getCourseId(collection);
   const progress = await getCourseProgress(courseId).catch(() => null);
   const blocks = getBlocks(day, collection);
@@ -42,7 +44,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
         <Link href="/course" className="text-sm font-semibold text-brand">
           ← All 7 days
         </Link>
-        <CollectionSwitcher current={collection} />
+        <CollectionSwitcher current={collection} counts={counts} />
       </div>
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-accent">Day {day.day} of 7</p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">{day.title}</h1>

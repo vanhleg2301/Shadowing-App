@@ -68,3 +68,14 @@ export async function getCollectionVideos(collection: CollectionId): Promise<Cur
   const catalog = await getCatalog();
   return catalog.filter((v) => getVideoCollection(v) === collection);
 }
+
+export type CollectionCounts = Partial<Record<CollectionId, number>>;
+
+export async function getCollectionCounts(): Promise<CollectionCounts> {
+  const counts: CollectionCounts = {};
+  for (const video of await getCatalog()) {
+    const id = getVideoCollection(video);
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}

@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { selectCollection } from "@/app/actions";
 import { COLLECTIONS, type Collection, type CollectionId } from "@/data/collections";
+import type { CollectionCounts } from "@/lib/catalog";
 import { speak } from "@/lib/speech";
 
 interface CollectionPickerProps {
   current: CollectionId | null;
+  counts: CollectionCounts;
   onDone?: () => void;
   // Inside a bottom sheet the cards stack in one column.
   isStacked?: boolean;
@@ -20,7 +22,7 @@ const SAMPLE_RATE: Record<Collection["speed"], number> = { slow: 0.7, medium: 0.
 const SAMPLE = "Hi! Today I'm going to tell you about my morning. I get up at seven and have a coffee.";
 
 // Choose the video collection by speaking speed; the library, favorites and the course follow it.
-export function CollectionPicker({ current, onDone, isStacked = false }: CollectionPickerProps) {
+export function CollectionPicker({ current, counts, onDone, isStacked = false }: CollectionPickerProps) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<CollectionId | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function CollectionPicker({ current, onDone, isStacked = false }: Collect
                 ))}
               </span>
               {SPEED_TITLE[speed]}
+              <span className="font-semibold text-muted">· {formatVideoCount(sumBySpeed(counts, speed))}</span>
             </h3>
             <ul className="space-y-3">
               {COLLECTIONS.filter((c) => c.speed === speed).map((c) => {
@@ -69,7 +72,7 @@ export function CollectionPicker({ current, onDone, isStacked = false }: Collect
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-xs font-bold uppercase tracking-wide text-accent">
-                          {c.levels} · {c.channel}
+                          {c.levels} · {formatVideoCount(counts[c.id] ?? 0)}
                         </span>
                       </div>
                       <p className="mt-2 text-lg font-extrabold text-ink">{c.name}</p>
@@ -106,4 +109,12 @@ export function CollectionPicker({ current, onDone, isStacked = false }: Collect
       </p>
     </div>
   );
+}
+
+function sumBySpeed(counts: CollectionCounts, speed: Collection["speed"]): number {
+  return COLLECTIONS.filter((c) => c.speed === speed).reduce((total, c) => total + (counts[c.id] ?? 0), 0);
+}
+
+function formatVideoCount(count: number): string {
+  return `${count} ${count === 1 ? "video" : "videos"}`;
 }
