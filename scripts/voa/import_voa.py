@@ -45,6 +45,8 @@ MIN_AUDIO_COVERAGE = 0.5
 MIN_SENTENCE_MATCH = 0.5
 MIN_SENTENCES = 8
 MAX_SENTENCE_SEC = 15.0
+# Learners shadow short pieces; anything longer than 10 minutes is left out.
+MAX_LESSON_SEC = 600
 START_PAD_S = 0.12
 END_PAD_S = 0.25
 
@@ -473,6 +475,9 @@ def import_article(article: Article, program: Program, db: Supabase | None, work
         return None
     audio_path = work / f"{article.article_id}.mp3"
     duration = prepare_audio(article.media_url, audio_path)
+    if duration > MAX_LESSON_SEC:
+        log(f"  {video_id}: {format_duration(duration)} is longer than {MAX_LESSON_SEC // 60} minutes, skipped")
+        return None
     heard = transcribe_words(audio_path)
     timed, coverage = align(sentences, heard)
     lesson_sentences = to_lesson_sentences(timed, duration)
