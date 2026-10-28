@@ -63,6 +63,11 @@ PROGRAMS: dict[str, Program] = {
     "everyday-grammar": Program(["Everyday Grammar"], "B1", "Everyday Words"),
     "health-lifestyle": Program(["Health & Lifestyle", "Health and Lifestyle"], "B1", "Health"),
     "words-and-their-stories": Program(["Words & Their Stories", "Words and Their Stories"], "B1", "Everyday Words"),
+    "american-stories": Program(["American Stories"], "B1", "Free Time"),
+    "arts-culture": Program(["Arts & Culture", "Arts and Culture"], "B1", "Free Time"),
+    "science-technology": Program(["Science & Technology", "Science and Technology"], "B1", "Everyday Words"),
+    "as-it-is": Program(["As It Is"], "B1", "Everyday Words"),
+    "ask-a-teacher": Program(["Ask a Teacher"], "B1", "Everyday Words"),
 }
 
 TOPIC_KEYWORDS: list[tuple[str, str]] = [
