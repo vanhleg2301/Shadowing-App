@@ -41,6 +41,8 @@ export interface CuratedVideo {
   channel?: string;
   // Missing means English Sponge, the original collection.
   collection?: CollectionId;
+  // false when the transcript isn't stored yet: the video opens in listen-and-note mode.
+  hasTranscript?: boolean;
 }
 
 export const CHANNEL_NAME = "English Sponge";

@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LessonPlayer } from "@/components/LessonPlayer";
+import { ListenNotesPlayer } from "@/components/ListenNotesPlayer";
 import { LessonSkeleton } from "@/components/Skeleton";
+import { getCatalogVideo } from "@/lib/catalog";
+import { NO_SUBTITLES_ERROR } from "@/lib/captions";
 import { getLesson, type LessonResult } from "@/lib/lessons";
-import { getLessonUserState } from "@/lib/user-data";
+import { getLessonUserState, getVideoNotes } from "@/lib/user-data";
 import { isValidVideoId } from "@/lib/youtube-url";
 
 const MODES = ["watch", "shadow", "dictation", "cloze"] as const;
@@ -41,6 +44,13 @@ export default function WatchPage({ params, searchParams }: PageProps<"/watch/[v
 async function LessonLoader({ videoId, options }: { videoId: string; options: LessonOptions }) {
   if (!isValidVideoId(videoId)) notFound();
 
+  // Catalog videos without a stored transcript skip getLesson: the server can't fetch YouTube captions,
+  // and a cached failure would outlive the transcript being stored later.
+  const catalogVideo = await getCatalogVideo(videoId).catch(() => undefined);
+  if (catalogVideo?.hasTranscript === false) {
+    return <NotesLoader videoId={videoId} title={catalogVideo.title} backHref={options.backHref} />;
+  }
+
   const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [], lastSentence: 0 }));
   let result: LessonResult;
   try {
@@ -49,6 +59,9 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
     result = { error: "Couldn't load this lesson. Please try again later." };
   }
 
+  if (result.error === NO_SUBTITLES_ERROR) {
+    return <NotesLoader videoId={videoId} title="YouTube video" backHref={options.backHref} />;
+  }
   if (result.error !== undefined) {
     return (
       <div className="grid h-dvh place-items-center px-6 text-center">
@@ -74,4 +87,9 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
       backHref={options.backHref}
     />
   );
+}
+
+async function NotesLoader({ videoId, title, backHref }: { videoId: string; title: string; backHref: string }) {
+  const notes = await getVideoNotes(videoId).catch(() => null);
+  return <ListenNotesPlayer videoId={videoId} title={title} initialNotes={notes} backHref={backHref} />;
 }

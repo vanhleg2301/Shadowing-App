@@ -43,6 +43,8 @@ interface Cue {
   text: string;
 }
 
+export const NO_SUBTITLES_ERROR = "This video has no English subtitles yet";
+
 export type CaptionSource = "human" | "asr";
 
 export type YouTubeLessonResult =
@@ -199,7 +201,7 @@ export async function fetchLessonFromYouTube(videoId: string): Promise<YouTubeLe
   const english =
     tracks.find((t) => t.languageCode.startsWith("en") && t.kind !== "asr") ??
     tracks.find((t) => t.languageCode.startsWith("en"));
-  if (!english) return { error: "This video has no English subtitles yet" };
+  if (!english) return { error: NO_SUBTITLES_ERROR };
 
   const sentences =
     english.kind === "asr" ? await fetchAsrSentences(english) : mergeIntoSentences(await fetchCues(english));

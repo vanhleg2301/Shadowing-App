@@ -170,6 +170,35 @@ export async function setCourseBlockDone(input: z.input<typeof CourseBlockSchema
   return { ok: true };
 }
 
+const VideoNoteSchema = z.object({ videoId, atSec: z.number().min(0).max(86400), text: z.string().trim().min(1).max(500) });
+
+export async function addVideoNote(
+  input: z.input<typeof VideoNoteSchema>,
+): Promise<{ ok: true; id: string } | { ok: false; error: "signed-out" | "invalid" | "failed" }> {
+  const parsed = VideoNoteSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+
+  const { videoId: id, atSec, text } = parsed.data;
+  const { data, error } = await ctx.supabase
+    .from("video_notes")
+    .insert({ user_id: ctx.user.id, video_id: id, at_sec: Math.round(atSec * 10) / 10, text })
+    .select("id")
+    .single();
+  if (error || !data) return { ok: false, error: "failed" };
+  return { ok: true, id: (data as { id: string }).id };
+}
+
+export async function deleteVideoNote(input: { id: string }): Promise<ActionResult> {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { error } = await ctx.supabase.from("video_notes").delete().eq("id", parsed.data.id);
+  return error ? { ok: false, error: "failed" } : { ok: true };
+}
+
 const PhraseListSchema = z.object({
   phrases: z.array(z.object({ text: z.string().min(1).max(60), meaning: z.string().max(200), example: z.string().max(300) })).max(30),
 });

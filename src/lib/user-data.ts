@@ -263,6 +263,25 @@ export async function getLessonUserState(videoId: string): Promise<LessonUserSta
   };
 }
 
+export interface VideoNote {
+  id: string;
+  atSec: number;
+  text: string;
+}
+
+// The learner's notes on a video, in video order. null when signed out (notes then stay on the device).
+export async function getVideoNotes(videoId: string): Promise<VideoNote[] | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { data, error } = await ctx.supabase
+    .from("video_notes")
+    .select("id, at_sec, text")
+    .eq("video_id", videoId)
+    .order("at_sec", { ascending: true });
+  if (error) return [];
+  return ((data ?? []) as { id: string; at_sec: number; text: string }[]).map((n) => ({ id: n.id, atSec: Number(n.at_sec), text: n.text }));
+}
+
 // Finished blocks per day for a course, e.g. { 1: ["listen-1", "phrases"] }. null when signed out.
 export async function getCourseProgress(courseId: string): Promise<Record<number, string[]> | null> {
   const ctx = await getUserContext();
