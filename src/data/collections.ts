@@ -2,7 +2,7 @@
 // favorites, progress and the 7-day course all follow that choice.
 import type { CuratedVideo } from "./curated";
 
-export const COLLECTION_IDS = ["sponge", "voa", "bob", "super-easy", "bbc", "easy-street"] as const;
+export const COLLECTION_IDS = ["sponge", "voa", "bob", "super-easy", "bbc", "easy-street", "studio-c"] as const;
 export type CollectionId = (typeof COLLECTION_IDS)[number];
 export const DEFAULT_COLLECTION: CollectionId = "sponge";
 
@@ -70,6 +70,15 @@ export const COLLECTIONS: Collection[] = [
     speedLabel: "Natural",
     levels: "A2–B1",
     description: "Real people in the UK answering everyday questions on the street, at natural speed, from Easy English.",
+  },
+  {
+    id: "studio-c",
+    name: "Studio C",
+    channel: "Studio C",
+    speed: "natural",
+    speedLabel: "Natural",
+    levels: "B1",
+    description: "Short comedy sketches from BYUtv: fast, funny American English with jokes, wordplay and everyday slang.",
   },
 ];
 
