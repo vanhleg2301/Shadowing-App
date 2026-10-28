@@ -17,9 +17,15 @@ const CONCURRENCY = 1;
 const PAUSE_MS = 6000;
 // Stop after this many 429s in a row: retrying only extends the block.
 const MAX_RATE_LIMITED_IN_A_ROW = 3;
+// Longer videos are skipped, unless a 7-day course uses them.
+const MAX_DURATION_SEC = 600;
 // YouTube only allows a few dozen fetches per run, so the 7-day course videos go first, BBC's first of all,
 // then the rest of BBC, then everything else.
 const PRIORITY_COLLECTION: CollectionId = "bbc";
+
+function toSeconds(duration: string | null): number {
+  return (duration ?? "").split(":").reduce((total, part) => total * 60 + (Number(part) || 0), 0);
+}
 
 function getCourseVideoIds(collection: CollectionId): Set<string> {
   return new Set(COURSE_DAYS.flatMap((day) => getDayVideos(day, collection).map((v) => v.id)));
@@ -41,19 +47,21 @@ async function main() {
   const hasTimings = (r: (typeof rows)[number]) => r.sentences?.some((s) => s.wordStarts && s.wordStarts.length > 0) ?? false;
   const stored = new Set(rows.filter((r) => !isKaraoke || hasTimings(r)).map((r) => r.video_id));
   const isForce = process.argv.includes("--force");
-  const { data: videoRows, error: videosError } = await admin.from("videos").select("video_id, title, collection_id");
+  const allCourses = new Set(COLLECTION_IDS.flatMap((c) => [...getCourseVideoIds(c)]));
+  const { data: videoRows, error: videosError } = await admin.from("videos").select("video_id, title, collection_id, duration");
   const catalog =
     !videosError && videoRows && videoRows.length > 0
-      ? (videoRows as { video_id: string; title: string; collection_id: string | null }[]).map((v) => ({
-          videoId: v.video_id,
-          title: v.title,
-          collection: v.collection_id,
-        }))
+      ? (videoRows as { video_id: string; title: string; collection_id: string | null; duration: string | null }[])
+          .filter((v) => toSeconds(v.duration) <= MAX_DURATION_SEC || allCourses.has(v.video_id))
+          .map((v) => ({
+            videoId: v.video_id,
+            title: v.title,
+            collection: v.collection_id,
+          }))
       : CURATED_VIDEOS;
   // Hosted-audio lessons come from scripts/voa/import_voa.py, not YouTube.
   const queue = catalog.filter((v) => !isHostedLesson(v.videoId) && (isForce || !stored.has(v.videoId)));
   const priorityCourse = getCourseVideoIds(PRIORITY_COLLECTION);
-  const allCourses = new Set(COLLECTION_IDS.flatMap((c) => [...getCourseVideoIds(c)]));
   const getRank = (v: (typeof queue)[number]) =>
     priorityCourse.has(v.videoId) ? 0 : allCourses.has(v.videoId) ? 1 : v.collection === PRIORITY_COLLECTION ? 2 : 3;
   queue.sort((a, b) => getRank(a) - getRank(b));
