@@ -281,8 +281,45 @@ export const COURSE_DAYS: CourseDay[] = [
 
 // Blocks are generated from the day's content so every day has the same rhythm.
 // The same phrases, dialogues and quiz for every collection; only the videos change.
-// Collections without their own picks (VOA, whose lessons are imported later) use the English Sponge videos.
+// Collections without their own picks use the English Sponge videos.
 const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>>> = {
+  voa: {
+    1: [
+      { id: "voa-3113733", title: "Hello, I'm Anna!" },
+      { id: "voa-3355849", title: "Where Are You From?" },
+      { id: "voa-3301733", title: "Meet My Family" },
+    ],
+    2: [
+      { id: "voa-3355785", title: "Are You Free on Friday?" },
+      { id: "voa-3406732", title: "Can You Come to the Party?" },
+      { id: "voa-3357748", title: "She Always Does That" },
+    ],
+    3: [
+      { id: "voa-3413753", title: "What Do You Want?" },
+      { id: "voa-3723588", title: "May I Borrow That?" },
+      { id: "voa-3522798", title: "Rolling on the River" },
+    ],
+    4: [
+      { id: "voa-3323771", title: "How About This?" },
+      { id: "voa-3571922", title: "Let's Make Dinner!" },
+      { id: "voa-3737352", title: "How Can I Help?" },
+    ],
+    5: [
+      { id: "voa-3225958", title: "Where Is the Gym?" },
+      { id: "voa-3285228", title: "Come Over to My Place" },
+      { id: "voa-3293986", title: "This Is My Neighborhood" },
+    ],
+    6: [
+      { id: "voa-3457316", title: "I Can't Come In" },
+      { id: "voa-3688552", title: "Making Healthy Choices" },
+      { id: "voa-3261789", title: "Is It Cold?" },
+    ],
+    7: [
+      { id: "voa-4035571", title: "Greatest Vacation of All Time" },
+      { id: "voa-4079037", title: "Visit to Peru" },
+      { id: "voa-4064769", title: "Tip Your Tour Guide" },
+    ],
+  },
   "super-easy": {
     1: [
       { id: "W7mkL-Oz8nI", title: "How Native Speakers Greet Each Other" },
