@@ -20,6 +20,8 @@ interface Question {
 
 const QUESTION_COUNT = 10;
 const PASS_SCORE = 8;
+// Shorter quizzes (the Gentle plan has 8 phrases) also allow two mistakes.
+const getPassScore = (count: number) => Math.min(PASS_SCORE, count - 2);
 const BLANK = "_____";
 
 // Seeded shuffle so the server and the browser render the same quiz.
@@ -71,7 +73,7 @@ export function PhraseQuiz({ phrases, seed, onPass }: PhraseQuizProps) {
     const next = index + 1;
     setPicked(null);
     setIndex(next);
-    if (next >= questions.length && score >= PASS_SCORE) onPass();
+    if (next >= questions.length && score >= getPassScore(questions.length)) onPass();
   };
 
   const handleRestart = () => {
@@ -81,14 +83,14 @@ export function PhraseQuiz({ phrases, seed, onPass }: PhraseQuizProps) {
   };
 
   if (isFinished) {
-    const hasPassed = score >= PASS_SCORE;
+    const hasPassed = score >= getPassScore(questions.length);
     return (
       <div className="rounded-2xl border border-line bg-cream p-5 text-center">
         <p className="text-3xl font-extrabold text-ink">
           {score}/{questions.length}
         </p>
         <p className={`mt-1 font-semibold ${hasPassed ? "text-brand" : "text-muted"}`}>
-          {hasPassed ? "Great job! Quiz block done." : `You need ${PASS_SCORE} to pass. Look at the phrases again and retry.`}
+          {hasPassed ? "Great job! Quiz block done." : `You need ${getPassScore(questions.length)} to pass. Look at the phrases again and retry.`}
         </p>
         <button type="button" onClick={handleRestart} className="btn-3d mt-4 px-4 py-2 text-sm">
           <Icon name="repeat" className="size-4" />

@@ -51,6 +51,8 @@ interface LessonPlayerProps {
   // Course "listen first" blocks hide the transcript for this visit without changing the saved preference.
   isListenFirst?: boolean;
   backHref?: string;
+  // Course links can open the lesson slower (the Gentle plan uses 0.75x).
+  initialRate?: number;
 }
 
 export function LessonPlayer({
@@ -61,6 +63,7 @@ export function LessonPlayer({
   initialMode = "watch",
   isListenFirst = false,
   backHref = "/",
+  initialRate = 1,
 }: LessonPlayerProps) {
   const { user } = useAuth();
   const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
@@ -79,7 +82,7 @@ export function LessonPlayer({
   const lastProgressAtRef = useRef(0);
   // In dictation and cloze the transcript stays hidden until the learner has answered that sentence.
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(initialRate);
   const { prefs, updatePrefs } = useLessonPrefs();
   const showTranslation = lesson.hasTranslation && prefs.showTranslation;
   const [isSessionListenFirst, setIsSessionListenFirst] = useState(isListenFirst);
@@ -101,6 +104,12 @@ export function LessonPlayer({
       seekTo(sentences[loopIndex].start);
     }
   }, [currentTime, loopIndex, sentences, seekTo]);
+
+  useEffect(() => {
+    if (initialRate !== 1) setRate(initialRate);
+    // Only on open; the speed button changes it afterwards.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isPlaying) hasInteractedRef.current = true;

@@ -17,7 +17,10 @@ interface LessonOptions {
   mode: StartMode;
   isListenFirst: boolean;
   backHref: string;
+  playbackRate: number;
 }
+
+const RATES = [0.5, 0.75, 1, 1.25];
 
 // Course links open a lesson in a given mode (?mode=shadow, ?listen=1) and return to the course day (?from=course-3).
 function parseOptions(sp: Record<string, string | string[] | undefined>): LessonOptions {
@@ -28,6 +31,7 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
     mode: (MODES as readonly string[]).includes(mode ?? "") ? (mode as StartMode) : "watch",
     isListenFirst: first(sp.listen) === "1",
     backHref: courseDay ? `/course/${courseDay}` : "/",
+    playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
   };
 }
 
@@ -85,6 +89,7 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
       initialMode={options.mode}
       isListenFirst={options.isListenFirst}
       backHref={options.backHref}
+      initialRate={options.playbackRate}
     />
   );
 }

@@ -4,10 +4,12 @@ import { AppShell } from "@/components/AppShell";
 import { Icon } from "@/components/Icon";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
-import { getCourse, type Course } from "@/data/courses";
+import { CoursePlanSwitch } from "@/components/course/CoursePlanSwitch";
+import { getCourse, hasGentlePlan, type Course } from "@/data/courses";
 import type { CollectionId } from "@/data/collections";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
+import { getCourseMode } from "@/lib/course-mode";
 import { getCourseProgress } from "@/lib/user-data";
 
 export default function CoursePage() {
@@ -47,7 +49,8 @@ function CourseHeader({ course }: { course: Course }) {
 
 async function CourseWithProgress() {
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
-  const course = getCourse(collection);
+  const mode = await getCourseMode();
+  const course = getCourse(collection, mode);
   const counts = await getCollectionCounts();
   const progress = await getCourseProgress(course.getId(collection)).catch(() => null);
   return (
@@ -57,6 +60,7 @@ async function CourseWithProgress() {
         <CollectionSwitcher current={collection} counts={counts} />
         <p className="min-w-0 flex-1 basis-56 text-sm text-muted">Videos come from this collection. Each collection keeps its own progress.</p>
       </div>
+      {hasGentlePlan(collection) && <CoursePlanSwitch current={mode} />}
       <DayList course={course} collection={collection} progress={progress} />
     </>
   );

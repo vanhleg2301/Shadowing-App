@@ -13,6 +13,7 @@ import { getCourse } from "@/data/courses";
 import type { CuratedVideo } from "@/data/curated";
 import { getCollectionCounts, getCollectionVideos } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
+import { getCourseMode } from "@/lib/course-mode";
 import { getLibraryUserState, getStreak } from "@/lib/user-data";
 
 export default function HomePage() {
@@ -47,7 +48,8 @@ async function HomeContent() {
     );
   }
   const videos = await getCollectionVideos(collection);
-  const course = getCourse(collection);
+  const mode = await getCourseMode();
+  const course = getCourse(collection, mode);
 
   return (
     <>
@@ -55,7 +57,7 @@ async function HomeContent() {
         <StreakSection />
       </Suspense>
       <Suspense fallback={null}>
-        <TodayPlan collection={collection} />
+        <TodayPlan collection={collection} mode={mode} />
       </Suspense>
 
       {/* One row on phones: the collection on the left, the course on the right. */}

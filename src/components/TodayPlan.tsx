@@ -3,6 +3,7 @@ import { Icon, type IconName } from "@/components/Icon";
 import type { CollectionId } from "@/data/collections";
 import { getCourse } from "@/data/courses";
 import { getNewsVideos } from "@/lib/catalog";
+import type { CourseMode } from "@/lib/course-mode";
 import { getCourseProgress, getDueWords } from "@/lib/user-data";
 
 interface Task {
@@ -15,8 +16,8 @@ interface Task {
 
 // "Today": the next step of the 7-day course, the words due for review and a fresh news story,
 // so a signed-in learner can start without browsing. Renders nothing when signed out.
-export async function TodayPlan({ collection }: { collection: CollectionId }) {
-  const course = getCourse(collection);
+export async function TodayPlan({ collection, mode }: { collection: CollectionId; mode: CourseMode }) {
+  const course = getCourse(collection, mode);
   const [progress, due, news] = await Promise.all([
     getCourseProgress(course.getId(collection)).catch(() => null),
     getDueWords(1).catch(() => null),

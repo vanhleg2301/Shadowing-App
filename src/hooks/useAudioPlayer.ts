@@ -12,6 +12,7 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(startSeconds);
+  const rateRef = useRef(1);
   const segmentRef = useRef<{ timer: ReturnType<typeof setInterval>; resolve: () => void } | null>(null);
 
   useEffect(() => {
@@ -19,6 +20,8 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
     const audio = new Audio();
     audio.preload = "metadata";
     audio.src = src;
+    audio.defaultPlaybackRate = rateRef.current;
+    audio.playbackRate = rateRef.current;
     audioRef.current = audio;
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
@@ -100,6 +103,7 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
     [endSegment],
   );
   const setRate = useCallback((rate: number) => {
+    rateRef.current = rate;
     if (audioRef.current) audioRef.current.playbackRate = rate;
   }, []);
 

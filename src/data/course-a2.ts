@@ -493,3 +493,22 @@ export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): 
 export function getCourseDay(dayNumber: number): CourseDay | undefined {
   return COURSE_DAYS.find((d) => d.day === dayNumber);
 }
+
+// "Gentle" plan for A1 learners moving up to A2: the same days with fewer, shorter steps (about 60–75 minutes),
+// slower playback and example answers to copy. Block ids match the full plan, so progress carries over.
+export const GENTLE_PHRASE_COUNT = 8;
+export const GENTLE_PROMPT_COUNT = 3;
+export const GENTLE_PLAYBACK_RATE = 0.75;
+
+export function getGentleBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
+  const [main, second] = getDayVideos(day, collection);
+  return [
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: review yesterday's phrases", minutes: 10 }] : []),
+    { id: "listen-1", kind: "listen", title: `Listen first: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: `Learn ${GENTLE_PHRASE_COUNT} key phrases`, minutes: 15 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 20, videoId: main.id },
+    { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} questions, copy the example first`, minutes: 10 },
+    { id: "quiz", kind: "quiz", title: "Quiz: check the key phrases", minutes: 5 },
+    { id: "extra", kind: "extra", title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true },
+  ];
+}

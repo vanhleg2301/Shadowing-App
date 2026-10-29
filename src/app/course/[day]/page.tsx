@@ -10,6 +10,7 @@ import { COURSE_DAYS } from "@/data/course-a2";
 import { getCourse } from "@/data/courses";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
+import { getCourseMode } from "@/lib/course-mode";
 import { getCourseProgress } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -32,7 +33,8 @@ export default function CourseDayPage({ params }: PageProps<"/course/[day]">) {
 
 async function DayContent({ dayNumber }: { dayNumber: number }) {
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
-  const course = getCourse(collection);
+  const mode = await getCourseMode();
+  const course = getCourse(collection, mode);
   const day = course.days.find((d) => d.day === dayNumber);
   if (!day) notFound();
   const counts = await getCollectionCounts();
@@ -62,6 +64,10 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           initialDone={progress?.[day.day] ?? []}
           isSignedIn={progress !== null}
           hasNextDay={day.day < course.days.length}
+          phraseCount={course.phraseCount}
+          promptCount={course.promptCount}
+          playbackRate={course.playbackRate}
+          sampleAnswers={course.sampleAnswers?.[day.day]}
         />
       </div>
     </>

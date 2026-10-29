@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { COLLECTION_IDS } from "@/data/collections";
 import { COLLECTION_COOKIE } from "@/lib/collection";
+import { COURSE_MODE_COOKIE } from "@/lib/course-mode";
 import { schedule } from "@/lib/srs";
 import { recordSignInEvent } from "@/lib/sign-in-log";
 import { getLocalToday, getTimeZone } from "@/lib/study-day";
@@ -314,6 +315,18 @@ export async function selectCollection(input: z.input<typeof CollectionSchema>):
       updated_at: new Date().toISOString(),
     });
   }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+const CourseModeSchema = z.object({ mode: z.enum(["full", "gentle"]) });
+
+// The A2 course plan (full or Gentle), remembered on this device.
+export async function setCourseMode(input: z.input<typeof CourseModeSchema>): Promise<ActionResult> {
+  const parsed = CourseModeSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const cookieStore = await cookies();
+  cookieStore.set(COURSE_MODE_COOKIE, parsed.data.mode, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   revalidatePath("/", "layout");
   return { ok: true };
 }

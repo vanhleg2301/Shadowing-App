@@ -21,6 +21,11 @@ interface CourseDayViewProps {
   initialDone: string[];
   isSignedIn: boolean;
   hasNextDay: boolean;
+  // The Gentle plan shows fewer phrases and questions and opens videos slower.
+  phraseCount?: number;
+  promptCount?: number;
+  playbackRate?: number;
+  sampleAnswers?: string[];
 }
 
 const KIND_ICON: Record<BlockKind, IconName> = {
@@ -37,8 +42,8 @@ const KIND_ICON: Record<BlockKind, IconName> = {
 
 const ACCENTS: Accent[] = ["uk", "us"];
 
-function blockHref(block: CourseBlock, day: number): string | null {
-  const from = `from=course-${day}`;
+function blockHref(block: CourseBlock, day: number, playbackRate?: number): string | null {
+  const from = `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
   if (block.kind === "review") return "/review";
   if (!block.videoId) return null;
   if (block.kind === "listen") return `/watch/${block.videoId}?mode=watch&listen=1&${from}`;
@@ -78,7 +83,24 @@ function DaySection({ id, title, hint, isDone, isOpen, onToggle, children }: Day
   );
 }
 
-export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
+export function CourseDayView({
+  day: fullDay,
+  courseId,
+  blocks,
+  dialogue,
+  initialDone,
+  isSignedIn,
+  hasNextDay,
+  phraseCount,
+  promptCount,
+  playbackRate,
+  sampleAnswers,
+}: CourseDayViewProps) {
+  const day: CourseDay = {
+    ...fullDay,
+    phrases: phraseCount ? fullDay.phrases.slice(0, phraseCount) : fullDay.phrases,
+    speakingPrompts: promptCount ? fullDay.speakingPrompts.slice(0, promptCount) : fullDay.speakingPrompts,
+  };
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(() => new Set(initialDone));
   const [recorded, setRecorded] = useState(() => new Set<number>());
@@ -169,7 +191,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
         <ol className="mt-4 space-y-2">
           {blocks.map((block) => {
             const isDone = done.has(block.id);
-            const href = blockHref(block, day.day);
+            const href = blockHref(block, day.day, playbackRate);
             const section = SECTION_IDS.includes(block.kind) ? (block.kind as SectionId) : null;
             return (
               <li
@@ -294,7 +316,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
       >
         <ol lang="en" className="space-y-3">
           {day.speakingPrompts.map((prompt, i) => (
-            <SpeakingPrompt key={prompt} index={i} prompt={prompt} onRecorded={() => handleRecorded(i)} />
+            <SpeakingPrompt key={prompt} index={i} prompt={prompt} sampleAnswer={sampleAnswers?.[i]} onRecorded={() => handleRecorded(i)} />
           ))}
         </ol>
         <p className="mt-3 text-sm text-muted">
@@ -319,7 +341,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
       <DaySection
         id="quiz"
         title="Quiz"
-        hint="10 quick questions on today's phrases. Get 8 right to finish the day."
+        hint={`${Math.min(day.phrases.length, 10)} quick questions on today's phrases. Get all but two right to finish the day.`}
         isDone={done.has("quiz")}
         isOpen={openSection === "quiz"}
         onToggle={() => toggleSection("quiz")}
@@ -327,7 +349,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
         <PhraseQuiz phrases={day.phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
       </DaySection>
 
-      {nextBlock && <NextStepButton block={nextBlock} day={day.day} onGoToSection={goToSection} />}
+      {nextBlock && <NextStepButton block={nextBlock} day={day.day} playbackRate={playbackRate} onGoToSection={goToSection} />}
     </div>
   );
 }
@@ -335,12 +357,13 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
 interface NextStepButtonProps {
   block: CourseBlock;
   day: number;
+  playbackRate?: number;
   onGoToSection: (id: SectionId) => void;
 }
 
 // The next unfinished activity is always one tap away, just above the phone's bottom navigation.
-function NextStepButton({ block, day, onGoToSection }: NextStepButtonProps) {
-  const href = blockHref(block, day);
+function NextStepButton({ block, day, playbackRate, onGoToSection }: NextStepButtonProps) {
+  const href = blockHref(block, day, playbackRate);
   const className =
     "btn-3d btn-brand fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 flex items-center gap-2 px-4 py-3 text-left md:hidden";
   const content = (
