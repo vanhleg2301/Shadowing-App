@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { TimeZoneSync } from "@/components/TimeZoneSync";
 import { getPaletteCss } from "@/data/palettes";
 import { getPalette } from "@/lib/app-settings";
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {children}
         <TimeZoneSync />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

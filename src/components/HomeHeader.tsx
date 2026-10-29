@@ -20,6 +20,7 @@ const PROFILE_LINKS: { href: string; label: string; icon: IconName }[] = [
   { href: "/review", label: "Review", icon: "repeat" },
   { href: "/vocabulary", label: "My words", icon: "book" },
   { href: "/favorites", label: "Favorites", icon: "heart" },
+  { href: "/offline", label: "Offline lessons", icon: "news" },
   { href: "/account", label: "Account", icon: "user" },
 ];
 

@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
   { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isDesktopOnly: true },
+  { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isDesktopOnly: true },
 ];
 
 interface AppShellProps {
