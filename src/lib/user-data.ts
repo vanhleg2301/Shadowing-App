@@ -24,6 +24,7 @@ interface FavoriteRow {
 }
 
 interface SavedWordRow {
+  id: string;
   word: string;
   sentence: string;
   video_id: string | null;
@@ -53,15 +54,27 @@ export async function getFavorites(): Promise<FavoriteVideo[] | null> {
   return ((data ?? []) as FavoriteRow[]).map((r) => ({ videoId: r.video_id, title: r.title, createdAt: r.created_at }));
 }
 
+const SAVED_WORDS_BATCH = 1000;
+
+// Every saved word, newest first. Supabase returns at most 1000 rows per request, so the list is read in
+// keyset batches: each one continues after the (created_at, id) of the previous batch's last row.
 export async function getSavedWords(): Promise<SavedWord[] | null> {
   const ctx = await getUserContext();
   if (!ctx) return null;
-  const { data, error } = await ctx.supabase
-    .from("saved_words")
-    .select("word, sentence, video_id, entry, created_at, interval_days")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as SavedWordRow[]).map((r) => ({
+  const rows: SavedWordRow[] = [];
+  for (;;) {
+    const last = rows.at(-1);
+    let request = ctx.supabase.from("saved_words").select("id, word, sentence, video_id, entry, created_at, interval_days");
+    if (last) request = request.or(`created_at.lt.${last.created_at},and(created_at.eq.${last.created_at},id.lt.${last.id})`);
+    const { data, error } = await request
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(SAVED_WORDS_BATCH);
+    if (error) throw error;
+    rows.push(...((data ?? []) as SavedWordRow[]));
+    if (!data || data.length < SAVED_WORDS_BATCH) break;
+  }
+  return rows.map((r) => ({
     word: r.word,
     sentence: r.sentence,
     videoId: r.video_id,

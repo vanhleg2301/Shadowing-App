@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { AdminPagination, AdminSearchBox } from "@/components/admin/AdminListControls";
+import { AdminKeysetNav, AdminSearchBox } from "@/components/admin/AdminListControls";
 import { SignInList, type SignInEventRow } from "@/components/admin/SignInList";
-import { ADMIN_PAGE_SIZE, parsePage, parseQuery, requireAdmin, type AdminContext } from "@/lib/admin";
+import { ADMIN_PAGE_SIZE, parseQuery, requireAdmin, type AdminContext } from "@/lib/admin";
+import { parseKeysetCursor, toKeysetPage, type KeysetCursor } from "@/lib/keyset";
 
 const EVENTS = [
   { value: "", label: "All" },
@@ -17,7 +18,7 @@ export default function AdminSignInsPage({ searchParams }: PageProps<"/admin/sig
     <AdminLayout active="/admin/sign-ins" title="Sign-ins">
       {searchParams.then((sp) => {
         const event = typeof sp.event === "string" && EVENTS.some((e) => e.value === sp.event) ? sp.event : "";
-        return <SignInLog page={parsePage(sp.page)} query={parseQuery(sp.q)} event={event} />;
+        return <SignInLog cursor={parseKeysetCursor(sp)} query={parseQuery(sp.q)} event={event} />;
       })}
     </AdminLayout>
   );
@@ -39,23 +40,23 @@ async function getStats(ctx: AdminContext) {
   ];
 }
 
-async function SignInLog({ page, query, event }: { page: number; query: string; event: string }) {
+async function SignInLog({ cursor, query, event }: { cursor: KeysetCursor; query: string; event: string }) {
   const ctx = await requireAdmin();
   if (!ctx) notFound();
 
-  let request = ctx.admin
-    .from("sign_in_events")
-    .select("id, user_id, email, event, device, country, detail, created_at", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * ADMIN_PAGE_SIZE, page * ADMIN_PAGE_SIZE - 1);
+  let request = ctx.admin.from("sign_in_events").select("id, user_id, email, event, device, country, detail, created_at");
   if (event) request = request.eq("event", event);
   if (query) request = request.ilike("email", `%${query.replace(/[%_]/g, "")}%`);
-  const [{ data, count, error }, stats] = await Promise.all([request, getStats(ctx)]);
+  if (cursor.after !== null) request = request.gt("id", cursor.after);
+  else if (cursor.before !== null) request = request.lt("id", cursor.before);
+  const [{ data, error }, stats] = await Promise.all([
+    request.order("id", { ascending: cursor.after !== null }).limit(ADMIN_PAGE_SIZE + 1),
+    getStats(ctx),
+  ]);
   if (error) return <p className="mt-8 text-red-600">Couldn&apos;t load sign-ins: {error.message}</p>;
 
-  const rows = (data ?? []) as SignInEventRow[];
-  const total = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  const { rows, olderThan, newerThan } = toKeysetPage((data ?? []) as SignInEventRow[], cursor, ADMIN_PAGE_SIZE);
+  const keptParams: Record<string, string> = { ...(query ? { q: query } : {}), ...(event ? { event } : {}) };
   const filterHref = (value: string) => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
@@ -92,7 +93,7 @@ async function SignInLog({ page, query, event }: { page: number; query: string; 
           </Link>
         ))}
       </div>
-      <AdminPagination basePath="/admin/sign-ins" page={page} totalPages={totalPages} total={total} query={query} filters={event ? { event } : {}} />
+      <AdminKeysetNav basePath="/admin/sign-ins" olderThan={olderThan} newerThan={newerThan} params={keptParams} />
       <SignInList rows={rows} />
     </div>
   );

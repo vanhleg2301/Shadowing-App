@@ -72,3 +72,44 @@ export function AdminPagination({ basePath, page, totalPages, total, query, filt
     </div>
   );
 }
+
+interface KeysetNavProps {
+  basePath: string;
+  olderThan: number | null;
+  newerThan: number | null;
+  // Search and filters to keep when paging, e.g. { q: "gmail", event: "sign_in" }.
+  params?: Record<string, string>;
+}
+
+// Newest / Newer / Older paging for logs (src/lib/keyset.ts); no page numbers, so no row count is needed.
+export function AdminKeysetNav({ basePath, olderThan, newerThan, params = {} }: KeysetNavProps) {
+  const hrefFor = (cursor: Record<string, string>) => {
+    const search = new URLSearchParams({ ...params, ...cursor }).toString();
+    return search ? `${basePath}?${search}` : basePath;
+  };
+  const linkClass = "btn-3d px-3 py-1.5 text-sm";
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
+      {newerThan !== null && (
+        <Link href={hrefFor({})} className={linkClass}>
+          Newest
+        </Link>
+      )}
+      {newerThan !== null ? (
+        <Link href={hrefFor({ after: String(newerThan) })} className={linkClass}>
+          ← Newer
+        </Link>
+      ) : (
+        <span className={`${linkClass} opacity-40`}>← Newer</span>
+      )}
+      {olderThan !== null ? (
+        <Link href={hrefFor({ before: String(olderThan) })} className={linkClass}>
+          Older →
+        </Link>
+      ) : (
+        <span className={`${linkClass} opacity-40`}>Older →</span>
+      )}
+    </div>
+  );
+}

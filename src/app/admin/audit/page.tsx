@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
-import { AdminPagination } from "@/components/admin/AdminListControls";
-import { ADMIN_PAGE_SIZE, parsePage, requireAdmin } from "@/lib/admin";
+import { AdminKeysetNav } from "@/components/admin/AdminListControls";
+import { ADMIN_PAGE_SIZE, requireAdmin } from "@/lib/admin";
+import { parseKeysetCursor, toKeysetPage, type KeysetCursor } from "@/lib/keyset";
 
 export default function AdminAuditPage({ searchParams }: PageProps<"/admin/audit">) {
   return (
     <AdminLayout active="/admin/audit" title="Activity log">
       {searchParams.then((sp) => (
-        <AuditLog page={parsePage(sp.page)} />
+        <AuditLog cursor={parseKeysetCursor(sp)} />
       ))}
     </AdminLayout>
   );
@@ -22,24 +23,21 @@ interface AuditRow {
   created_at: string;
 }
 
-async function AuditLog({ page }: { page: number }) {
+async function AuditLog({ cursor }: { cursor: KeysetCursor }) {
   const ctx = await requireAdmin();
   if (!ctx) notFound();
-  const { data, count, error } = await ctx.admin
-    .from("admin_audit")
-    .select("id, admin_email, action, target, details, created_at", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * ADMIN_PAGE_SIZE, page * ADMIN_PAGE_SIZE - 1);
+  let request = ctx.admin.from("admin_audit").select("id, admin_email, action, target, details, created_at");
+  if (cursor.after !== null) request = request.gt("id", cursor.after);
+  else if (cursor.before !== null) request = request.lt("id", cursor.before);
+  const { data, error } = await request.order("id", { ascending: cursor.after !== null }).limit(ADMIN_PAGE_SIZE + 1);
   if (error) return <p className="mt-8 text-red-600">Couldn&apos;t load the log: {error.message}</p>;
 
-  const rows = (data ?? []) as AuditRow[];
-  const total = count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  const { rows, olderThan, newerThan } = toKeysetPage((data ?? []) as AuditRow[], cursor, ADMIN_PAGE_SIZE);
 
   return (
     <div className="mt-8 space-y-4">
       <p className="text-sm text-muted">Every change made in the admin panel, newest first.</p>
-      <AdminPagination basePath="/admin/audit" page={page} totalPages={totalPages} total={total} query="" />
+      <AdminKeysetNav basePath="/admin/audit" olderThan={olderThan} newerThan={newerThan} />
       <ul className="divide-y divide-line rounded-3xl border border-line bg-surface">
         {rows.map((r) => (
           <li key={r.id} className="flex flex-col gap-1 px-4 py-3 text-sm md:flex-row md:items-center md:gap-4">
