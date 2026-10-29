@@ -17,6 +17,7 @@ function greetingFor(hour: number): string {
 }
 
 const PROFILE_LINKS: { href: string; label: string; icon: IconName }[] = [
+  { href: "/search", label: "Search phrases", icon: "search" },
   { href: "/review", label: "Review", icon: "repeat" },
   { href: "/vocabulary", label: "My words", icon: "book" },
   { href: "/favorites", label: "Favorites", icon: "heart" },

@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
+  { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isDesktopOnly: true },
   { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isDesktopOnly: true },
   { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isDesktopOnly: true },
 ];

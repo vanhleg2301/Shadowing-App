@@ -20,6 +20,8 @@ interface LessonOptions {
   backHref: string;
   playbackRate: number;
   part: number | null;
+  // Opens at this sentence (from phrase search) instead of where the learner left off.
+  sentence: number | null;
   // The query to keep when moving between parts (mode, course day, speed).
   query: string;
 }
@@ -37,8 +39,9 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
     backHref: courseDay ? `/course/${courseDay}` : "/",
     playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
     part: Number(first(sp.part)) || null,
+    sentence: /^\d{1,5}$/.test(first(sp.s) ?? "") ? Number(first(sp.s)) : null,
     query: new URLSearchParams(
-      Object.entries(sp).flatMap(([key, value]) => (key === "part" || value === undefined ? [] : [[key, first(value) ?? ""]])),
+      Object.entries(sp).flatMap(([key, value]) => (key === "part" || key === "s" || value === undefined ? [] : [[key, first(value) ?? ""]])),
     ).toString(),
   };
 }
@@ -96,7 +99,7 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   }
 
   const userState = await userStatePromise;
-  const lastSentence = Math.min(userState.lastSentence, result.lesson.sentences.length - 1);
+  const lastSentence = Math.min(options.sentence ?? userState.lastSentence, result.lesson.sentences.length - 1);
   // Long videos open in parts of about 5 minutes; without ?part= the learner resumes in the part they were in.
   const cut = getLessonPart(result.lesson, options.part ?? getPartForSentence(result.lesson, lastSentence));
   const lesson = cut?.lesson ?? result.lesson;
