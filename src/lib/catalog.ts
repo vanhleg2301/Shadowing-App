@@ -4,6 +4,7 @@ import { CURATED_VIDEOS, LEVELS, type CuratedVideo, type Level } from "@/data/cu
 import { createPublicClient } from "./supabase/admin";
 
 export const VIDEOS_TAG = "videos";
+const CATALOG_PAGE = 1000;
 
 export interface VideoRow {
   video_id: string;
@@ -53,14 +54,40 @@ export async function getCatalog(): Promise<CuratedVideo[]> {
 
   const supabase = createPublicClient();
   if (!supabase) return BUNDLED_VIDEOS;
+  // The server can't fetch transcripts (YouTube blocks cloud IPs), so videos that scripts/seed-lessons.ts
+  // hasn't stored yet open in listen-and-note mode instead. The catalog_videos view (migration 016)
+  // says which ones in the same query.
+  // Supabase returns at most 1000 rows per request, so the list is read in pages.
+  const rows: (VideoRow & { has_transcript: boolean })[] = [];
+  let viewError = false;
+  for (let from = 0; ; from += CATALOG_PAGE) {
+    const { data, error } = await supabase
+      .from("catalog_videos")
+      .select("video_id, title, level, topic, duration, channel, sort_order, collection_id, category, published_at, has_transcript")
+      .order("sort_order", { ascending: true })
+      .order("video_id", { ascending: true })
+      .range(from, from + CATALOG_PAGE - 1);
+    if (error || !data) {
+      viewError = true;
+      break;
+    }
+    rows.push(...(data as (VideoRow & { has_transcript: boolean })[]));
+    if (data.length < CATALOG_PAGE) break;
+  }
+  if (!viewError && rows.length > 0) {
+    return rows.map((row) => ({
+      ...toCatalogVideo(row),
+      ...(row.has_transcript ? {} : { hasTranscript: false }),
+    }));
+  }
+
+  // Without the view: the videos table, plus every stored lesson id.
   const { data, error } = await supabase
     .from("videos")
     .select("video_id, title, level, topic, duration, channel, is_published, sort_order, collection_id, category, published_at")
     .eq("is_published", true)
     .order("sort_order", { ascending: true });
   if (error || !data || data.length === 0) return BUNDLED_VIDEOS;
-  // The server can't fetch transcripts (YouTube blocks cloud IPs), so videos that scripts/seed-lessons.ts
-  // hasn't stored yet open in listen-and-note mode instead.
   const { data: lessonRows, error: lessonsError } = await supabase.from("lessons").select("video_id");
   const stored = new Set(((lessonRows ?? []) as { video_id: string }[]).map((r) => r.video_id));
   return (data as VideoRow[]).map((row) => ({
