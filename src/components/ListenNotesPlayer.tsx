@@ -10,6 +10,8 @@ import { VideoFacade } from "@/components/VideoFacade";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import type { TimePart } from "@/lib/lesson-parts";
 import type { VideoNote } from "@/lib/user-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { getLessonTrail } from "@/lib/lesson-trail";
 
 interface ListenNotesPlayerProps {
   videoId: string;
@@ -144,6 +146,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref, part
           <Icon name="back" className="size-5" />
         </Link>
         <div className="min-w-0 flex-1">
+          <Breadcrumbs items={getLessonTrail(backHref)} className="hidden lg:block" />
           <h1 className="truncate font-bold text-ink">{title}</h1>
           <p className="truncate text-sm text-muted">
             {part ? `Part ${part.index} of ${part.total} · ` : ""}No subtitles yet · listen and take notes

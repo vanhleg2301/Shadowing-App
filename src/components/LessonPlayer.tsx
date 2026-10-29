@@ -24,6 +24,8 @@ import { useWordLookup } from "@/hooks/useWordLookup";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
 import type { LessonPart } from "@/lib/lesson-parts";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { getLessonTrail } from "@/lib/lesson-trail";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 // Progress is saved at most this often while the learner moves through sentences.
@@ -316,6 +318,8 @@ export function LessonPlayer({
           <Icon name="back" />
         </Link>
         <div className="min-w-0 flex-1">
+          {/* Desktop only: on phones the back button is enough and the video keeps the space. */}
+          <Breadcrumbs items={getLessonTrail(backHref)} className="hidden lg:block" />
           <h1 className="truncate font-bold text-ink">{lesson.title}</h1>
           <p className="truncate text-sm text-muted">{part ? `Part ${part.index} of ${part.total} · ${lesson.author}` : lesson.author}</p>
         </div>
