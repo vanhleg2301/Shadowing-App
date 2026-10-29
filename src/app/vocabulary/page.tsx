@@ -42,5 +42,6 @@ async function WordList() {
     const owner = w.videoId ? collectionOf.get(w.videoId) : undefined;
     return !collection || !owner || owner === collection;
   });
-  return <WordListView words={visible} masteredInterval={MASTERED_INTERVAL_DAYS} />;
+  const lessonTitles = Object.fromEntries(catalog.map((v) => [v.videoId, v.title]));
+  return <WordListView words={visible} masteredInterval={MASTERED_INTERVAL_DAYS} lessonTitles={lessonTitles} />;
 }
