@@ -60,7 +60,17 @@ async function CourseWithProgress() {
         <CollectionSwitcher current={collection} counts={counts} />
         <p className="min-w-0 flex-1 basis-56 text-sm text-muted">Videos come from this collection. Each collection keeps its own progress.</p>
       </div>
-      {hasGentlePlan(collection) && <CoursePlanSwitch current={mode} />}
+      {hasGentlePlan(collection) ? (
+        <CoursePlanSwitch current={mode} />
+      ) : (
+        <p className="mt-4 rounded-2xl border border-line bg-cream px-4 py-3 text-sm text-muted">
+          This course is for B1 learners at natural speed. Starting from A1 or A2?{" "}
+          <Link href="/course/level-check" className="font-semibold text-brand">
+            Take the 2-minute level check
+          </Link>{" "}
+          to switch to the Gentle plan with slower videos.
+        </p>
+      )}
       <DayList course={course} collection={collection} progress={progress} />
     </>
   );
