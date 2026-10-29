@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { SavedWordCard } from "@/components/SavedWordCard";
+import { ShowMore } from "@/components/ShowMore";
 import type { SavedWord } from "@/lib/user-data";
 
 interface WordListViewProps {
@@ -96,11 +97,11 @@ export function WordListView({ words, masteredInterval }: WordListViewProps) {
       {visible.length === 0 ? (
         <p className="mt-4 text-muted">No words match.</p>
       ) : (
-        <ul className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ShowMore as="ul" resetKey={`${filter}-${query}`} className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((w) => (
             <SavedWordCard key={w.word} item={w} />
           ))}
-        </ul>
+        </ShowMore>
       )}
     </>
   );

@@ -1,8 +1,6 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { PageNav } from "@/components/PageNav";
 import { getThumbnailUrl } from "@/lib/media";
 
 export interface NewsStory {
@@ -16,32 +14,41 @@ export interface NewsStory {
 
 interface NewsListProps {
   stories: NewsStory[];
+  categories: string[];
+  category: string | null;
+  page: number;
+  totalPages: number;
 }
 
-export function NewsList({ stories }: NewsListProps) {
-  const categories = [...new Set(stories.map((s) => s.category))];
-  const [category, setCategory] = useState<string | null>(null);
-  const visible = category ? stories.filter((s) => s.category === category) : stories;
-  const [lead, ...rest] = visible;
+export function newsHref(category: string | null, page = 1): string {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (page > 1) params.set("page", String(page));
+  const search = params.toString();
+  return search ? `/news?${search}` : "/news";
+}
+
+// One page of stories; the category and page live in the URL.
+export function NewsList({ stories, categories, category, page, totalPages }: NewsListProps) {
+  const [lead, ...rest] = stories;
 
   return (
     <>
       <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
         {[null, ...categories].map((c) => (
-          <button
+          <Link
             key={c ?? "all"}
-            type="button"
-            onClick={() => setCategory(c)}
+            href={newsHref(c)}
             className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
               category === c ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink"
             }`}
           >
             {c ?? "All"}
-          </button>
+          </Link>
         ))}
       </div>
 
-      {lead && (
+      {lead && page === 1 ? (
         <Link href={`/news/${lead.videoId}`} className="group mt-5 block overflow-hidden rounded-3xl border border-line bg-surface">
           <div className="relative aspect-video bg-cream">
             <Image src={getThumbnailUrl(lead.videoId)} alt="" fill priority sizes="(min-width: 768px) 60vw, 100vw" className="object-cover" />
@@ -51,10 +58,10 @@ export function NewsList({ stories }: NewsListProps) {
             <p className="mt-1 text-xl font-extrabold leading-snug text-ink group-hover:text-brand">{lead.title}</p>
           </div>
         </Link>
-      )}
+      ) : null}
 
       <ul className="mt-4 grid gap-3 md:grid-cols-2">
-        {rest.map((story) => (
+        {(page === 1 ? rest : stories).map((story) => (
           <li key={story.videoId}>
             <Link href={`/news/${story.videoId}`} className="group flex gap-3 rounded-2xl border border-line bg-surface p-2.5">
               <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-xl bg-cream">
@@ -68,6 +75,8 @@ export function NewsList({ stories }: NewsListProps) {
           </li>
         ))}
       </ul>
+
+      <PageNav page={page} totalPages={totalPages} hrefFor={(p) => newsHref(category, p)} />
     </>
   );
 }

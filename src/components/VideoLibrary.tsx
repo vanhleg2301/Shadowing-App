@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { ScrollRow } from "@/components/ScrollRow";
+import { ShowMore } from "@/components/ShowMore";
 import { LEVEL_DOT, VideoCard } from "@/components/VideoCard";
 import { LEVEL_STORAGE_KEY } from "@/data/placement";
 import { LEVELS, orderTopics, type CuratedVideo, type Level, type Topic } from "@/data/curated";
@@ -188,11 +189,11 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
       {gridVideos ? (
         <section className="mt-6">
           <h2 className="text-2xl font-extrabold text-ink">{needle ? `Results for “${query.trim()}”` : topic}</h2>
-          <div key={`${topic}-${level}-${needle}`} className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <ShowMore resetKey={`${topic}-${level}-${needle}`} className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {gridVideos.map((video) => (
               <div key={video.videoId}>{card(video)}</div>
             ))}
-          </div>
+          </ShowMore>
           {gridVideos.length === 0 && <p className="mt-6 text-muted">No videos found. Try another word or level.</p>}
         </section>
       ) : (
