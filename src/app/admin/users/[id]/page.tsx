@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SignInList, type SignInEventRow } from "@/components/admin/SignInList";
 import { deleteUserFavorite, deleteUserWord, resetUserProgress } from "@/app/admin/actions";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
@@ -41,7 +42,7 @@ async function UserDetails({ id }: { id: string }) {
   const { data, error } = await ctx.admin.auth.admin.getUserById(id);
   if (error || !data.user) notFound();
 
-  const [words, favorites, progress, days] = await Promise.all([
+  const [words, favorites, progress, days, signIns] = await Promise.all([
     ctx.admin.from("saved_words").select("word, sentence, reps, due_at").eq("user_id", id).order("created_at", { ascending: false }),
     ctx.admin.from("favorites").select("video_id, title").eq("user_id", id).order("created_at", { ascending: false }),
     ctx.admin
@@ -50,6 +51,12 @@ async function UserDetails({ id }: { id: string }) {
       .eq("user_id", id)
       .order("updated_at", { ascending: false }),
     ctx.admin.from("study_days").select("day", { count: "exact", head: true }).eq("user_id", id),
+    ctx.admin
+      .from("sign_in_events")
+      .select("id, user_id, email, event, device, country, detail, created_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
   const wordRows = (words.data ?? []) as WordRow[];
   const favoriteRows = (favorites.data ?? []) as FavoriteRow[];
@@ -77,6 +84,11 @@ async function UserDetails({ id }: { id: string }) {
           {wordRows.length} saved words · {favoriteRows.length} favorites · {progressRows.length} lessons started ·{" "}
           {days.count ?? 0} study days
         </p>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-bold text-ink">Recent sign-ins</h2>
+        <SignInList rows={(signIns.data ?? []) as SignInEventRow[]} showEmail={false} />
       </section>
 
       <section className="rounded-3xl border border-line bg-surface p-5">

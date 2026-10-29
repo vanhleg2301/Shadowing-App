@@ -34,11 +34,13 @@ interface PaginationProps {
   totalPages: number;
   total: number;
   query: string;
+  // Other filters to keep when paging, e.g. { event: "sign_in" }.
+  filters?: Record<string, string>;
 }
 
-export function AdminPagination({ basePath, page, totalPages, total, query }: PaginationProps) {
+export function AdminPagination({ basePath, page, totalPages, total, query, filters = {} }: PaginationProps) {
   const hrefFor = (p: number) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(filters);
     if (query) params.set("q", query);
     if (p > 1) params.set("page", String(p));
     const search = params.toString();

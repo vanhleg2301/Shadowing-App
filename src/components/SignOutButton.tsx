@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { recordSignOut } from "@/app/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -27,9 +28,10 @@ export function SignOutButton({ className, ariaLabel, title, children }: SignOut
           message="Your progress, saved words and favorites stay in your account. Sign in again any time to continue."
           confirmLabel="Sign out"
           tone="danger"
-          onConfirm={() => {
+          onConfirm={async () => {
             setIsAsking(false);
-            signOut();
+            await recordSignOut().catch(() => undefined);
+            await signOut();
           }}
           onCancel={() => setIsAsking(false)}
         />

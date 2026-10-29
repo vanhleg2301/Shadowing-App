@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { COLLECTION_IDS } from "@/data/collections";
 import { COLLECTION_COOKIE } from "@/lib/collection";
 import { schedule } from "@/lib/srs";
+import { recordSignInEvent } from "@/lib/sign-in-log";
 import { getLocalToday, getTimeZone } from "@/lib/study-day";
 import { getUserContext } from "@/lib/user-data";
 
@@ -315,4 +316,11 @@ export async function selectCollection(input: z.input<typeof CollectionSchema>):
   }
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+// Called just before the browser ends the session, so the sign-out shows in Admin -> Sign-ins.
+export async function recordSignOut(): Promise<void> {
+  const ctx = await getUserContext();
+  if (!ctx) return;
+  await recordSignInEvent({ event: "sign_out", userId: ctx.user.id, email: ctx.user.email, headers: await headers() });
 }
