@@ -9,6 +9,7 @@ const TABS = [
   { href: "/admin/videos", label: "Videos" },
   { href: "/admin/lessons", label: "Transcripts" },
   { href: "/admin/audit", label: "Activity" },
+  { href: "/admin/theme", label: "Theme" },
 ];
 
 interface AdminLayoutProps {

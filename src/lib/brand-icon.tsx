@@ -1,10 +1,8 @@
 import { ImageResponse } from "next/og";
 
-const BRAND = "#1f6f62";
-
-// App icon: white microphone on the brand teal. `padding` leaves a safe zone for maskable icons,
-// which Android crops into a circle. Inline styles are required by ImageResponse.
-export function renderBrandIcon(size: number, { padding = 0, rounded = true } = {}) {
+// App icon: white microphone on the palette's icon colour (Admin -> Theme). `padding` leaves a safe zone
+// for maskable icons, which Android crops into a circle. Inline styles are required by ImageResponse.
+export function renderBrandIcon(size: number, color: string, { padding = 0, rounded = true } = {}) {
   const inner = size - padding * 2;
   return new ImageResponse(
     (
@@ -15,7 +13,7 @@ export function renderBrandIcon(size: number, { padding = 0, rounded = true } = 
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: padding > 0 || !rounded ? BRAND : "transparent",
+          background: padding > 0 || !rounded ? color : "transparent",
         }}
       >
         <div
@@ -25,7 +23,7 @@ export function renderBrandIcon(size: number, { padding = 0, rounded = true } = 
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: BRAND,
+            background: color,
             borderRadius: rounded && padding === 0 ? inner * 0.22 : 0,
           }}
         >

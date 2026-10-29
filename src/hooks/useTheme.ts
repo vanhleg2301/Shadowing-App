@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_COLORS, THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme";
+import { THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
@@ -18,7 +18,9 @@ function applyTheme(preference: ThemePreference) {
   const isDark = preference === "dark" || (preference === "system" && window.matchMedia(DARK_QUERY).matches);
   const theme = isDark ? "dark" : "light";
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[theme]);
+  // The background comes from the palette chosen in Admin -> Theme.
+  const background = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (background) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
 }
 
 export function useTheme() {

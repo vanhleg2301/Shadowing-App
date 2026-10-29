@@ -1,8 +1,9 @@
+import { getPalette } from "@/lib/app-settings";
 import { renderBrandIcon } from "@/lib/brand-icon";
 
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
-export default function Icon() {
-  return renderBrandIcon(size.width);
+export default async function Icon() {
+  return renderBrandIcon(size.width, (await getPalette()).icon);
 }

@@ -3,6 +3,8 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { COLLECTION_IDS } from "@/data/collections";
+import { PALETTE_IDS } from "@/data/palettes";
+import { APP_SETTINGS_TAG } from "@/lib/app-settings";
 import { requireAdmin, type AdminContext } from "@/lib/admin";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { fetchLessonFromYouTube } from "@/lib/captions";
@@ -237,6 +239,17 @@ export async function deleteVideo(input: { videoId: string }) {
     if (error) return { ok: false, error: error.message };
     updateTag(VIDEOS_TAG);
     revalidatePath("/admin/videos");
+    return { ok: true };
+  });
+}
+
+export async function setPalette(input: { paletteId: string }) {
+  return withAdmin("theme.palette", z.object({ paletteId: z.enum(PALETTE_IDS) }), input, async (ctx, { paletteId }) => {
+    const { error } = await ctx.admin
+      .from("app_settings")
+      .upsert({ key: "palette", value: paletteId, updated_at: new Date().toISOString(), updated_by: ctx.user.email ?? null });
+    if (error) return { ok: false, error: error.message };
+    updateTag(APP_SETTINGS_TAG);
     return { ok: true };
   });
 }

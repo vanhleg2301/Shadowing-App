@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
+import { getPalette } from "@/lib/app-settings";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const palette = await getPalette();
   return {
     name: "Shadowing English",
     short_name: "Shadowing",
@@ -8,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#eef2f1",
-    theme_color: "#1f6f62",
+    background_color: palette.light.bg,
+    theme_color: palette.icon,
     icons: [
       { src: "/pwa-icon/192", sizes: "192x192", type: "image/png" },
       { src: "/pwa-icon/512", sizes: "512x512", type: "image/png" },
