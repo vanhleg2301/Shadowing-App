@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { addVideoNote, deleteVideoNote } from "@/app/actions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Icon } from "@/components/Icon";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import type { VideoNote } from "@/lib/user-data";
@@ -50,6 +51,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
   const [loop, setLoop] = useState<{ start: number; end: number | null } | null>(null);
   const [rateIndex, setRateIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
   };
 
   const handleDelete = (id: string) => {
+    setDeletingId(null);
     const next = notes.filter((n) => n.id !== id);
     setNotes(next);
     if (!isSignedIn) writeLocalNotes(videoId, next);
@@ -180,7 +183,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
                   ▶ {formatTime(note.atSec)}
                 </button>
                 <p className="min-w-0 flex-1 whitespace-pre-wrap break-words py-1 text-ink">{note.text}</p>
-                <button type="button" onClick={() => handleDelete(note.id)} className="shrink-0 p-1.5 text-muted hover:text-ink" aria-label="Delete note">
+                <button type="button" onClick={() => setDeletingId(note.id)} className="shrink-0 p-1.5 text-muted hover:text-ink" aria-label="Delete note">
                   <Icon name="close" className="size-4" />
                 </button>
               </li>
@@ -219,6 +222,16 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
           </button>
         </div>
       </form>
+      {deletingId && (
+        <ConfirmDialog
+          title="Delete this note?"
+          message="The note is removed for good."
+          confirmLabel="Delete"
+          tone="danger"
+          onConfirm={() => handleDelete(deletingId)}
+          onCancel={() => setDeletingId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { setSavedWord } from "@/app/actions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { SavedWord } from "@/lib/user-data";
 import { speak, type Accent } from "@/lib/speech";
 
@@ -14,6 +15,7 @@ const ACCENTS: Accent[] = ["uk", "us"];
 
 export function SavedWordCard({ item }: SavedWordCardProps) {
   const [isRemoved, setIsRemoved] = useState(false);
+  const [isAsking, setIsAsking] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { entry } = item;
   const meaning = entry?.contextMeaning ?? entry?.meanings[0]?.definition;
@@ -21,6 +23,7 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
   if (isRemoved) return null;
 
   const handleRemove = () => {
+    setIsAsking(false);
     setIsRemoved(true);
     startTransition(async () => {
       const result = await setSavedWord({ word: item.word, sentence: "", videoId: null, entry: null, isSaved: false });
@@ -53,7 +56,7 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
         </div>
         <button
           type="button"
-          onClick={handleRemove}
+          onClick={() => setIsAsking(true)}
           disabled={isPending}
           className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-muted hover:bg-cream hover:text-red-600"
         >
@@ -66,6 +69,16 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
         <Link href={`/watch/${item.videoId}`} className="mt-3 inline-block text-sm font-semibold text-brand hover:text-brand-dark">
           Open the video →
         </Link>
+      )}
+      {isAsking && (
+        <ConfirmDialog
+          title={`Remove "${item.word}"?`}
+          message="It disappears from My words and from your review flashcards."
+          confirmLabel="Remove"
+          tone="danger"
+          onConfirm={handleRemove}
+          onCancel={() => setIsAsking(false)}
+        />
       )}
     </li>
   );

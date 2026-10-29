@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { SignOutButton } from "@/components/SignOutButton";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AuthButtonProps {
@@ -19,7 +20,7 @@ function GoogleLogo() {
 }
 
 export function AuthButton({ variant }: AuthButtonProps) {
-  const { user, isLoading, isAvailable, signInWithGoogle, signOut } = useAuth();
+  const { user, isLoading, isAvailable, signInWithGoogle } = useAuth();
 
   if (!isAvailable) return null;
   if (isLoading) return <div className={variant === "full" ? "h-12 rounded-2xl bg-cream" : "size-10 rounded-full bg-line"} />;
@@ -50,9 +51,9 @@ export function AuthButton({ variant }: AuthButtonProps) {
 
   if (variant === "compact") {
     return (
-      <button type="button" onClick={signOut} title={`Signed in as ${name}. Tap to sign out.`} aria-label="Sign out">
+      <SignOutButton title={`Signed in as ${name}. Tap to sign out.`} ariaLabel="Sign out">
         {avatar}
-      </button>
+      </SignOutButton>
     );
   }
 
@@ -61,9 +62,7 @@ export function AuthButton({ variant }: AuthButtonProps) {
       {avatar}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-ink">{name}</p>
-        <button type="button" onClick={signOut} className="text-xs font-semibold text-muted hover:text-ink">
-          Sign out
-        </button>
+        <SignOutButton className="text-xs font-semibold text-muted hover:text-ink">Sign out</SignOutButton>
       </div>
     </div>
   );

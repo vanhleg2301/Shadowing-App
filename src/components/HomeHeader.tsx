@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Icon, type IconName } from "@/components/Icon";
 import { PasteLinkForm } from "@/components/PasteLinkForm";
+import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,7 +24,7 @@ const PROFILE_LINKS: { href: string; label: string; icon: IconName }[] = [
 ];
 
 export function HomeHeader() {
-  const { user, isAvailable, signInWithGoogle, signOut } = useAuth();
+  const { user, isAvailable, signInWithGoogle } = useAuth();
   const [greeting, setGreeting] = useState("Welcome");
   const [sheet, setSheet] = useState<"add" | "profile" | null>(null);
 
@@ -107,9 +108,7 @@ export function HomeHeader() {
               Privacy Policy
             </Link>
             {user && (
-              <button type="button" onClick={signOut} className="font-semibold text-red-600">
-                Sign out
-              </button>
+              <SignOutButton className="font-semibold text-red-600">Sign out</SignOutButton>
             )}
           </div>
         </BottomSheet>
