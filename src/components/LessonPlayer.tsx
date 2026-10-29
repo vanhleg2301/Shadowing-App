@@ -22,6 +22,7 @@ import { useMediaSession } from "@/hooks/useMediaSession";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
+import type { LessonPart } from "@/lib/lesson-parts";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 // Progress is saved at most this often while the learner moves through sentences.
@@ -53,6 +54,9 @@ interface LessonPlayerProps {
   backHref?: string;
   // Course links can open the lesson slower (the Gentle plan uses 0.75x).
   initialRate?: number;
+  // Set when a long video is studied in parts; lesson.sentences then holds only this part.
+  part?: LessonPart;
+  partQuery?: string;
 }
 
 export function LessonPlayer({
@@ -64,6 +68,8 @@ export function LessonPlayer({
   isListenFirst = false,
   backHref = "/",
   initialRate = 1,
+  part,
+  partQuery = "",
 }: LessonPlayerProps) {
   const { user } = useAuth();
   const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
@@ -121,10 +127,22 @@ export function LessonPlayer({
     const wait = Math.max(0, PROGRESS_INTERVAL_MS - (Date.now() - lastProgressAtRef.current));
     const id = setTimeout(() => {
       lastProgressAtRef.current = Date.now();
-      recordProgress({ videoId: lesson.videoId, sentenceIndex: currentIndex, sentenceCount: sentences.length });
+      recordProgress({
+        videoId: lesson.videoId,
+        sentenceIndex: currentIndex + (part?.offset ?? 0),
+        sentenceCount: part?.sentenceCount ?? sentences.length,
+      });
     }, wait);
     return () => clearTimeout(id);
-  }, [currentIndex, user, lesson.videoId, sentences.length]);
+  }, [currentIndex, user, lesson.videoId, sentences.length, part?.offset, part?.sentenceCount]);
+
+  // A part ends where its last sentence ends, not where the video does.
+  const partEnd = part ? sentences[sentences.length - 1].end : null;
+  const isPartOver = partEnd !== null && currentTime >= partEnd + 0.3;
+  useEffect(() => {
+    if (isPartOver && isPlaying && loopIndex === null) pause();
+  }, [isPartOver, isPlaying, loopIndex, pause]);
+  const partHref = (index: number) => `/watch/${lesson.videoId}?${partQuery ? `${partQuery}&` : ""}part=${index}`;
 
   useEffect(() => {
     if (highlightIndex < 0 || !prefs.autoScroll || isFollowPaused) return;
@@ -198,7 +216,7 @@ export function LessonPlayer({
   const handleStartOver = () => {
     setIsResumeVisible(false);
     setPracticeIndex(0);
-    seekTo(0);
+    seekTo(sentences[0]?.start ?? 0);
     pause();
   };
 
@@ -279,7 +297,7 @@ export function LessonPlayer({
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-bold text-ink">{lesson.title}</h1>
-          <p className="truncate text-sm text-muted">{lesson.author}</p>
+          <p className="truncate text-sm text-muted">{part ? `Part ${part.index} of ${part.total} · ${lesson.author}` : lesson.author}</p>
         </div>
         {/* Phones get the modes as a compact menu so the header stays one row and the video sits higher. */}
         <select
@@ -424,6 +442,9 @@ export function LessonPlayer({
               </button>
             </div>
           )}
+          {part && (
+            <PartNav part={part} href={partHref} isOver={isPartOver} />
+          )}
           {sentences.map((sentence, i) => (
             <TranscriptRow
               key={i}
@@ -544,6 +565,38 @@ export function LessonPlayer({
       )}
 
       {sheetProps && <WordLookupSheet {...sheetProps} />}
+    </div>
+  );
+}
+
+interface PartNavProps {
+  part: LessonPart;
+  href: (index: number) => string;
+  isOver: boolean;
+}
+
+// Moves between the ~5-minute parts of a long video.
+function PartNav({ part, href, isOver }: PartNavProps) {
+  const hasNext = part.index < part.total;
+  return (
+    <div
+      className={`mb-3 flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm ${
+        isOver ? "animate-fade-in border-accent/40 bg-accent-soft" : "border-line bg-surface"
+      }`}
+    >
+      <span className="min-w-0 flex-1 text-ink">
+        {isOver ? (hasNext ? <b>Part {part.index} done. Ready for the next one?</b> : <b>Last part done!</b>) : <>Part <b>{part.index}</b> of {part.total} · about 5 minutes</>}
+      </span>
+      {part.index > 1 && (
+        <Link href={href(part.index - 1)} className="btn-3d shrink-0 px-3 py-1 text-sm">
+          Back
+        </Link>
+      )}
+      {hasNext && (
+        <Link href={href(part.index + 1)} className={`btn-3d shrink-0 px-3 py-1 text-sm ${isOver ? "btn-brand" : ""}`}>
+          Next part
+        </Link>
+      )}
     </div>
   );
 }

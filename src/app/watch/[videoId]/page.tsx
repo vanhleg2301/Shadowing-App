@@ -6,6 +6,7 @@ import { ListenNotesPlayer } from "@/components/ListenNotesPlayer";
 import { LessonSkeleton } from "@/components/Skeleton";
 import { getCatalogVideo } from "@/lib/catalog";
 import { NO_SUBTITLES_ERROR } from "@/lib/captions";
+import { getLessonPart, getPartForSentence } from "@/lib/lesson-parts";
 import { getLesson, type LessonResult } from "@/lib/lessons";
 import { getLessonUserState, getVideoNotes } from "@/lib/user-data";
 import { isValidVideoId } from "@/lib/youtube-url";
@@ -18,6 +19,9 @@ interface LessonOptions {
   isListenFirst: boolean;
   backHref: string;
   playbackRate: number;
+  part: number | null;
+  // The query to keep when moving between parts (mode, course day, speed).
+  query: string;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25];
@@ -32,6 +36,10 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
     isListenFirst: first(sp.listen) === "1",
     backHref: courseDay ? `/course/${courseDay}` : "/",
     playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
+    part: Number(first(sp.part)) || null,
+    query: new URLSearchParams(
+      Object.entries(sp).flatMap(([key, value]) => (key === "part" || value === undefined ? [] : [[key, first(value) ?? ""]])),
+    ).toString(),
   };
 }
 
@@ -80,12 +88,19 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   }
 
   const userState = await userStatePromise;
+  const lastSentence = Math.min(userState.lastSentence, result.lesson.sentences.length - 1);
+  // Long videos open in parts of about 5 minutes; without ?part= the learner resumes in the part they were in.
+  const cut = getLessonPart(result.lesson, options.part ?? getPartForSentence(result.lesson, lastSentence));
+  const lesson = cut?.lesson ?? result.lesson;
+  const initialSentence = cut ? Math.min(Math.max(lastSentence - cut.part.offset, 0), lesson.sentences.length - 1) : lastSentence;
   return (
     <LessonPlayer
-      lesson={result.lesson}
+      lesson={lesson}
+      part={cut?.part}
+      partQuery={options.query}
       initialIsFavorite={userState.isFavorite}
       initialSavedWords={userState.savedWords}
-      initialSentence={Math.min(userState.lastSentence, result.lesson.sentences.length - 1)}
+      initialSentence={initialSentence}
       initialMode={options.mode}
       isListenFirst={options.isListenFirst}
       backHref={options.backHref}

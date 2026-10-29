@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { CHANNEL_NAME, type CuratedVideo, type Level } from "@/data/curated";
+import { formatParts } from "@/lib/lesson-parts";
 import { getThumbnailUrl } from "@/lib/media";
 
 export const LEVEL_DOT: Record<Level, string> = {
@@ -46,7 +47,7 @@ export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardPr
           )}
           {video.duration && (
             <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
-              {video.duration}
+              {formatParts(video.duration) ?? video.duration}
             </span>
           )}
           {progress !== undefined && progress > 0 && (
