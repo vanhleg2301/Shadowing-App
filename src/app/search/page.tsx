@@ -17,7 +17,7 @@ export default function SearchPage({ searchParams }: PageProps<"/search">) {
     <AppShell active="/search">
       <main className="w-full max-w-3xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
         <Breadcrumbs items={[{ label: "Search phrases" }]} />
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Search phrases</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Search phrases</h1>
         <p className="mt-2 text-muted">Find a word or phrase in every lesson, then hear real people say it and shadow the sentence.</p>
         <Suspense fallback={<SearchForm query="" />}>
           {searchParams.then((sp) => {

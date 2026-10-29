@@ -57,7 +57,7 @@ export function VideoCard({ video, subtitle, isFavorite, progress }: VideoCardPr
           )}
         </div>
         <div className="px-1 pb-1 pt-3">
-          <p className="line-clamp-2 text-[17px] font-semibold leading-snug text-ink">{video.title}</p>
+          <p className="line-clamp-2 text-base font-semibold leading-snug text-ink">{video.title}</p>
           <p className="mt-1 text-sm text-muted">{subtitle ?? video.channel ?? CHANNEL_NAME}</p>
         </div>
       </Link>

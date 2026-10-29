@@ -31,7 +31,7 @@ const PROGRESS_INTERVAL_MS = 10000;
 
 const TEXT_SIZE_CLASS: Record<TextSize, string> = {
   sm: "text-[15px]",
-  md: "text-[17px]",
+  md: "text-base",
   lg: "text-[20px] leading-relaxed",
 };
 

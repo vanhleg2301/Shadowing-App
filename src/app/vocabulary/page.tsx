@@ -14,7 +14,7 @@ export default function VocabularyPage() {
     <AppShell active="/vocabulary">
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <Breadcrumbs items={[{ label: "My words" }]} />
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">My words</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">My words</h1>
         <p className="mt-2 text-muted">Words you saved while watching, with the sentence you met them in.</p>
         <Suspense fallback={<ListSkeleton />}>
           <WordList />

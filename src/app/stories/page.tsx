@@ -14,7 +14,7 @@ export default function StoriesPage({ searchParams }: PageProps<"/stories">) {
     <AppShell active="/stories">
       <main className="w-full max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
         <Breadcrumbs items={[{ label: "Daily stories" }]} />
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Daily stories</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Daily stories</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Short stories and everyday conversations. Read them, or press play and listen like a podcast. Each one ends with
           the words and grammar to notice.

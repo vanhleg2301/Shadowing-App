@@ -14,7 +14,7 @@ export default function ReviewPage() {
     <AppShell active="/review">
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
         <Breadcrumbs items={[{ label: "Review" }]} />
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Review</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Review</h1>
         <p className="mt-2 text-muted">Flashcards for your saved words, shown again right before you would forget them.</p>
         <Suspense fallback={<ListSkeleton rows={2} />}>
           <ReviewContent />

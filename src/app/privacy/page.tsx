@@ -23,7 +23,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       <Breadcrumbs items={[{ label: "Privacy policy" }]} />
-      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Privacy Policy</h1>
+      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Privacy Policy</h1>
       <p className="mt-2 text-sm text-muted">Last updated: {LAST_UPDATED}</p>
 
       <p className="mt-6 leading-relaxed text-ink/90">

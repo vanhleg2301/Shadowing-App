@@ -103,6 +103,9 @@
 /* Tailwind's preflight resets buttons to the default arrow cursor. */
 @layer base {
   html {
+    /* Everything is sized in rem, so this scales text, spacing, cards and icons together, about 6%
+       smaller than the browser default. A percentage keeps the learner's own font-size setting. */
+    font-size: 93.75%;
     /* Keeps focused or anchored content clear of the sticky header. */
     scroll-padding-top: 6rem;
     -webkit-tap-highlight-color: transparent;
@@ -122,6 +125,14 @@
   }
   button:disabled {
     cursor: not-allowed;
+  }
+  /* iOS zooms the page into any field under 16px when it gets focus. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: max(1rem, 16px);
+    }
   }
 }
 

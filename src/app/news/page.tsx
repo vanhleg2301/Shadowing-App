@@ -13,7 +13,7 @@ export default function NewsPage({ searchParams }: PageProps<"/news">) {
     <AppShell active="/news">
       <main className="w-full max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
         <Breadcrumbs items={[{ label: "News" }]} />
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">News</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">News</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Short news stories read slowly and clearly by VOA Learning English. Listen, read along and tap any word.
         </p>
