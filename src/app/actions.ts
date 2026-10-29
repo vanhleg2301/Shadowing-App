@@ -7,15 +7,21 @@ import { COLLECTION_IDS } from "@/data/collections";
 import { COLLECTION_COOKIE } from "@/lib/collection";
 import { COURSE_MODE_COOKIE } from "@/lib/course-mode";
 import { schedule } from "@/lib/srs";
+import { WRITES_PER_MINUTE, checkRateLimits } from "@/lib/rate-limit";
 import { recordSignInEvent } from "@/lib/sign-in-log";
 import { getLocalToday, getTimeZone } from "@/lib/study-day";
 import { getUserContext } from "@/lib/user-data";
 
 type UserContext = NonNullable<Awaited<ReturnType<typeof getUserContext>>>;
 
-export type ActionResult = { ok: true } | { ok: false; error: "signed-out" | "invalid" | "failed" };
+export type ActionResult = { ok: true } | { ok: false; error: "signed-out" | "invalid" | "failed" | "rate-limited" };
 
 const videoId = z.string().regex(/^[A-Za-z0-9_-]{11}$/);
+
+// Shared cap on writes per signed-in learner (src/lib/rate-limit.ts).
+async function isWriteAllowed(userId: string): Promise<boolean> {
+  return checkRateLimits(`user:${userId}`, [WRITES_PER_MINUTE]);
+}
 
 const FavoriteSchema = z.object({ videoId, title: z.string().min(1).max(300), isFavorite: z.boolean() });
 
@@ -32,6 +38,7 @@ export async function setFavorite(input: z.input<typeof FavoriteSchema>): Promis
   if (!parsed.success) return { ok: false, error: "invalid" };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
 
   const { videoId: id, title, isFavorite } = parsed.data;
   const { error } = isFavorite
@@ -48,6 +55,7 @@ export async function setSavedWord(input: z.input<typeof SavedWordSchema>): Prom
   if (!parsed.success) return { ok: false, error: "invalid" };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
 
   const { word, sentence, videoId: id, entry, isSaved } = parsed.data;
   const { error } = isSaved
@@ -111,6 +119,7 @@ export async function gradeWord(input: z.input<typeof GradeSchema>): Promise<Act
   if (!parsed.success) return { ok: false, error: "invalid" };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
 
   const { word, grade } = parsed.data;
   const { data, error: readError } = await ctx.supabase
@@ -176,11 +185,12 @@ const VideoNoteSchema = z.object({ videoId, atSec: z.number().min(0).max(86400),
 
 export async function addVideoNote(
   input: z.input<typeof VideoNoteSchema>,
-): Promise<{ ok: true; id: string } | { ok: false; error: "signed-out" | "invalid" | "failed" }> {
+): Promise<{ ok: true; id: string } | { ok: false; error: "signed-out" | "invalid" | "failed" | "rate-limited" }> {
   const parsed = VideoNoteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
 
   const { videoId: id, atSec, text } = parsed.data;
   const { data, error } = await ctx.supabase
@@ -211,6 +221,7 @@ export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema
   if (!parsed.success) return { ok: false, error: "invalid" };
   const ctx = await getUserContext();
   if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
 
   const rows = parsed.data.phrases.map((p) => ({
     user_id: ctx.user.id,
