@@ -15,7 +15,7 @@ interface SearchRow {
   video_id: string;
   idx: number;
   start_sec: number;
-  highlighted: string;
+  text: string;
   title: string;
   collection_id: string | null;
   category: string | null;
@@ -23,11 +23,23 @@ interface SearchRow {
 
 export const MIN_QUERY_LENGTH = 2;
 
-function splitHighlight(highlighted: string): SentenceHit["parts"] {
-  return highlighted
-    .split(/(\[\[.*?\]\])/)
-    .filter(Boolean)
-    .map((part) => (part.startsWith("[[") ? { text: part.slice(2, -2), isMatch: true } : { text: part, isMatch: false }));
+// Marks where the whole phrase appears (the database's ts_headline marks each word on its own), allowing
+// punctuation or extra spaces between the words.
+function splitHighlight(text: string, query: string): SentenceHit["parts"] {
+  // Words hold only letters, digits and apostrophes, so they are safe inside a RegExp.
+  const words = query.match(/[\p{L}\p{N}']+/gu) ?? [];
+  if (words.length === 0) return [{ text, isMatch: false }];
+  const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${words.join("[^\\p{L}\\p{N}']+")}(?![\\p{L}\\p{N}])`, "giu");
+  const parts: SentenceHit["parts"] = [];
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    const start = match.index ?? 0;
+    if (start > last) parts.push({ text: text.slice(last, start), isMatch: false });
+    parts.push({ text: match[0], isMatch: true });
+    last = start + match[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last), isMatch: false });
+  return parts;
 }
 
 // Phrase search over every stored transcript sentence (search_sentences, migration 018).
@@ -43,7 +55,7 @@ export async function searchSentences(query: string): Promise<SentenceHit[] | nu
     videoId: row.video_id,
     index: row.idx,
     start: row.start_sec,
-    parts: splitHighlight(row.highlighted),
+    parts: splitHighlight(row.text, q),
     title: row.title,
     collectionId: row.collection_id,
     isNews: row.category !== null,
