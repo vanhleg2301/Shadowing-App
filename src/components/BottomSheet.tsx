@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
 
 interface BottomSheetProps {
@@ -24,7 +25,9 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
     };
   }, [onClose]);
 
-  return (
+  // Rendered into <body>: a sheet opened from the sticky sidebar or a blurred bar would otherwise be
+  // trapped in that element's stacking context and show up behind the page.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
@@ -42,6 +45,7 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
         </div>
         <div className="mt-3">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
