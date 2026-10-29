@@ -1,5 +1,6 @@
+import { cache } from "react";
 import type { WordInfo } from "./dictionary";
-import { getLocalToday, previousDay } from "./study-day";
+import { getLocalToday } from "./study-day";
 import { createClient } from "./supabase/server";
 
 export interface FavoriteVideo {
@@ -157,52 +158,50 @@ function addDays(day: string, delta: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function longestRun(days: string[]): number {
-  const sorted = [...days].sort();
-  let best = 0;
-  let run = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    run = i > 0 && addDays(sorted[i - 1], 1) === sorted[i] ? run + 1 : 1;
-    best = Math.max(best, run);
-  }
-  return best;
+interface StudySummaryRow {
+  current_streak: number;
+  longest_streak: number;
+  studied_today: boolean;
+  total_seconds: number;
+  active_days: number;
+  // Seconds studied per day ("YYYY-MM-DD"), for the last 90 days.
+  recent: Record<string, number>;
+  lessons_completed: number;
+  words_saved: number;
+  words_mastered: number;
+  words_due: number;
+  goal_minutes: number | null;
 }
+
+// One database call (get_study_summary, migration 021) for the streak, the week, the stats and the
+// calendar; cached per request because the home and account pages ask for several of them.
+const getStudySummary = cache(async (): Promise<{ summary: StudySummaryRow; today: string } | null> => {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const today = await getLocalToday();
+  const { data, error } = await ctx.supabase.rpc("get_study_summary", { today, mastered_interval: MASTERED_INTERVAL_DAYS });
+  if (error || !data) return null;
+  return { summary: data as StudySummaryRow, today };
+});
 
 // Consecutive study days ending today, or yesterday if the learner hasn't studied yet today.
 export async function getStreak(): Promise<Streak | null> {
-  const ctx = await getUserContext();
-  if (!ctx) return null;
-  const { data, error } = await ctx.supabase
-    .from("study_days")
-    .select("day, seconds")
-    .order("day", { ascending: false })
-    .limit(400);
-  if (error) return null;
-
-  const rows = (data ?? []) as { day: string; seconds: number }[];
-  const days = new Set(rows.map((r) => r.day));
-  const today = await getLocalToday();
-  const settings = await getUserSettings();
-  const hasStudiedToday = days.has(today);
-  let cursor = hasStudiedToday ? today : previousDay(today);
-  let count = 0;
-  while (days.has(cursor)) {
-    count++;
-    cursor = previousDay(cursor);
-  }
+  const result = await getStudySummary();
+  if (!result) return null;
+  const { summary, today } = result;
   const mondayOffset = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
   const monday = addDays(today, -mondayOffset);
   const week = WEEKDAY_LABELS.map((label, i) => {
     const day = addDays(monday, i);
-    return { day, label, studied: days.has(day), isToday: day === today, isFuture: day > today };
+    return { day, label, studied: day in summary.recent, isToday: day === today, isFuture: day > today };
   });
   return {
-    days: count,
-    hasStudiedToday,
-    longest: longestRun([...days]),
+    days: summary.current_streak,
+    hasStudiedToday: summary.studied_today,
+    longest: summary.longest_streak,
     week,
-    todaySeconds: rows.find((r) => r.day === today)?.seconds ?? 0,
-    goalMinutes: settings?.dailyGoalMinutes ?? DEFAULT_GOAL_MINUTES,
+    todaySeconds: summary.recent[today] ?? 0,
+    goalMinutes: summary.goal_minutes ?? DEFAULT_GOAL_MINUTES,
   };
 }
 
@@ -321,32 +320,21 @@ export const MASTERED_INTERVAL_DAYS = 21;
 const CALENDAR_WEEKS = 12;
 
 export async function getStudyStats(): Promise<StudyStats | null> {
-  const ctx = await getUserContext();
-  if (!ctx) return null;
-  const [days, completed, saved, mastered] = await Promise.all([
-    ctx.supabase.from("study_days").select("day, seconds").order("day", { ascending: false }).limit(1000),
-    ctx.supabase.from("lesson_progress").select("video_id", { count: "exact", head: true }).not("completed_at", "is", null),
-    ctx.supabase.from("saved_words").select("word", { count: "exact", head: true }),
-    ctx.supabase.from("saved_words").select("word", { count: "exact", head: true }).gte("interval_days", MASTERED_INTERVAL_DAYS),
-  ]);
-  if (days.error) return null;
-
-  const rows = (days.data ?? []) as { day: string; seconds: number }[];
-  const secondsByDay = new Map(rows.map((r) => [r.day, r.seconds]));
-  const today = await getLocalToday();
+  const result = await getStudySummary();
+  if (!result) return null;
+  const { summary, today } = result;
   const sundayOffset = 6 - ((new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7);
   const lastDay = addDays(today, sundayOffset);
   const calendar = Array.from({ length: CALENDAR_WEEKS * 7 }, (_, i) => {
     const day = addDays(lastDay, i - CALENDAR_WEEKS * 7 + 1);
-    return { day, minutes: Math.floor((secondsByDay.get(day) ?? 0) / 60), isFuture: day > today };
+    return { day, minutes: Math.floor((summary.recent[day] ?? 0) / 60), isFuture: day > today };
   });
-
   return {
-    totalMinutes: Math.floor(rows.reduce((sum, r) => sum + r.seconds, 0) / 60),
-    activeDays: rows.length,
-    lessonsCompleted: completed.count ?? 0,
-    wordsSaved: saved.count ?? 0,
-    wordsMastered: mastered.count ?? 0,
+    totalMinutes: Math.floor(summary.total_seconds / 60),
+    activeDays: summary.active_days,
+    lessonsCompleted: summary.lessons_completed,
+    wordsSaved: summary.words_saved,
+    wordsMastered: summary.words_mastered,
     calendar,
   };
 }
