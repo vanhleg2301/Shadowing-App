@@ -31,8 +31,8 @@ export function RecordingPlayer({ blob, label }: RecordingPlayerProps) {
       barGap: 2,
       barRadius: 3,
       cursorWidth: 0,
-      waveColor: readColor("--muted", "#9ba1c2"),
-      progressColor: readColor("--brand", "#4f46e5"),
+      waveColor: readColor("--muted", "#93a29e"),
+      progressColor: readColor("--brand", "#0d9488"),
       normalize: true,
     });
     wave.on("ready", (d) => setDuration(d));

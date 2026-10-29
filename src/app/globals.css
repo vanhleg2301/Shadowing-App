@@ -3,40 +3,41 @@
 /* dark: utilities follow the resolved theme on <html data-theme>, set before paint by ThemeScript. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* "Indigo night" palette. Light is a cool, slightly dim gray-lavender; dark is deep navy. */
+/* "Graphite & teal" palette. Light is a soft gray-green; dark is neutral graphite with teal buttons and
+   amber accents, easy on the eyes for long study sessions. */
 :root {
   color-scheme: light;
-  --bg: #eef0f7;
+  --bg: #eef2f1;
   --surface: #ffffff;
-  --ink: #161a2e;
-  --muted: #5f6684;
-  --line: #dde0ee;
-  --brand: #4f46e5;
-  --brand-dark: #3730a3;
-  --brand-soft: #e4e5fc;
+  --ink: #142022;
+  --muted: #5b6b68;
+  --line: #d9e2e0;
+  --brand: #0d9488;
+  --brand-dark: #0f766e;
+  --brand-soft: #d5f3ee;
   --on-brand: #ffffff;
-  --accent: #e85d43;
-  --accent-soft: #fde6e0;
+  --accent: #b45309;
+  --accent-soft: #fdf0d5;
   --highlight: #fde68a;
   --highlight-ink: #241a00;
-  --shadow-strong: #0b0d1a;
+  --shadow-strong: #0a1012;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0d0f1e;
-  --surface: #171a2f;
-  --ink: #e8eaf7;
-  --muted: #9ba1c2;
-  --line: #2a2e4a;
-  --brand: #818cf8;
-  --brand-dark: #4f46e5;
-  --brand-soft: #232653;
-  --on-brand: #0d0f1e;
-  --accent: #ff8a70;
-  --accent-soft: #3b2128;
-  --highlight: #b45309;
-  --highlight-ink: #fff8e6;
+  --bg: #111416;
+  --surface: #1a1f22;
+  --ink: #e6ecea;
+  --muted: #93a29e;
+  --line: #2a3236;
+  --brand: #2dd4bf;
+  --brand-dark: #0d9488;
+  --brand-soft: #16332f;
+  --on-brand: #06201c;
+  --accent: #fbbf24;
+  --accent-soft: #3a2e12;
+  --highlight: #a16207;
+  --highlight-ink: #fffbea;
   --shadow-strong: #000000;
 }
 
