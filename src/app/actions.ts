@@ -321,12 +321,18 @@ export async function selectCollection(input: z.input<typeof CollectionSchema>):
 
 const CourseModeSchema = z.object({ mode: z.enum(["full", "gentle"]) });
 
-// The A2 course plan (full or Gentle), remembered on this device.
+// The A2 course plan (full or Gentle), remembered on this device and, when signed in, on the account.
 export async function setCourseMode(input: z.input<typeof CourseModeSchema>): Promise<ActionResult> {
   const parsed = CourseModeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
   const cookieStore = await cookies();
   cookieStore.set(COURSE_MODE_COOKIE, parsed.data.mode, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+
+  const ctx = await getUserContext();
+  if (ctx) {
+    // Fails quietly until migration 017 adds the column; the cookie still applies on this device.
+    await ctx.supabase.from("user_settings").upsert({ user_id: ctx.user.id, course_mode: parsed.data.mode, updated_at: new Date().toISOString() });
+  }
   revalidatePath("/", "layout");
   return { ok: true };
 }
