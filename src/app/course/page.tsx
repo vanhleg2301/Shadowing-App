@@ -29,14 +29,14 @@ function CourseHeader({ course }: { course: Course }) {
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">{course.title}</h1>
       <p className="mt-2 max-w-2xl text-muted">{course.description}</p>
 
-      <ul className="mt-5 grid gap-2 text-sm text-ink sm:grid-cols-3">
+      <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-semibold text-ink">
         {[
-          ["headphones", "Listen first, then read"],
+          ["headphones", "Listen first"],
           ["mic", "Shadow the real voice"],
           ["record", "Speak and listen back"],
         ].map(([icon, text]) => (
-          <li key={text} className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5 font-semibold">
-            <Icon name={icon as "mic"} className="size-5 text-brand" />
+          <li key={text} className="flex items-center gap-1.5">
+            <Icon name={icon as "mic"} className="size-4 text-brand" />
             {text}
           </li>
         ))}

@@ -9,6 +9,8 @@ import { COURSE_B1_DIALOGUES } from "./course-b1-dialogues";
 export interface Course {
   level: "A2" | "B1";
   title: string;
+  // For the compact course button on phones.
+  shortTitle: string;
   description: string;
   tagline: string;
   days: CourseDay[];
@@ -20,6 +22,7 @@ export interface Course {
 const SPEAK_A2: Course = {
   level: "A2",
   title: "Speak A2 in 7 days",
+  shortTitle: "Speak A2",
   description:
     "For learners who understand A2 English but freeze when they have to speak. Each day: a short listening, 15 useful phrases, lots of shadowing and five questions to answer out loud. Plan for 2–3 hours, or 4 with the bonus.",
   tagline: "Already understand A2? Start speaking, 2–3 hours a day.",
@@ -32,6 +35,7 @@ const SPEAK_A2: Course = {
 const NATURAL_B1: Course = {
   level: "B1",
   title: "Natural speed in 7 days",
+  shortTitle: "Natural speed",
   description:
     "For B1 learners who lose track when real people talk fast. Each day: listen without subtitles, shadow two videos, learn 15 phrases people really use, then retell and role-play out loud. Plan for 3 hours, or 3.5 with the bonus.",
   tagline: "Keep up with fast, real English. Listen and speak, 3 hours a day.",

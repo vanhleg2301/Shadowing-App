@@ -54,21 +54,27 @@ async function HomeContent() {
         <StreakSection />
       </Suspense>
 
-      <div className="mt-4 flex flex-wrap items-stretch gap-3">
-        <CollectionSwitcher current={collection} counts={counts} />
+      {/* One row on phones: the collection on the left, the course on the right. */}
+      <div className="mt-4 flex items-stretch gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 sm:flex-none [&>button]:w-full">
+          <CollectionSwitcher current={collection} counts={counts} />
+        </div>
         <Link
           href="/course"
-          className="group flex min-w-0 flex-1 basis-72 items-center gap-4 rounded-3xl border border-brand/25 bg-gradient-to-r from-brand-soft to-surface p-4 transition-transform active:translate-y-0.5"
+          className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl border border-brand/25 bg-gradient-to-r from-brand-soft to-surface px-3 py-1.5 transition-transform active:translate-y-0.5 sm:gap-4 sm:rounded-3xl sm:p-4"
         >
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)] sm:size-12 sm:rounded-2xl">
             <Icon name="course" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-bold uppercase tracking-wide text-accent">7-day course · {course.level}</span>
-            <span className="block font-bold text-ink">{course.title}</span>
-            <span className="block truncate text-sm text-muted">{course.tagline}</span>
+            <span className="block truncate text-[11px] font-bold uppercase tracking-wide text-accent sm:text-xs">
+              7 days<span className="hidden sm:inline"> · course</span> · {course.level}
+            </span>
+            <span className="block truncate text-sm font-bold text-ink sm:hidden">{course.shortTitle}</span>
+            <span className="hidden truncate font-bold text-ink sm:block">{course.title}</span>
+            <span className="hidden truncate text-sm text-muted sm:block">{course.tagline}</span>
           </span>
-          <Icon name="chevronRight" className="size-5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
+          <Icon name="chevronRight" className="hidden size-5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5 sm:block" />
         </Link>
       </div>
 

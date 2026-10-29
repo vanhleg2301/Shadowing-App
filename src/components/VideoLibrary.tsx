@@ -16,7 +16,17 @@ interface VideoLibraryProps {
   userState: LibraryUserState;
 }
 
-const CARD_WIDTH = "w-[78%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]";
+// Phones show one and a half cards per row, so it's clear the row scrolls sideways.
+const CARD_WIDTH = "w-[68%] shrink-0 snap-start sm:w-[45%] xl:w-[31%]";
+const PLACEMENT_TIP_KEY = "placement-tip-hidden";
+
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
   const { favoriteIds, progress, continueIds } = userState;
@@ -36,9 +46,19 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
     // Reading localStorage only works after hydration.
     /* eslint-disable react-hooks/set-state-in-effect */
     if (storedLevel) setLevel(storedLevel);
-    setHasPlacement(LEVELS.some((l) => l === stored));
+    setHasPlacement(LEVELS.some((l) => l === stored) || readFlag(PLACEMENT_TIP_KEY));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [videos]);
+
+  // Shown until the learner takes the test or hides the tip once.
+  const dismissPlacement = () => {
+    setHasPlacement(true);
+    try {
+      localStorage.setItem(PLACEMENT_TIP_KEY, "1");
+    } catch {
+      // Storage blocked: the tip comes back next visit.
+    }
+  };
 
   const continueVideos = continueIds
     .map((id) => videos.find((v) => v.videoId === id))
@@ -64,22 +84,10 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
 
   return (
     <>
-      <label className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-soft">
-        <Icon name="search" className="size-5 shrink-0 text-muted" />
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find videos to study..."
-          aria-label="Search videos"
-          className="min-w-0 flex-1 bg-transparent py-3.5 text-ink outline-none placeholder:text-muted"
-        />
-      </label>
-
       {!needle && featured && (
         <Link
           href={`/watch/${featured.videoId}`}
-          className="group mt-5 flex animate-fade-up items-center gap-4 rounded-3xl border border-line bg-surface p-3 shadow-[0_4px_0_0_var(--color-line)] transition-transform active:translate-y-0.5"
+          className="group flex animate-fade-up items-center gap-4 rounded-3xl border border-line bg-surface p-3 shadow-[0_4px_0_0_var(--color-line)] transition-transform active:translate-y-0.5"
         >
           <div className="relative aspect-video w-36 shrink-0 overflow-hidden rounded-2xl sm:w-48">
             <Image
@@ -110,55 +118,71 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
       )}
 
       {!needle && !hasPlacement && (
-        <Link
-          href="/placement"
-          className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-brand/25 bg-brand-soft px-4 py-3 transition-colors hover:border-brand"
-        >
-          <span>
-            <span className="block font-bold text-ink">Not sure which level to pick?</span>
-            <span className="block text-sm text-muted">Take a 3-minute test and we&apos;ll show the right videos.</span>
-          </span>
-          <Icon name="next" className="size-5 shrink-0 text-brand" />
-        </Link>
+        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-brand/25 bg-brand-soft py-1 pl-4 pr-1 first:mt-0">
+          <Link href="/placement" className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2">
+            <span className="min-w-0">
+              <span className="block font-bold text-ink">Not sure which level to pick?</span>
+              <span className="block text-sm text-muted">Take a 3-minute test and we&apos;ll show the right videos.</span>
+            </span>
+            <Icon name="next" className="size-5 shrink-0 text-brand" />
+          </Link>
+          <button type="button" onClick={dismissPlacement} className="shrink-0 p-2.5 text-muted hover:text-ink" aria-label="Hide this tip">
+            <Icon name="close" className="size-4" />
+          </button>
+        </div>
       )}
 
-      <div className="no-scrollbar -mx-4 mt-5 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
-        <div role="radiogroup" aria-label="Level" className="flex shrink-0 rounded-2xl border border-line bg-surface p-1">
-          {(["all", ...LEVELS.filter((l) => videos.some((v) => v.level === l))] as const).map((l) => (
+      {/* Search and filters stay in reach while scrolling the long library. */}
+      <div className="sticky top-0 z-20 -mx-4 mt-4 bg-cream/95 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-xl md:mx-0 md:px-0">
+        <label className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand-soft">
+          <Icon name="search" className="size-5 shrink-0 text-muted" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find videos to study..."
+            aria-label="Search videos"
+            className="min-w-0 flex-1 bg-transparent py-3.5 text-ink outline-none placeholder:text-muted"
+          />
+        </label>
+        <div className="no-scrollbar -mx-4 mt-2 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
+          <div role="radiogroup" aria-label="Level" className="flex shrink-0 rounded-2xl border border-line bg-surface p-1">
+            {(["all", ...LEVELS.filter((l) => videos.some((v) => v.level === l))] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                role="radio"
+                aria-checked={level === l}
+                onClick={() => setLevel(l)}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  level === l ? "bg-ink text-cream" : "text-muted hover:text-ink"
+                }`}
+              >
+                {l !== "all" && <span className={`size-2 rounded-full ${LEVEL_DOT[l]}`} />}
+                {l === "all" ? "All" : l}
+              </button>
+            ))}
+          </div>
+          <span className="mx-1 h-6 w-px shrink-0 bg-line" />
+          <button
+            type="button"
+            onClick={() => setTopic(null)}
+            className={`btn-3d shrink-0 px-4 py-2 text-sm ${topic === null ? "btn-dark" : ""}`}
+          >
+            All topics
+          </button>
+          {sections.map((s) => (
             <button
-              key={l}
+              key={s.topic}
               type="button"
-              role="radio"
-              aria-checked={level === l}
-              onClick={() => setLevel(l)}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
-                level === l ? "bg-ink text-cream" : "text-muted hover:text-ink"
-              }`}
+              onClick={() => setTopic(s.topic)}
+              className={`btn-3d shrink-0 whitespace-nowrap px-4 py-2 text-sm ${topic === s.topic ? "btn-dark" : ""}`}
             >
-              {l !== "all" && <span className={`size-2 rounded-full ${LEVEL_DOT[l]}`} />}
-              {l === "all" ? "All" : l}
+              {s.topic}
+              <span className={`text-xs ${topic === s.topic ? "text-cream/70" : "text-muted"}`}>{s.items.length}</span>
             </button>
           ))}
         </div>
-        <span className="mx-1 h-6 w-px shrink-0 bg-line" />
-        <button
-          type="button"
-          onClick={() => setTopic(null)}
-          className={`btn-3d shrink-0 px-4 py-2 text-sm ${topic === null ? "btn-dark" : ""}`}
-        >
-          All topics
-        </button>
-        {sections.map((s) => (
-          <button
-            key={s.topic}
-            type="button"
-            onClick={() => setTopic(s.topic)}
-            className={`btn-3d shrink-0 whitespace-nowrap px-4 py-2 text-sm ${topic === s.topic ? "btn-dark" : ""}`}
-          >
-            {s.topic}
-            <span className={`text-xs ${topic === s.topic ? "text-cream/70" : "text-muted"}`}>{s.items.length}</span>
-          </button>
-        ))}
       </div>
 
       {gridVideos ? (

@@ -21,7 +21,7 @@ export function CollectionSwitcher({ current, counts }: CollectionSwitcherProps)
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-1.5 text-left transition-colors hover:border-brand"
+        className="flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-1.5 text-left transition-colors hover:border-brand"
         aria-label={`Video collection: ${collection.name}. Change`}
       >
         <span className="min-w-0">
