@@ -37,7 +37,7 @@ async function Overview() {
           </div>
         ))}
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ColumnChart title="New sign-ups" subtitle="Per day, last 30 days" unit="sign-ups" data={analytics.signups} />
         <ColumnChart title="Active learners" subtitle="Learners who studied each day, last 30 days" unit="learners" data={analytics.activeLearners} />
         <RankedBars title="Most-started videos" subtitle="Learners who opened each lesson" emptyText="No lessons started yet." items={analytics.topVideos} />

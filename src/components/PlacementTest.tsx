@@ -76,7 +76,7 @@ export function PlacementTest() {
       <p lang="en" className="mt-4 text-xl font-bold leading-snug text-ink">
         {question.prompt}
       </p>
-      <ul lang="en" className="mt-4 grid gap-2 sm:grid-cols-2">
+      <ul lang="en" className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {question.options.map((option) => (
           <li key={option}>
             <button

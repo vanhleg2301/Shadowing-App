@@ -67,7 +67,7 @@ async function SignInLog({ cursor, query, event }: { cursor: KeysetCursor; query
 
   return (
     <div className="mt-8 space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((s) => (
           <div key={s.label} className="rounded-3xl border border-line bg-surface p-5 shadow-[0_4px_0_0_var(--color-line)]">
             <p className="text-sm font-semibold text-muted">{s.label}</p>

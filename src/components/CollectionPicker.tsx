@@ -44,7 +44,7 @@ export function CollectionPicker({ current, counts, onDone, isStacked = false }:
 
   return (
     <div>
-      <div className={`grid gap-5 ${isStacked ? "" : "md:grid-cols-3"}`}>
+      <div className={`grid grid-cols-1 gap-5 ${isStacked ? "" : "md:grid-cols-3"}`}>
         {SPEEDS.map((speed) => (
           <section key={speed}>
             <h3 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">

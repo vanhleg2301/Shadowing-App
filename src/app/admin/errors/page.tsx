@@ -66,17 +66,17 @@ async function ErrorLog({ cursor }: { cursor: KeysetCursor }) {
                   <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.message}</span>
                 </span>
               </summary>
-              <dl className="mt-3 grid gap-1 text-xs text-muted sm:grid-cols-[8rem_1fr]">
+              <dl className="mt-3 grid grid-cols-1 gap-1 text-xs text-muted sm:grid-cols-[8rem_minmax(0,1fr)]">
                 <dt>Request</dt>
-                <dd className="font-mono text-ink">
+                <dd className="break-all font-mono text-ink">
                   {r.method} {r.path}
                 </dd>
                 <dt>Route</dt>
-                <dd className="font-mono text-ink">{r.route_path}</dd>
+                <dd className="break-all font-mono text-ink">{r.route_path}</dd>
                 {r.digest && (
                   <>
                     <dt>Digest</dt>
-                    <dd className="font-mono text-ink">{r.digest}</dd>
+                    <dd className="break-all font-mono text-ink">{r.digest}</dd>
                   </>
                 )}
               </dl>

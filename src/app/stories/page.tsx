@@ -69,7 +69,7 @@ async function StoriesContent({ topic }: { topic: string | null }) {
         ))}
       </nav>
 
-      <ul className="mt-4 grid gap-3 md:grid-cols-2">
+      <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
         {stories.map((story) => (
           <StoryCard key={story.id} story={story} />
         ))}

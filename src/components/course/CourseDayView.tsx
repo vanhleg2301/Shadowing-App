@@ -280,7 +280,7 @@ export function CourseDayView({
           </button>
         </div>
         {phraseMessage && <p className="mt-2 text-sm font-semibold text-brand">{phraseMessage}</p>}
-        <ul lang="en" className="mt-4 grid gap-3 md:grid-cols-2">
+        <ul lang="en" className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           {day.phrases.map((p) => (
             <li key={p.text} className="rounded-2xl border border-line bg-surface p-4">
               <div className="flex items-start justify-between gap-3">

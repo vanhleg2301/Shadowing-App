@@ -115,7 +115,7 @@ export function PhraseQuiz({ phrases, seed, onPass }: PhraseQuizProps) {
       <p lang="en" className="mt-1 text-lg font-bold leading-snug text-ink">
         {question.prompt}
       </p>
-      <ul lang="en" className="mt-4 grid gap-2 sm:grid-cols-2">
+      <ul lang="en" className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {question.options.map((option) => {
           const isAnswer = option === question.answer;
           const state = !picked ? "border-line bg-surface hover:border-brand" : isAnswer ? "border-brand bg-brand-soft" : option === picked ? "border-red-400 bg-red-50 dark:bg-red-950/40" : "border-line bg-surface opacity-60";

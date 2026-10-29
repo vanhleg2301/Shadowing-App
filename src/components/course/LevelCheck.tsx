@@ -136,7 +136,7 @@ export function LevelCheck() {
       </button>
       <p className="mt-2 text-center text-xs text-muted">You can listen twice.</p>
       <p className="mt-5 font-bold text-ink">{question.question}</p>
-      <div className="mt-3 grid gap-2">
+      <div className="mt-3 grid grid-cols-1 gap-2">
         {question.options.map((option, i) => {
           const state = picked === null ? "" : i === question.answer ? "border-brand bg-brand-soft" : i === picked ? "border-red-400 opacity-70" : "opacity-60";
           return (

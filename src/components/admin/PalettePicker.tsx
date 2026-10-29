@@ -35,7 +35,7 @@ export function PalettePicker({ currentId }: PalettePickerProps) {
         Changes the colours of the whole app and the app icon for every learner. Installed apps on Android update their
         icon within a few days; on iPhone the home-screen icon only changes after the app is removed and added again.
       </p>
-      <div role="radiogroup" aria-label="Palette" className="grid gap-4 md:grid-cols-2">
+      <div role="radiogroup" aria-label="Palette" className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {PALETTE_IDS.map((id) => (
           <PaletteCard key={id} palette={PALETTES[id]} isSelected={selected === id} isCurrent={currentId === id} onSelect={() => setSelected(id)} />
         ))}
