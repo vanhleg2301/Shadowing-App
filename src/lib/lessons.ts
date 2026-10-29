@@ -5,6 +5,7 @@ import { toLessonRow } from "./lesson-row";
 import { getHostedMedia, isHostedLesson } from "./media";
 import { createAdminClient, createPublicClient } from "./supabase/admin";
 
+export const LESSONS_TAG = "lessons";
 export const lessonTag = (videoId: string) => `lesson:${videoId}`;
 
 export type LessonResult = { lesson: Lesson; error?: never } | { lesson?: never; error: string };
@@ -46,7 +47,8 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
 export async function getLesson(videoId: string): Promise<LessonResult> {
   "use cache";
   cacheLife("days");
-  cacheTag(lessonTag(videoId));
+  // Every lesson also carries LESSONS_TAG, so a bulk change (scripts/resegment-lessons.ts) can drop them all.
+  cacheTag(lessonTag(videoId), LESSONS_TAG);
 
   const stored = await readStoredLesson(videoId);
   if (stored) return { lesson: stored };
