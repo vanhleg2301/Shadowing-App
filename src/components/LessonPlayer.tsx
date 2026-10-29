@@ -86,6 +86,8 @@ export function LessonPlayer({
   const [practiceIndex, setPracticeIndex] = useState(initialSentence);
   const [isResumeVisible, setIsResumeVisible] = useState(initialSentence > 0);
   const hasInteractedRef = useRef(false);
+  // True while one sentence is playing on purpose, so the stop-at-sentence-end guard stays out of the way.
+  const isSegmentPlayingRef = useRef(false);
   const lastProgressAtRef = useRef(0);
   // In dictation and cloze the transcript stays hidden until the learner has answered that sentence.
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
@@ -137,6 +139,14 @@ export function LessonPlayer({
     return () => clearTimeout(id);
   }, [currentIndex, user, lesson.videoId, sentences.length, part?.offset, part?.sentenceCount]);
 
+  // In shadow, dictation and cloze the video must stop where the practised sentence ends, even when playback
+  // was started from the video itself (its play button or YouTube's own controls), so the learner can answer.
+  const practiceEnd = isPractice ? sentences[practiceIndex]?.end : undefined;
+  useEffect(() => {
+    if (practiceEnd === undefined || !isPlaying || loopIndex !== null || isSegmentPlayingRef.current) return;
+    if (currentTime >= practiceEnd) pause();
+  }, [practiceEnd, currentTime, isPlaying, loopIndex, pause]);
+
   // A part ends where its last sentence ends, not where the video does.
   const partEnd = part ? sentences[sentences.length - 1].end : null;
   const isPartOver = partEnd !== null && currentTime >= partEnd + 0.3;
@@ -169,8 +179,17 @@ export function LessonPlayer({
     rowRefs.current.get(Math.max(highlightIndex, 0))?.scrollIntoView({ block: "center", behavior: "smooth" });
   };
 
+  const playOneSentence = async (index: number): Promise<void> => {
+    isSegmentPlayingRef.current = true;
+    try {
+      await playSegment(sentences[index].start, sentences[index].end);
+    } finally {
+      isSegmentPlayingRef.current = false;
+    }
+  };
+
   const playSentence = (index: number): Promise<void> => {
-    if (isPractice) return playSegment(sentences[index].start, sentences[index].end);
+    if (isPractice) return playOneSentence(index);
     seekTo(sentences[index].start);
     play();
     return Promise.resolve();
@@ -182,7 +201,7 @@ export function LessonPlayer({
     setIsResumeVisible(false);
     if (mode === "watch" && isHideText) setRevealed((prev) => new Set(prev).add(index));
     if (isPractice) setPracticeIndex(index);
-    playSegment(sentences[index].start, sentences[index].end);
+    void playOneSentence(index);
   };
 
   const goToSentence = (index: number) => {
@@ -354,7 +373,7 @@ export function LessonPlayer({
           {lesson.media ? (
             <button
               type="button"
-              onClick={isPlaying ? pause : play}
+              onClick={isPlaying ? pause : isPractice ? () => void playSentence(practiceIndex) : play}
               aria-label={isPlaying ? "Pause" : "Play"}
               className="group absolute inset-0"
             >
@@ -368,7 +387,7 @@ export function LessonPlayer({
           ) : (
             <>
               <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
-              {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={play} />}
+              {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={isPractice ? () => void playSentence(practiceIndex) : play} />}
             </>
           )}
           {!isReady && (
