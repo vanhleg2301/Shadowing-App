@@ -3,7 +3,9 @@ import { Suspense, type ReactNode } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ICON_SYMBOLS } from "@/data/app-icons";
 import { isAdminEmail } from "@/lib/admin-emails";
+import { getAppSettings } from "@/lib/app-settings";
 import { getUserContext } from "@/lib/user-data";
 
 interface NavItem {
@@ -34,9 +36,9 @@ export function AppShell({ active, children }: AppShellProps) {
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-5 md:flex">
         <Link href="/" className="flex items-center gap-2 px-2">
-          <span className="grid size-10 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
-            <Icon name="mic" />
-          </span>
+          <Suspense fallback={<span className="size-10 rounded-xl bg-brand" />}>
+            <BrandMark />
+          </Suspense>
           <span className="text-xl font-extrabold text-ink">
             Shadow<span className="text-brand">ing</span>
           </span>
@@ -121,5 +123,21 @@ async function AdminNavLink({ isActive }: { isActive: boolean }) {
       <Icon name="chart" className="size-5" />
       Admin
     </Link>
+  );
+}
+
+// The sidebar logo follows the icon chosen in Admin -> Theme.
+async function BrandMark() {
+  const { icon } = await getAppSettings();
+  if (icon.kind === "image") {
+    // eslint-disable-next-line @next/next/no-img-element -- small uploaded logo; the URL changes on every upload
+    return <img src={icon.url} alt="" className="size-10 rounded-xl object-cover shadow-[0_3px_0_0_var(--color-brand-dark)]" />;
+  }
+  return (
+    <span className="grid size-10 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
+      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={ICON_SYMBOLS[icon.symbol].path} />
+      </svg>
+    </span>
   );
 }
