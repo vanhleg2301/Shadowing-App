@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icon, type IconName } from "@/components/Icon";
 import type { CollectionId } from "@/data/collections";
 import { getCourse } from "@/data/courses";
-import { getNewsVideos } from "@/lib/catalog";
+import { getStoryOfTheDay } from "@/data/stories";
 import type { CourseMode } from "@/lib/course-mode";
 import { getCourseProgress, getDueWords } from "@/lib/user-data";
 
@@ -18,10 +18,9 @@ interface Task {
 // so a signed-in learner can start without browsing. Renders nothing when signed out.
 export async function TodayPlan({ collection, mode }: { collection: CollectionId; mode: CourseMode }) {
   const course = getCourse(collection, mode);
-  const [progress, due, news] = await Promise.all([
+  const [progress, due] = await Promise.all([
     getCourseProgress(course.getId(collection)).catch(() => null),
     getDueWords(1).catch(() => null),
-    getNewsVideos().catch(() => []),
   ]);
   if (!progress) return null;
 
@@ -50,16 +49,14 @@ export async function TodayPlan({ collection, mode }: { collection: CollectionId
       detail: "A few minutes of flashcards keeps them in your head",
     });
   }
-  const story = news[0];
-  if (story) {
-    tasks.push({
-      href: `/news/${story.videoId}`,
-      icon: "news",
-      label: `News · ${story.category ?? "World"}`,
-      title: story.title,
-      detail: `Listen and read along · ${story.duration}`,
-    });
-  }
+  const story = getStoryOfTheDay();
+  tasks.push({
+    href: `/stories/${story.id}`,
+    icon: "chat",
+    label: `Today's story · ${story.level}`,
+    title: story.title,
+    detail: story.kind === "small-talk" ? "Small talk · read or listen" : "Read or listen like a podcast",
+  });
   if (tasks.length === 0) return null;
 
   return (

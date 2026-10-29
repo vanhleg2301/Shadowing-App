@@ -6,6 +6,7 @@ import { WordListView } from "@/components/WordListView";
 import { getCatalog, getVideoCollection } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getSavedWords, MASTERED_INTERVAL_DAYS, type SavedWord } from "@/lib/user-data";
+import { STORIES } from "@/data/stories";
 
 export default function VocabularyPage() {
   return (
@@ -42,6 +43,6 @@ async function WordList() {
     const owner = w.videoId ? collectionOf.get(w.videoId) : undefined;
     return !collection || !owner || owner === collection;
   });
-  const lessonTitles = Object.fromEntries(catalog.map((v) => [v.videoId, v.title]));
+  const lessonTitles = Object.fromEntries([...catalog.map((v) => [v.videoId, v.title]), ...STORIES.map((s) => [s.id, s.title])]);
   return <WordListView words={visible} masteredInterval={MASTERED_INTERVAL_DAYS} lessonTitles={lessonTitles} />;
 }

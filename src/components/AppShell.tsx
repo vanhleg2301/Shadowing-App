@@ -19,7 +19,8 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
-  { label: "News", shortLabel: "News", icon: "news", href: "/news" },
+  { label: "Daily stories", shortLabel: "Stories", icon: "chat", href: "/stories" },
+  { label: "News", shortLabel: "News", icon: "news", href: "/news", isDesktopOnly: true },
   { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },

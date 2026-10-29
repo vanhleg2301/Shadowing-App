@@ -152,7 +152,7 @@ export function WordListView({ words, masteredInterval, lessonTitles }: WordList
                   </span>
                 </span>
                 {group.videoId && (
-                  <Link href={`/watch/${group.videoId}`} className="shrink-0 text-sm font-semibold text-brand hover:text-brand-dark">
+                  <Link href={group.videoId.startsWith("story-") ? `/stories/${group.videoId}` : `/watch/${group.videoId}`} className="shrink-0 text-sm font-semibold text-brand hover:text-brand-dark">
                     Open lesson
                   </Link>
                 )}
