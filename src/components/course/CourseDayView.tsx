@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { PhraseQuiz } from "@/components/course/PhraseQuiz";
 import { RolePlay } from "@/components/course/RolePlay";
@@ -46,6 +46,38 @@ function blockHref(block: CourseBlock, day: number): string | null {
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
+type SectionId = "phrases" | "speak" | "roleplay" | "quiz";
+const SECTION_IDS: readonly string[] = ["phrases", "speak", "roleplay", "quiz"];
+
+interface DaySectionProps {
+  id: SectionId;
+  title: string;
+  hint: string;
+  isDone: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}
+
+// On phones the day is long, so each activity folds away and only the one in use stays open.
+function DaySection({ id, title, hint, isDone, isOpen, onToggle, children }: DaySectionProps) {
+  return (
+    <section id={id} className="scroll-mt-24 rounded-3xl border border-line bg-surface">
+      <button type="button" onClick={onToggle} aria-expanded={isOpen} className="flex w-full items-center gap-3 p-4 text-left sm:p-5">
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2 text-xl font-extrabold text-ink">
+            {title}
+            {isDone && <span className="rounded-full bg-brand-soft px-2 py-0.5 text-xs font-bold text-brand">Done</span>}
+          </span>
+          <span className="mt-0.5 block text-sm text-muted">{hint}</span>
+        </span>
+        <Icon name="chevronDown" className={`size-5 shrink-0 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      {isOpen && <div className="animate-fade-in px-4 pb-4 sm:px-5 sm:pb-5">{children}</div>}
+    </section>
+  );
+}
+
 export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, isSignedIn, hasNextDay }: CourseDayViewProps) {
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(() => new Set(initialDone));
@@ -57,6 +89,18 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
   const requiredDone = required.filter((b) => done.has(b.id)).length;
   const minutesLeft = required.filter((b) => !done.has(b.id)).reduce((sum, b) => sum + b.minutes, 0);
   const isDayComplete = requiredDone === required.length;
+  const nextBlock = required.find((b) => !done.has(b.id));
+  const [openSection, setOpenSection] = useState<SectionId | null>(() => {
+    const first = blocks.find((b) => SECTION_IDS.includes(b.kind) && !initialDone.includes(b.id));
+    return (first?.kind as SectionId | undefined) ?? null;
+  });
+
+  const toggleSection = (id: SectionId) => setOpenSection((current) => (current === id ? null : id));
+  const goToSection = (id: SectionId) => {
+    setOpenSection(id);
+    // Wait for the section to open before scrolling to it.
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const toggleBlock = (blockId: string, isDone: boolean) => {
     if (!isSignedIn) {
@@ -110,7 +154,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 pb-20 md:pb-0">
       <StudyTimer />
       <section className="rounded-3xl border border-line bg-surface p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
@@ -126,7 +170,7 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
           {blocks.map((block) => {
             const isDone = done.has(block.id);
             const href = blockHref(block, day.day);
-            const anchor = ["phrases", "speak", "roleplay", "quiz"].includes(block.kind) ? `#${block.kind}` : null;
+            const section = SECTION_IDS.includes(block.kind) ? (block.kind as SectionId) : null;
             return (
               <li
                 key={block.id}
@@ -163,10 +207,10 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
                     Start
                   </Link>
                 ) : (
-                  anchor && (
-                    <a href={anchor} className="btn-3d shrink-0 px-3 py-1.5 text-sm">
+                  section && (
+                    <button type="button" onClick={() => goToSection(section)} className="btn-3d shrink-0 px-3 py-1.5 text-sm">
                       Go
-                    </a>
+                    </button>
                   )
                 )}
               </li>
@@ -199,12 +243,15 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
         </section>
       )}
 
-      <section id="phrases" className="scroll-mt-24">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-extrabold text-ink">Today&apos;s phrases</h2>
-            <p className="text-sm text-muted">Say each one out loud twice. Tap UK or US to hear it.</p>
-          </div>
+      <DaySection
+        id="phrases"
+        title="Today's phrases"
+        hint="Say each one out loud twice. Tap UK or US to hear it."
+        isDone={done.has("phrases")}
+        isOpen={openSection === "phrases"}
+        onToggle={() => toggleSection("phrases")}
+      >
+        <div className="flex justify-end">
           <button type="button" onClick={handleSavePhrases} disabled={isPending} className="btn-3d btn-brand px-4 py-2 text-sm">
             <Icon name="plus" className="size-4" />
             Add all to Review
@@ -235,15 +282,17 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
             </li>
           ))}
         </ul>
-      </section>
+      </DaySection>
 
-      <section id="speak" className="scroll-mt-24">
-        <h2 className="text-xl font-extrabold text-ink">Speak</h2>
-        <p className="text-sm text-muted">
-          Answer each question out loud for 30–60 seconds, using today&apos;s phrases. Record, listen back, then try once more.
-          Recordings stay on your device.
-        </p>
-        <ol lang="en" className="mt-4 space-y-3">
+      <DaySection
+        id="speak"
+        title="Speak"
+        hint="Answer each question out loud for 30–60 seconds. Record, listen back, then try once more. Recordings stay on your device."
+        isDone={done.has("speak")}
+        isOpen={openSection === "speak"}
+        onToggle={() => toggleSection("speak")}
+      >
+        <ol lang="en" className="space-y-3">
           {day.speakingPrompts.map((prompt, i) => (
             <SpeakingPrompt key={prompt} index={i} prompt={prompt} onRecorded={() => handleRecorded(i)} />
           ))}
@@ -252,25 +301,66 @@ export function CourseDayView({ day, courseId, blocks, dialogue, initialDone, is
           {recorded.size}/{day.speakingPrompts.length} answered
           {recorded.size === day.speakingPrompts.length ? " · speaking block done" : ""}
         </p>
-      </section>
+      </DaySection>
 
       {dialogue && (
-        <section id="roleplay" className="scroll-mt-24">
-          <h2 className="text-xl font-extrabold text-ink">Role-play</h2>
-          <p className="text-sm text-muted">Act out a real conversation. Listen to your partner, then record your reply.</p>
-          <div className="mt-4">
-            <RolePlay dialogue={dialogue} onComplete={() => markDone("roleplay")} />
-          </div>
-        </section>
+        <DaySection
+          id="roleplay"
+          title="Role-play"
+          hint="Act out a real conversation. Listen to your partner, then record your reply."
+          isDone={done.has("roleplay")}
+          isOpen={openSection === "roleplay"}
+          onToggle={() => toggleSection("roleplay")}
+        >
+          <RolePlay dialogue={dialogue} onComplete={() => markDone("roleplay")} />
+        </DaySection>
       )}
 
-      <section id="quiz" className="scroll-mt-24">
-        <h2 className="text-xl font-extrabold text-ink">Quiz</h2>
-        <p className="text-sm text-muted">10 quick questions on today&apos;s phrases. Get 8 right to finish the day.</p>
-        <div className="mt-4">
-          <PhraseQuiz phrases={day.phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
-        </div>
-      </section>
+      <DaySection
+        id="quiz"
+        title="Quiz"
+        hint="10 quick questions on today's phrases. Get 8 right to finish the day."
+        isDone={done.has("quiz")}
+        isOpen={openSection === "quiz"}
+        onToggle={() => toggleSection("quiz")}
+      >
+        <PhraseQuiz phrases={day.phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
+      </DaySection>
+
+      {nextBlock && <NextStepButton block={nextBlock} day={day.day} onGoToSection={goToSection} />}
     </div>
+  );
+}
+
+interface NextStepButtonProps {
+  block: CourseBlock;
+  day: number;
+  onGoToSection: (id: SectionId) => void;
+}
+
+// The next unfinished activity is always one tap away, just above the phone's bottom navigation.
+function NextStepButton({ block, day, onGoToSection }: NextStepButtonProps) {
+  const href = blockHref(block, day);
+  const className =
+    "btn-3d btn-brand fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 flex items-center gap-2 px-4 py-3 text-left md:hidden";
+  const content = (
+    <>
+      <Icon name={KIND_ICON[block.kind]} className="size-5 shrink-0" />
+      <span className="min-w-0 flex-1 truncate text-sm font-bold">Next: {block.title}</span>
+      <Icon name="chevronRight" className="size-5 shrink-0" />
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  if (!SECTION_IDS.includes(block.kind)) return null;
+  return (
+    <button type="button" onClick={() => onGoToSection(block.kind as SectionId)} className={className}>
+      {content}
+    </button>
   );
 }

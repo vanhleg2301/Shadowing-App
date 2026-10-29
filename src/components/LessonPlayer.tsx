@@ -294,7 +294,7 @@ export function LessonPlayer({
   return (
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
       <StudyTimer isBusy={isPlaying} />
-      <header className="relative flex flex-wrap items-center gap-2.5 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
+      <header className="relative flex items-center gap-2 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
         <Link href={backHref} aria-label={backHref === "/" ? "Back to home" : "Back to the course"} className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
         </Link>
@@ -302,6 +302,19 @@ export function LessonPlayer({
           <h1 className="truncate font-bold text-ink">{lesson.title}</h1>
           <p className="truncate text-sm text-muted">{lesson.author}</p>
         </div>
+        {/* Phones get the modes as a compact menu so the header stays one row and the video sits higher. */}
+        <select
+          value={mode}
+          onChange={(event) => handleModeChange(event.target.value as Mode)}
+          aria-label="Lesson mode"
+          className="h-10 shrink-0 rounded-full border border-line bg-surface px-3 text-sm font-bold text-ink outline-none focus:border-brand lg:hidden"
+        >
+          {MODES.map((m) => (
+            <option key={m.mode} value={m.mode}>
+              {m.label}
+            </option>
+          ))}
+        </select>
         <FavoriteButton videoId={lesson.videoId} title={lesson.title} initialIsFavorite={initialIsFavorite} />
         <button
           type="button"
@@ -311,7 +324,7 @@ export function LessonPlayer({
         >
           Aa
         </button>
-        <div className="no-scrollbar flex w-full gap-1 overflow-x-auto rounded-2xl border border-line bg-surface p-1 lg:w-auto lg:shrink-0">
+        <div className="no-scrollbar hidden gap-1 overflow-x-auto rounded-2xl border border-line bg-surface p-1 lg:flex lg:w-auto lg:shrink-0">
           {MODES.map((m) => (
             <button
               key={m.mode}
@@ -336,9 +349,10 @@ export function LessonPlayer({
         </div>
       </header>
 
-      {/* Listening comes first: on phones the video gets more of the screen than the transcript. */}
-      <div className="flex min-h-0 flex-[3] flex-col bg-black lg:flex-none lg:bg-transparent lg:px-6 lg:pt-6">
-        <div className="relative min-h-[56.25vw] w-full flex-1 overflow-hidden bg-black lg:aspect-video lg:min-h-0 lg:flex-none lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
+      {/* Listening comes first: on phones, while watching, the video and the sentence being spoken
+          take more of the screen than the transcript list. */}
+      <div className={`flex flex-col lg:flex-none lg:px-6 lg:pt-6 ${mode === "watch" ? "min-h-0 flex-[3]" : "shrink-0"}`}>
+        <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
           {lesson.media ? (
             <button
               type="button"
@@ -360,6 +374,17 @@ export function LessonPlayer({
             <p className="absolute inset-0 grid place-items-center text-sm text-white/60">Loading video...</p>
           )}
         </div>
+        {mode === "watch" && (
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden border-b border-line bg-surface px-5 py-3 text-center lg:hidden">
+            {isHideText ? (
+              <p className="text-sm font-semibold text-muted">Listen first. The text is hidden.</p>
+            ) : (
+              <p key={currentIndex} className="line-clamp-4 animate-fade-in text-xl font-bold leading-snug text-ink">
+                {sentences[currentIndex]?.text}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div
