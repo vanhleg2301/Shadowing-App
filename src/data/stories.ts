@@ -2,6 +2,7 @@
 // Ids are 11 characters like YouTube ids, so words saved from a story use the same My words storage.
 
 import { MORE_A2_STORIES } from "./stories-a2";
+import { THIRD_A2_STORIES } from "./stories-a2-2";
 
 export type StoryKind = "story" | "small-talk";
 export type StoryLevel = "A1" | "A2" | "B1";
@@ -643,7 +644,7 @@ const FIRST_STORIES: Story[] = [
   },
 ];
 
-export const STORIES: Story[] = [...FIRST_STORIES, ...MORE_A2_STORIES];
+export const STORIES: Story[] = [...FIRST_STORIES, ...MORE_A2_STORIES, ...THIRD_A2_STORIES];
 
 export const STORY_TOPICS = [...new Set(STORIES.map((s) => s.topic))];
 
