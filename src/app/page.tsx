@@ -7,6 +7,7 @@ import { HomeHeader } from "@/components/HomeHeader";
 import { Icon } from "@/components/Icon";
 import { ListSkeleton } from "@/components/Skeleton";
 import { StreakCard } from "@/components/StreakCard";
+import { TodayPlan } from "@/components/TodayPlan";
 import { VideoLibrary } from "@/components/VideoLibrary";
 import { getCourse } from "@/data/courses";
 import type { CuratedVideo } from "@/data/curated";
@@ -52,6 +53,9 @@ async function HomeContent() {
     <>
       <Suspense fallback={null}>
         <StreakSection />
+      </Suspense>
+      <Suspense fallback={null}>
+        <TodayPlan collection={collection} />
       </Suspense>
 
       {/* One row on phones: the collection on the left, the course on the right. */}
