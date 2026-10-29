@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -12,6 +11,7 @@ import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
 import { getCourseProgress } from "@/lib/user-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export function generateStaticParams() {
   return COURSE_DAYS.map((d) => ({ day: String(d.day) }));
@@ -45,9 +45,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/course" className="text-sm font-semibold text-brand">
-          ← All 7 days
-        </Link>
+        <Breadcrumbs items={[{ label: "7-day course", href: "/course" }, { label: `Day ${day.day}` }]} className="" />
         <CollectionSwitcher current={collection} counts={counts} />
       </div>
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-accent">Day {day.day} of 7</p>

@@ -13,6 +13,7 @@ import { useMediaSession } from "@/hooks/useMediaSession";
 import { READER_SIZES, READER_SPACINGS, useReaderPrefs, type ReaderSpacing } from "@/hooks/useReaderPrefs";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { findActiveIndex, type Lesson } from "@/lib/lesson";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface NewsReaderProps {
   lesson: Lesson & { media: NonNullable<Lesson["media"]> };
@@ -105,9 +106,7 @@ export function NewsReader({ lesson, category, dateLabel, initialSavedWords }: N
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/news" className="text-sm font-semibold text-brand">
-          ← All news
-        </Link>
+        <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: lesson.title }]} className="min-w-0" />
         <div className="flex items-center gap-2">
           <OfflineButton path={`/news/${lesson.videoId}`} title={lesson.title} audioUrl={lesson.media.audioUrl} imageUrl={lesson.media.imageUrl} />
           <button type="button" onClick={() => setIsTextSheetOpen(true)} className="btn-3d size-10 rounded-full text-sm font-extrabold" aria-label="Text size and spacing">

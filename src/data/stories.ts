@@ -1,6 +1,8 @@
 // Daily stories: short texts and small-talk dialogues written for this app, read in the browser's own voice.
 // Ids are 11 characters like YouTube ids, so words saved from a story use the same My words storage.
 
+import { MORE_A2_STORIES } from "./stories-a2";
+
 export type StoryKind = "story" | "small-talk";
 export type StoryLevel = "A1" | "A2" | "B1";
 
@@ -34,7 +36,7 @@ export interface Story {
   grammar: StoryGrammar[];
 }
 
-export const STORIES: Story[] = [
+const FIRST_STORIES: Story[] = [
   {
     id: "story-00001",
     title: "My day today",
@@ -640,6 +642,8 @@ export const STORIES: Story[] = [
     ],
   },
 ];
+
+export const STORIES: Story[] = [...FIRST_STORIES, ...MORE_A2_STORIES];
 
 export const STORY_TOPICS = [...new Set(STORIES.map((s) => s.topic))];
 

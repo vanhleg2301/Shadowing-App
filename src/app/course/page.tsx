@@ -11,6 +11,7 @@ import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
 import { getCourseProgress } from "@/lib/user-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function CoursePage() {
   return (
@@ -27,6 +28,7 @@ export default function CoursePage() {
 function CourseHeader({ course }: { course: Course }) {
   return (
     <>
+      <Breadcrumbs items={[{ label: "7-day course" }]} />
       <p className="text-xs font-bold uppercase tracking-wide text-accent">7-day course · {course.level}</p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">{course.title}</h1>
       <p className="mt-2 max-w-2xl text-muted">{course.description}</p>

@@ -4,6 +4,7 @@ import { NewsList } from "@/components/NewsList";
 import { ListSkeleton } from "@/components/Skeleton";
 import { getNewsVideos } from "@/lib/catalog";
 import { formatNewsDate } from "@/lib/news";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const STORIES_PER_PAGE = 13;
 
@@ -11,6 +12,7 @@ export default function NewsPage({ searchParams }: PageProps<"/news">) {
   return (
     <AppShell active="/news">
       <main className="w-full max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
+        <Breadcrumbs items={[{ label: "News" }]} />
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">News</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Short news stories read slowly and clearly by VOA Learning English. Listen, read along and tap any word.

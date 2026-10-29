@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
@@ -9,6 +8,7 @@ import { READER_SIZES, READER_SPACINGS, useReaderPrefs } from "@/hooks/useReader
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { getStoryLabel, splitSentences, type Story } from "@/data/stories";
 import { speak, type Accent } from "@/lib/speech";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface StoryReaderProps {
   story: Story;
@@ -74,9 +74,7 @@ export function StoryReader({ story, initialSavedWords }: StoryReaderProps) {
 
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
-      <Link href="/stories" className="text-sm font-semibold text-brand">
-        ← All stories
-      </Link>
+      <Breadcrumbs items={[{ label: "Daily stories", href: "/stories" }, { label: story.title }]} className="" />
       <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">
         {getStoryLabel(story)}
       </p>

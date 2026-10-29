@@ -8,11 +8,13 @@ import { StreakBadge } from "@/components/StreakBadge";
 import { StudySettings } from "@/components/StudySettings";
 import { StudyStatsPanel } from "@/components/StudyStatsPanel";
 import { getStreak, getStudyStats, getUserContext, getUserSettings } from "@/lib/user-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function AccountPage() {
   return (
     <AppShell active="/account">
       <main className="w-full max-w-3xl px-4 py-8 md:px-10">
+        <Breadcrumbs items={[{ label: "Account" }]} />
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Account</h1>
         <Suspense fallback={<ListSkeleton rows={2} />}>
           <AccountDetails />

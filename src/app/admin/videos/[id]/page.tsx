@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { EditVideoForm } from "@/components/admin/EditVideoForm";
@@ -24,9 +23,6 @@ async function EditVideo({ id }: { id: string }) {
 
   return (
     <div className="mt-8 space-y-4">
-      <Link href="/admin/videos" className="text-sm font-semibold text-brand">
-        ← All videos
-      </Link>
       <EditVideoForm video={video} topics={orderTopics(videos.map((v) => v.topic))} />
     </div>
   );

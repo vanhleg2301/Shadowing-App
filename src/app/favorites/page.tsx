@@ -9,11 +9,13 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { getCatalog, getCollectionCounts, getVideoCollection } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getFavorites, type FavoriteVideo } from "@/lib/user-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function FavoritesPage() {
   return (
     <AppShell active="/favorites">
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
+        <Breadcrumbs items={[{ label: "Favorites" }]} />
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Favorites</h1>
         <p className="mt-2 text-muted">Videos you saved with the heart button.</p>
         <Suspense fallback={<ListSkeleton />}>

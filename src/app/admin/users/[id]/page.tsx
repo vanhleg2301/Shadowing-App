@@ -71,9 +71,6 @@ async function UserDetails({ id }: { id: string }) {
 
   return (
     <div className="mt-8 space-y-6">
-      <Link href="/admin/users" className="text-sm font-semibold text-brand">
-        ← All users
-      </Link>
 
       <section className="rounded-3xl border border-line bg-surface p-5">
         <p className="text-xl font-extrabold text-ink">{user.name || user.email}</p>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
+import { Breadcrumbs, type Crumb } from "@/components/Breadcrumbs";
 import { ListSkeleton } from "@/components/Skeleton";
 
 const TABS = [
@@ -13,6 +14,16 @@ const TABS = [
   { href: "/admin/theme", label: "Theme" },
 ];
 
+// Home › Admin › section › page, skipping steps that would repeat the title.
+function getAdminTrail(active: string, title: string): Crumb[] {
+  const tab = TABS.find((t) => t.href === active);
+  if (active === "/admin") return [{ label: "Admin" }];
+  const trail: Crumb[] = [{ label: "Admin", href: "/admin" }];
+  if (tab && tab.label !== title) trail.push({ label: tab.label, href: tab.href });
+  trail.push({ label: title });
+  return trail;
+}
+
 interface AdminLayoutProps {
   active: string;
   title: string;
@@ -23,7 +34,7 @@ export function AdminLayout({ active, title, children }: AdminLayoutProps) {
   return (
     <AppShell active="/admin">
       <main className="w-full max-w-6xl px-4 py-8 md:px-10">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Admin</p>
+        <Breadcrumbs items={getAdminTrail(active, title)} />
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">{title}</h1>
         <nav className="no-scrollbar mt-4 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-surface p-1 sm:w-fit">
           {TABS.map((tab) => (

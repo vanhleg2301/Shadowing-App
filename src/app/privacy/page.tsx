@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const metadata: Metadata = {
   title: "Privacy Policy · Shadowing English",
@@ -21,9 +22,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
-      <Link href="/" className="text-sm font-semibold text-brand">
-        ← Back to the app
-      </Link>
+      <Breadcrumbs items={[{ label: "Privacy policy" }]} />
       <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Privacy Policy</h1>
       <p className="mt-2 text-sm text-muted">Last updated: {LAST_UPDATED}</p>
 

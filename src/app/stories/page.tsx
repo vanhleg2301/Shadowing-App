@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListSkeleton } from "@/components/Skeleton";
 import { STORIES, STORY_TOPICS, getStoryLabel, getStoryOfTheDay, type Story } from "@/data/stories";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const metadata: Metadata = { title: "Daily stories · Shadowing English" };
 
@@ -12,6 +13,7 @@ export default function StoriesPage({ searchParams }: PageProps<"/stories">) {
   return (
     <AppShell active="/stories">
       <main className="w-full max-w-6xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
+        <Breadcrumbs items={[{ label: "Daily stories" }]} />
         <h1 className="text-3xl font-extrabold tracking-tight text-ink md:text-[40px]">Daily stories</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Short stories and everyday conversations. Read them, or press play and listen like a podcast. Each one ends with
