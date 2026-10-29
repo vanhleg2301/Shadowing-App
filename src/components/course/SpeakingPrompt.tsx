@@ -48,7 +48,10 @@ export function SpeakingPrompt({ index, prompt, sampleAnswer, onRecorded }: Spea
                   <Icon name="volume" className="size-5" />
                 </button>
               </div>
-              <p className="mt-1 text-xs text-muted">Say it after the voice, then answer again with your own details.</p>
+              <p className="mt-1 text-xs text-muted">Say it after the voice and check which words came out clearly, then answer with your own details below.</p>
+              <div className="mt-2">
+                <VoiceRecorder target={sampleAnswer} recordLabel="Say the example" />
+              </div>
             </>
           )}
         </div>
