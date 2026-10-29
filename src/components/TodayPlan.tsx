@@ -62,10 +62,10 @@ export async function TodayPlan({ collection, mode }: { collection: CollectionId
   return (
     <section className="mt-4 animate-fade-up rounded-3xl border border-line bg-surface p-4 sm:p-5">
       <h2 className="text-lg font-extrabold text-ink">Today</h2>
-      <ul className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+      <ul className="stagger mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
         {tasks.map((task) => (
           <li key={task.href} className="min-w-0">
-            <Link href={task.href} className="group flex h-full items-center gap-3 rounded-2xl border border-line bg-cream p-3 transition-colors hover:border-brand">
+            <Link href={task.href} className="pressable group flex h-full items-center gap-3 rounded-2xl border border-line bg-cream p-3 hover:border-brand">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
                 <Icon name={task.icon} className="size-5" />
               </span>

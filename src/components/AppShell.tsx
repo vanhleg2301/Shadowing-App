@@ -84,7 +84,11 @@ export function AppShell({ active, children }: AppShellProps) {
       </aside>
 
       {/* Leaves room for the floating tab bar plus the iPhone home indicator. */}
-      <div className="flex min-w-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom)+6rem)] md:pb-0">{children}</div>
+      <div className="flex min-w-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom)+6rem)] md:pb-0">
+        {/* Each page renders its own AppShell, so every navigation mounts this again and the content rises in;
+            the sidebar and bottom bar stay put. */}
+        <div className="flex flex-1 animate-page-in flex-col">{children}</div>
+      </div>
 
       <nav
         aria-label="Main"

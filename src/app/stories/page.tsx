@@ -69,7 +69,7 @@ async function StoriesContent({ topic }: { topic: string | null }) {
         ))}
       </nav>
 
-      <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <ul className="stagger mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
         {stories.map((story) => (
           <StoryCard key={story.id} story={story} />
         ))}
@@ -81,7 +81,7 @@ async function StoriesContent({ topic }: { topic: string | null }) {
 function StoryCard({ story }: { story: Story }) {
   return (
     <li>
-      <Link href={`/stories/${story.id}`} className="block h-full rounded-3xl border border-line bg-surface p-4 transition-colors hover:border-brand">
+      <Link href={`/stories/${story.id}`} className="pressable block h-full rounded-3xl border border-line bg-surface p-4 hover:border-brand">
         <p className="text-xs font-bold uppercase tracking-wide text-accent">
           {getStoryLabel(story)}
         </p>

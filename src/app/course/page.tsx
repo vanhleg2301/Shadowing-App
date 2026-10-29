@@ -106,7 +106,7 @@ function DayList({ course, collection, progress }: DayListProps) {
           </span>
         </div>
       )}
-      <ol className="mt-6 space-y-3">
+      <ol className="stagger mt-6 space-y-3">
         {days.map((day) => {
           const done = isComplete(day.day);
           // Signed-in learners unlock days in order; visitors can browse everything.
@@ -141,7 +141,7 @@ function DayList({ course, collection, progress }: DayListProps) {
             </>
           );
           return (
-            <li key={day.day} className="animate-fade-up">
+            <li key={day.day}>
               {isLocked ? (
                 <div className="flex items-center gap-4 rounded-3xl border border-line bg-surface/60 p-4 opacity-70">{content}</div>
               ) : (

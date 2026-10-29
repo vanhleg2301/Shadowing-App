@@ -189,7 +189,7 @@ export function VideoLibrary({ videos, userState }: VideoLibraryProps) {
       {gridVideos ? (
         <section className="mt-6">
           <h2 className="text-2xl font-extrabold text-ink">{needle ? `Results for “${query.trim()}”` : topic}</h2>
-          <ShowMore resetKey={`${topic}-${level}-${needle}`} className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <ShowMore resetKey={`${topic}-${level}-${needle}`} className="stagger mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {gridVideos.map((video) => (
               <div key={video.videoId}>{card(video)}</div>
             ))}

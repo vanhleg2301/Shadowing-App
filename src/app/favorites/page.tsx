@@ -67,7 +67,7 @@ async function FavoritesList() {
         </div>
       )}
       {visible.length === 0 && <p className="mt-6 text-muted">No favorites in this collection yet.</p>}
-      <ShowMore className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <ShowMore className="stagger mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((f) => {
           const curated = catalog.find((v) => v.videoId === f.videoId);
           return <VideoCard key={f.videoId} video={curated ?? f} subtitle={curated ? undefined : "YouTube"} isFavorite />;

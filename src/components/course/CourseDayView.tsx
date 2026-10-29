@@ -188,7 +188,7 @@ export function CourseDayView({
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-line">
           <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${(requiredDone / required.length) * 100}%` }} />
         </div>
-        <ol className="mt-4 space-y-2">
+        <ol className="stagger mt-4 space-y-2">
           {blocks.map((block) => {
             const isDone = done.has(block.id);
             const href = blockHref(block, day.day, playbackRate);

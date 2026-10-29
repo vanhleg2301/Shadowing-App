@@ -95,10 +95,10 @@ async function Results({ query }: { query: string }) {
       <p className="mt-6 text-sm text-muted">
         {hits.length === 60 ? "Top 60" : hits.length} {hits.length === 1 ? "sentence" : "sentences"} with “{query}”
       </p>
-      <ul className="mt-3 space-y-2">
+      <ul className="stagger mt-3 space-y-2">
         {hits.map((hit) => (
           <li key={`${hit.videoId}-${hit.index}`}>
-            <Link href={hitHref(hit)} className="group block rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-brand">
+            <Link href={hitHref(hit)} className="pressable group block rounded-2xl border border-line bg-surface p-3 hover:border-brand">
               <p lang="en" className="text-ink">
                 {hit.parts.map((part, i) =>
                   part.isMatch ? (

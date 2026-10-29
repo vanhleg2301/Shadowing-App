@@ -167,7 +167,7 @@ export function WordListView({ words, masteredInterval, lessonTitles }: WordList
           ))}
         </div>
       ) : (
-        <ShowMore as="ul" resetKey={`${filter}-${query}`} className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ShowMore as="ul" resetKey={`${filter}-${query}`} className="stagger mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((w) => (
             <SavedWordCard key={w.word} item={w} />
           ))}

@@ -60,7 +60,7 @@ export function NewsList({ stories, categories, category, page, totalPages }: Ne
         </Link>
       ) : null}
 
-      <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <ul className="stagger mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
         {(page === 1 ? rest : stories).map((story) => (
           <li key={story.videoId}>
             <Link href={`/news/${story.videoId}`} className="group flex gap-3 rounded-2xl border border-line bg-surface p-2.5">
