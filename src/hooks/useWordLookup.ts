@@ -17,17 +17,19 @@ export function useWordLookup(videoId: string, initialSavedWords: string[]) {
   const fetchLookup = async (word: string, sentence: string) => {
     setLookup({ word, sentence, status: "loading", info: null });
     let info: WordInfo | null = null;
+    let isRateLimited = false;
     try {
       const query = new URLSearchParams({ word, sentence });
       const res = await fetch(`/api/lookup?${query}`, {
         signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
       });
       if (res.ok) info = await res.json();
+      isRateLimited = res.status === 429;
     } catch {
       // Network failure or timeout: fall through to the error state so the sheet never hangs on "loading".
     }
     setLookup((current) =>
-      current?.word === word ? { word, sentence, status: info ? "found" : "error", info } : current,
+      current?.word === word ? { word, sentence, status: info ? "found" : isRateLimited ? "rate-limited" : "error", info } : current,
     );
   };
 

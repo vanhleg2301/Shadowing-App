@@ -1,12 +1,9 @@
-# Imports VOA Learning English lessons into Supabase (scripts/voa/import_voa.py). Runs every morning for the
-# News tab (newest stories first), or by hand from the Actions tab. Needs repository secrets
+# Imports VOA Learning English lessons into Supabase (scripts/voa/import_voa.py), by hand from the Actions tab.
+# The daily schedule was removed: VOA Learning English stopped publishing in March 2025, so it found nothing. Needs repository secrets
 # NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and migrations 010 and 013.
 name: Import VOA lessons
 
 on:
-  schedule:
-    # 06:00 in Vietnam; As It Is publishes during the US day.
-    - cron: "0 23 * * *"
   workflow_dispatch:
     inputs:
       programs:

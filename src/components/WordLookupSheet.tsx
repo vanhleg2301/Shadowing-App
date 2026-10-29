@@ -7,7 +7,8 @@ import { speak, type Accent } from "@/lib/speech";
 export interface WordLookupState {
   word: string;
   sentence: string;
-  status: "loading" | "found" | "error";
+  // "rate-limited": /api/lookup refused (too many lookups in a minute).
+  status: "loading" | "found" | "error" | "rate-limited";
   info: WordInfo | null;
 }
 
@@ -80,9 +81,13 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
         <p className="mt-4 rounded-2xl bg-cream p-3 text-sm italic text-muted">“{lookup.sentence}”</p>
 
         {lookup.status === "loading" && <p className="mt-4 text-muted">Looking up...</p>}
-        {lookup.status === "error" && (
+        {(lookup.status === "error" || lookup.status === "rate-limited") && (
           <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-red-600">Sorry, we couldn&apos;t find this word.</p>
+            <p className="text-red-600">
+              {lookup.status === "rate-limited"
+                ? "That's a lot of lookups in a minute. Wait a moment, then try again."
+                : "Sorry, we couldn't find this word."}
+            </p>
             <button type="button" className="btn-3d px-4 py-2 text-sm" onClick={onRetry}>
               Try again
             </button>
