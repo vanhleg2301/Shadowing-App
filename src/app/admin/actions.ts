@@ -3,6 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { COLLECTION_IDS } from "@/data/collections";
+import { ICON_SYMBOL_IDS } from "@/data/app-icons";
 import { PALETTE_IDS } from "@/data/palettes";
 import { APP_SETTINGS_TAG } from "@/lib/app-settings";
 import { requireAdmin, type AdminContext } from "@/lib/admin";
@@ -244,12 +245,59 @@ export async function deleteVideo(input: { videoId: string }) {
 }
 
 export async function setPalette(input: { paletteId: string }) {
-  return withAdmin("theme.palette", z.object({ paletteId: z.enum(PALETTE_IDS) }), input, async (ctx, { paletteId }) => {
-    const { error } = await ctx.admin
-      .from("app_settings")
-      .upsert({ key: "palette", value: paletteId, updated_at: new Date().toISOString(), updated_by: ctx.user.email ?? null });
+  return withAdmin("theme.palette", z.object({ paletteId: z.enum(PALETTE_IDS) }), input, (ctx, { paletteId }) =>
+    saveSetting(ctx, "palette", paletteId),
+  );
+}
+
+async function saveSetting(ctx: AdminContext, key: string, value: unknown): Promise<AdminResult> {
+  const { error } = await ctx.admin
+    .from("app_settings")
+    .upsert({ key, value, updated_at: new Date().toISOString(), updated_by: ctx.user.email ?? null });
+  if (error) return { ok: false, error: error.message };
+  updateTag(APP_SETTINGS_TAG);
+  return { ok: true };
+}
+
+export async function setIconSymbol(input: { symbol: string }) {
+  return withAdmin("theme.icon", z.object({ symbol: z.enum(ICON_SYMBOL_IDS as [string, ...string[]]) }), input, (ctx, { symbol }) =>
+    saveSetting(ctx, "icon", { kind: "symbol", symbol }),
+  );
+}
+
+export async function resetShareImage(input: Record<string, never> = {}) {
+  return withAdmin("theme.share-image.reset", z.object({}), input, async (ctx) => {
+    const { error } = await ctx.admin.from("app_settings").delete().eq("key", "share_image");
     if (error) return { ok: false, error: error.message };
     updateTag(APP_SETTINGS_TAG);
     return { ok: true };
+  });
+}
+
+const UPLOAD_RULES = {
+  icon: { maxBytes: 2 * 1024 * 1024, label: "2 MB" },
+  share: { maxBytes: 5 * 1024 * 1024, label: "5 MB" },
+} as const;
+const IMAGE_TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+
+// Uploads the app icon ("icon") or the link-preview image ("share") to Storage and saves its URL.
+export async function uploadBrandImage(formData: FormData): Promise<AdminResult> {
+  const target = formData.get("target");
+  const file = formData.get("file");
+  if ((target !== "icon" && target !== "share") || !(file instanceof File)) return { ok: false, error: "Invalid request" };
+  const extension = IMAGE_TYPES[file.type];
+  if (!extension) return { ok: false, error: "Use a PNG, JPG or WebP image" };
+  if (file.size > UPLOAD_RULES[target].maxBytes) return { ok: false, error: `The image must be under ${UPLOAD_RULES[target].label}` };
+
+  return withAdmin(`theme.${target}.upload`, z.object({ target: z.enum(["icon", "share"]) }), { target }, async (ctx) => {
+    // A new file name each time, so browsers and link previews don't keep showing the old image.
+    const path = `branding/${target}-${Date.now()}.${extension}`;
+    const { error } = await ctx.admin.storage.from("lesson-media").upload(path, await file.arrayBuffer(), {
+      contentType: file.type,
+      cacheControl: "31536000",
+    });
+    if (error) return { ok: false, error: error.message };
+    const url = ctx.admin.storage.from("lesson-media").getPublicUrl(path).data.publicUrl;
+    return target === "icon" ? saveSetting(ctx, "icon", { kind: "image", url }) : saveSetting(ctx, "share_image", url);
   });
 }

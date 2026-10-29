@@ -1,9 +1,12 @@
 import { ImageResponse } from "next/og";
+import { ICON_SYMBOLS, type AppIconSetting } from "@/data/app-icons";
 
-// App icon: white microphone on the palette's icon colour (Admin -> Theme). `padding` leaves a safe zone
-// for maskable icons, which Android crops into a circle. Inline styles are required by ImageResponse.
-export function renderBrandIcon(size: number, color: string, { padding = 0, rounded = true } = {}) {
+// App icon from Admin -> Theme: a white symbol on the palette's icon colour, or the uploaded image.
+// `padding` leaves a safe zone for maskable icons, which Android crops into a circle.
+// Inline styles are required by ImageResponse.
+export function renderBrandIcon(size: number, color: string, icon: AppIconSetting, { padding = 0, rounded = true } = {}) {
   const inner = size - padding * 2;
+  const radius = rounded && padding === 0 ? inner * 0.22 : 0;
   return new ImageResponse(
     (
       <div
@@ -23,13 +26,19 @@ export function renderBrandIcon(size: number, color: string, { padding = 0, roun
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
             background: color,
-            borderRadius: rounded && padding === 0 ? inner * 0.22 : 0,
+            borderRadius: radius,
           }}
         >
-          <svg width={inner * 0.55} height={inner * 0.55} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
-            <path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5 11a7 7 0 0 0 14 0M12 18v3" />
-          </svg>
+          {icon.kind === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- ImageResponse only understands plain <img>
+            <img src={icon.url} alt="" width={inner} height={inner} style={{ objectFit: "cover" }} />
+          ) : (
+            <svg width={inner * 0.55} height={inner * 0.55} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <path d={ICON_SYMBOLS[icon.symbol].path} />
+            </svg>
+          )}
         </div>
       </div>
     ),

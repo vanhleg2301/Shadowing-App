@@ -2,7 +2,7 @@
 // from globals.css for both light and dark mode, plus the app icon colour. Text colours were chosen to
 // keep at least 4.5:1 contrast on their backgrounds.
 
-export const PALETTE_IDS = ["graphite", "moss", "coffee", "oled", "indigo"] as const;
+export const PALETTE_IDS = ["graphite", "moss", "coffee", "oled", "indigo", "midnight", "plum", "slate", "forest", "mono"] as const;
 export type PaletteId = (typeof PALETTE_IDS)[number];
 export const DEFAULT_PALETTE: PaletteId = "graphite";
 
@@ -110,6 +110,86 @@ export const PALETTES: Record<PaletteId, Palette> = {
       bg: "#0d0f1e", surface: "#171a2f", ink: "#e8eaf7", muted: "#9ba1c2", line: "#2a2e4a",
       brand: "#818cf8", "brand-dark": "#4f46e5", "brand-soft": "#232653", "on-brand": "#0d0f1e",
       accent: "#ff8a70", "accent-soft": "#3b2128", highlight: "#b45309", "highlight-ink": "#fff8e6",
+    },
+  },
+  midnight: {
+    id: "midnight",
+    name: "Midnight blue",
+    description: "Night-sky blue, bright blue buttons, orange accents.",
+    icon: "#1d4ed8",
+    light: {
+      bg: "#eef3fa", surface: "#ffffff", ink: "#0f1b2d", muted: "#576579", line: "#d7e1ee",
+      brand: "#1d4ed8", "brand-dark": "#1e40af", "brand-soft": "#dce7fd", "on-brand": "#ffffff",
+      accent: "#c2410c", "accent-soft": "#fde9dc", highlight: "#fde68a", "highlight-ink": "#241a00",
+    },
+    dark: {
+      bg: "#0a1220", surface: "#121c2e", ink: "#e5ecf7", muted: "#93a3bb", line: "#233149",
+      brand: "#60a5fa", "brand-dark": "#2563eb", "brand-soft": "#14284a", "on-brand": "#06122a",
+      accent: "#fb923c", "accent-soft": "#3a2414", highlight: "#1d4ed8", "highlight-ink": "#eff6ff",
+    },
+  },
+  plum: {
+    id: "plum",
+    name: "Plum & lavender",
+    description: "Deep plum, lavender buttons, golden accents.",
+    icon: "#6d28d9",
+    light: {
+      bg: "#f4f0f8", surface: "#ffffff", ink: "#22172e", muted: "#6a5e78", line: "#e4dcee",
+      brand: "#6d28d9", "brand-dark": "#5b21b6", "brand-soft": "#ece3fc", "on-brand": "#ffffff",
+      accent: "#a16207", "accent-soft": "#fdf3c7", highlight: "#fde68a", "highlight-ink": "#241a00",
+    },
+    dark: {
+      bg: "#140f1c", surface: "#1e1729", ink: "#efe8f7", muted: "#a99bba", line: "#33284a",
+      brand: "#c4b5fd", "brand-dark": "#7c3aed", "brand-soft": "#2c2145", "on-brand": "#1c0f33",
+      accent: "#facc15", "accent-soft": "#3a3410", highlight: "#6d28d9", "highlight-ink": "#f5f3ff",
+    },
+  },
+  slate: {
+    id: "slate",
+    name: "Slate & rose",
+    description: "Cool slate grey, rose buttons, teal accents.",
+    icon: "#be123c",
+    light: {
+      bg: "#f1f3f6", surface: "#ffffff", ink: "#171c24", muted: "#5d6675", line: "#dde2ea",
+      brand: "#be123c", "brand-dark": "#9f1239", "brand-soft": "#fde3e9", "on-brand": "#ffffff",
+      accent: "#0f766e", "accent-soft": "#d5f3ee", highlight: "#fecdd3", "highlight-ink": "#2a0510",
+    },
+    dark: {
+      bg: "#101318", surface: "#191d24", ink: "#e8ebf0", muted: "#98a1b0", line: "#2b313c",
+      brand: "#fb7185", "brand-dark": "#e11d48", "brand-soft": "#3a1820", "on-brand": "#2a0510",
+      accent: "#2dd4bf", "accent-soft": "#123230", highlight: "#be123c", "highlight-ink": "#fff1f2",
+    },
+  },
+  forest: {
+    id: "forest",
+    name: "Forest & gold",
+    description: "Dark forest green, gold buttons, light green accents.",
+    icon: "#14532d",
+    light: {
+      bg: "#f2f4ec", surface: "#ffffff", ink: "#18200f", muted: "#5f6a52", line: "#dfe5d3",
+      brand: "#a16207", "brand-dark": "#854d0e", "brand-soft": "#fbefc8", "on-brand": "#ffffff",
+      accent: "#15803d", "accent-soft": "#dcf3e3", highlight: "#fde68a", "highlight-ink": "#241a00",
+    },
+    dark: {
+      bg: "#0c140e", surface: "#142017", ink: "#e9efe3", muted: "#9aa892", line: "#253526",
+      brand: "#eab308", "brand-dark": "#a16207", "brand-soft": "#33300f", "on-brand": "#1f1a02",
+      accent: "#86efac", "accent-soft": "#173323", highlight: "#a16207", "highlight-ink": "#fffbea",
+    },
+  },
+  mono: {
+    id: "mono",
+    name: "Mono",
+    description: "Neutral greys, ivory buttons, blue accents. Calm and distraction-free.",
+    icon: "#27272a",
+    light: {
+      bg: "#f4f4f5", surface: "#ffffff", ink: "#18181b", muted: "#62626b", line: "#e2e2e6",
+      brand: "#27272a", "brand-dark": "#09090b", "brand-soft": "#e7e7ea", "on-brand": "#ffffff",
+      accent: "#1d4ed8", "accent-soft": "#dce7fd", highlight: "#fde68a", "highlight-ink": "#241a00",
+    },
+    dark: {
+      bg: "#111113", surface: "#1b1b1e", ink: "#ececee", muted: "#a0a0a8", line: "#2d2d32",
+      brand: "#f4f1e8", "brand-dark": "#b8b4a8", "brand-soft": "#2c2b28", "on-brand": "#18181b",
+      accent: "#60a5fa", "accent-soft": "#14284a", highlight: "#52525b", "highlight-ink": "#fafafa",
     },
   },
 };

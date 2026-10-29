@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     ],
   },
   partialPrefetching: true,
+  // Admin -> Theme uploads the app icon and link-preview image through a server action.
+  experimental: { serverActions: { bodySizeLimit: "6mb" } },
   turbopack: {
     rules: {
       "*.css": {

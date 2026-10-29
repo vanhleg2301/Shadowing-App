@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { BrandingSettings } from "@/components/admin/BrandingSettings";
 import { PalettePicker } from "@/components/admin/PalettePicker";
 import { requireAdmin } from "@/lib/admin";
-import { getPalette } from "@/lib/app-settings";
+import { getAppSettings } from "@/lib/app-settings";
 
 export default function AdminThemePage() {
   return (
@@ -15,6 +16,11 @@ export default function AdminThemePage() {
 async function ThemeSettings() {
   const ctx = await requireAdmin();
   if (!ctx) notFound();
-  const palette = await getPalette();
-  return <PalettePicker currentId={palette.id} />;
+  const { palette, icon, shareImageUrl } = await getAppSettings();
+  return (
+    <>
+      <PalettePicker currentId={palette.id} />
+      <BrandingSettings icon={icon} iconColor={palette.icon} shareImageUrl={shareImageUrl} />
+    </>
+  );
 }
