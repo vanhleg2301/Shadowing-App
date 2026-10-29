@@ -30,17 +30,25 @@ function loadYouTubeApi(): Promise<void> {
 
 // startSeconds cues the video at that point without autoplaying (used to resume a lesson).
 // A null videoId mounts nothing (hosted-audio lessons use useAudioPlayer instead).
+// The YouTube player (about 1 MB of scripts) only loads on the first play, seek or segment; until then
+// the page shows the thumbnail. Calls made before it is ready run once it is.
 export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [isActivated, setIsActivated] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const startRef = useRef(startSeconds);
+  const rateRef = useRef(1);
+  const pendingRef = useRef<((player: YT.Player) => void) | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(startSeconds);
   const segmentRef = useRef<{ end: number; timer: ReturnType<typeof setInterval>; resolve: () => void } | null>(null);
+  // Read inside callbacks, which must not wait for a re-render to know the player is ready.
+  const isPlayerReadyRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !videoId) return;
+    if (!container || !videoId || !isActivated) return;
     let isCancelled = false;
 
     const mount = async () => {
@@ -53,9 +61,16 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
         videoId,
         width: "100%",
         height: "100%",
-        playerVars: { playsinline: 1, rel: 0, cc_load_policy: 0, iv_load_policy: 3, start: Math.floor(startSeconds) },
+        playerVars: { playsinline: 1, rel: 0, cc_load_policy: 0, iv_load_policy: 3, start: Math.floor(startRef.current) },
         events: {
-          onReady: () => setIsReady(true),
+          onReady: (event) => {
+            isPlayerReadyRef.current = true;
+            setIsPlayerReady(true);
+            if (rateRef.current !== 1) event.target.setPlaybackRate(rateRef.current);
+            const pending = pendingRef.current;
+            pendingRef.current = null;
+            pending?.(event.target);
+          },
           onStateChange: (event) => setIsPlaying(event.data === STATE_PLAYING),
         },
       });
@@ -67,11 +82,10 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
       if (segmentRef.current) clearInterval(segmentRef.current.timer);
       playerRef.current?.destroy();
       playerRef.current = null;
+      isPlayerReadyRef.current = false;
       container.innerHTML = "";
     };
-    // Only the initial position matters; changing it later must not rebuild the player.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId]);
+  }, [videoId, isActivated]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -87,7 +101,18 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
     segment.resolve();
   }, []);
 
-  const play = useCallback(() => playerRef.current?.playVideo(), []);
+  // Runs now if the player is ready, otherwise loads it and runs once it is.
+  const withPlayer = useCallback((run: (player: YT.Player) => void) => {
+    const player = playerRef.current;
+    if (player && isPlayerReadyRef.current) {
+      run(player);
+      return;
+    }
+    pendingRef.current = run;
+    setIsActivated(true);
+  }, []);
+
+  const play = useCallback(() => withPlayer((player) => player.playVideo()), [withPlayer]);
   const pause = useCallback(() => {
     endSegment();
     playerRef.current?.pauseVideo();
@@ -95,17 +120,17 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
   const seekTo = useCallback(
     (seconds: number) => {
       endSegment();
-      playerRef.current?.seekTo(seconds, true);
       setCurrentTime(seconds);
+      if (playerRef.current && isPlayerReadyRef.current) playerRef.current.seekTo(seconds, true);
+      // Before the player exists, just remember where to start; seeking alone doesn't load it.
+      else startRef.current = seconds;
     },
     [endSegment],
   );
 
   // Plays start..end once and resolves when it stops (at the end, or when something else takes over).
-  const playSegment = useCallback(
-    (start: number, end: number): Promise<void> => {
-      const player = playerRef.current;
-      if (!player) return Promise.resolve();
+  const runSegment = useCallback(
+    (player: YT.Player, start: number, end: number): Promise<void> => {
       endSegment();
       player.seekTo(start, true);
       setCurrentTime(start);
@@ -129,7 +154,25 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
     },
     [endSegment],
   );
-  const setRate = useCallback((rate: number) => playerRef.current?.setPlaybackRate(rate), []);
 
-  return { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate };
+  const playSegment = useCallback(
+    (start: number, end: number): Promise<void> =>
+      new Promise((resolve) => {
+        withPlayer((player) => {
+          runSegment(player, start, end).then(resolve);
+        });
+      }),
+    [withPlayer, runSegment],
+  );
+
+  const setRate = useCallback((rate: number) => {
+    rateRef.current = rate;
+    if (isPlayerReadyRef.current) playerRef.current?.setPlaybackRate(rate);
+  }, []);
+
+  // Controls work before the player loads (their call loads it), so the lesson counts as ready until a
+  // load has started; then it waits for the player.
+  const isReady = !isActivated || isPlayerReady;
+
+  return { containerRef, isActivated, isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate };
 }

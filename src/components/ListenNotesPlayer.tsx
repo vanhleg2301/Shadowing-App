@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { addVideoNote, deleteVideoNote } from "@/app/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Icon } from "@/components/Icon";
+import { VideoFacade } from "@/components/VideoFacade";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import type { VideoNote } from "@/lib/user-data";
 
@@ -43,7 +44,7 @@ function writeLocalNotes(videoId: string, notes: VideoNote[]) {
 // For videos without a stored transcript: listen with replay tools and write down what you hear,
 // each note pinned to the moment in the video so it can be replayed.
 export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: ListenNotesPlayerProps) {
-  const { containerRef, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(videoId);
+  const { containerRef, isActivated, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(videoId);
   const isSignedIn = initialNotes !== null;
   const [notes, setNotes] = useState<VideoNote[]>(initialNotes ?? []);
   const [draft, setDraft] = useState("");
@@ -139,6 +140,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
 
       <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-black sm:mt-4 sm:rounded-3xl">
         <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+        {!isActivated && <VideoFacade videoId={videoId} onPlay={play} />}
         {!isReady && <p className="absolute inset-0 grid place-items-center text-sm text-white/60">Loading video...</p>}
       </div>
 

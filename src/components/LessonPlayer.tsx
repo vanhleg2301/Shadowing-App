@@ -13,6 +13,7 @@ import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { StudyTimer } from "@/components/StudyTimer";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { TranscriptRow } from "@/components/TranscriptRow";
+import { VideoFacade } from "@/components/VideoFacade";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
@@ -337,7 +338,10 @@ export function LessonPlayer({
               </span>
             </button>
           ) : (
-            <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+            <>
+              <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
+              {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={play} />}
+            </>
           )}
           {!isReady && (
             <p className="absolute inset-0 grid place-items-center text-sm text-white/60">Loading video...</p>
