@@ -22,6 +22,8 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
     audioRef.current = audio;
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
+    // Keeps the position current while the page is in the background, where the poll below is throttled.
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleMetadata = () => {
       if (startSeconds > 0) audio.currentTime = startSeconds;
     };
@@ -29,6 +31,7 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handlePause);
     audio.addEventListener("loadedmetadata", handleMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
 
     return () => {
       if (segmentRef.current) clearInterval(segmentRef.current.timer);
@@ -37,6 +40,7 @@ export function useAudioPlayer(src: string | null, startSeconds = 0) {
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handlePause);
       audio.removeEventListener("loadedmetadata", handleMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeAttribute("src");
       audio.load();
       audioRef.current = null;

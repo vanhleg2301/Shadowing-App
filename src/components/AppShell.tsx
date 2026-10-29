@@ -11,14 +11,17 @@ interface NavItem {
   shortLabel: string;
   icon: IconName;
   href: string;
+  // The phone tab bar has room for five; the rest stay in the sidebar and the profile menu.
+  isDesktopOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
+  { label: "News", shortLabel: "News", icon: "news", href: "/news" },
   { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
-  { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites" },
+  { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isDesktopOnly: true },
 ];
 
 interface AppShellProps {
@@ -82,7 +85,7 @@ export function AppShell({ active, children }: AppShellProps) {
         aria-label="Main"
         className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 flex justify-around rounded-[1.75rem] border border-line bg-surface/90 p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] backdrop-blur-xl md:hidden"
       >
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.isDesktopOnly).map((item) => {
           const isActive = item.href === active;
           return (
             <Link

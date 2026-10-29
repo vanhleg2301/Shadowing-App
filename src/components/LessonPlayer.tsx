@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
-import { recordProgress, setSavedWord } from "@/app/actions";
+import { recordProgress } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
 import { FavoriteButton } from "@/components/FavoriteButton";
@@ -13,16 +13,16 @@ import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { StudyTimer } from "@/components/StudyTimer";
 import { SummaryPanel } from "@/components/SummaryPanel";
 import { TranscriptRow } from "@/components/TranscriptRow";
-import { WordLookupSheet, type WordLookupState } from "@/components/WordLookupSheet";
+import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { useMediaSession } from "@/hooks/useMediaSession";
+import { useWordLookup } from "@/hooks/useWordLookup";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
-import { normalizeWord, type WordInfo } from "@/lib/dictionary";
 import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
-const LOOKUP_TIMEOUT_MS = 20000;
 // Progress is saved at most this often while the learner moves through sentences.
 const PROGRESS_INTERVAL_MS = 10000;
 
@@ -61,8 +61,8 @@ export function LessonPlayer({
   isListenFirst = false,
   backHref = "/",
 }: LessonPlayerProps) {
-  const { user, isAvailable: isAuthAvailable, signInWithGoogle } = useAuth();
-  const [savedWords, setSavedWords] = useState(() => new Set(initialSavedWords));
+  const { user } = useAuth();
+  const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
   const { sentences } = lesson;
   const startSeconds = lesson.sentences[initialSentence]?.start ?? 0;
   // Both hooks are always called; only the one matching the lesson's media mounts a player.
@@ -86,7 +86,6 @@ export function LessonPlayer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
-  const [lookup, setLookup] = useState<WordLookupState | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
 
   const activeIndex = findActiveIndex(sentences, currentTime);
@@ -203,50 +202,8 @@ export function LessonPlayer({
     setRate(next);
   };
 
-  const fetchLookup = async (word: string, sentence: string) => {
-    setLookup({ word, sentence, status: "loading", info: null });
-    let info: WordInfo | null = null;
-    try {
-      const query = new URLSearchParams({ word, sentence });
-      const res = await fetch(`/api/lookup?${query}`, {
-        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-      });
-      if (res.ok) info = await res.json();
-    } catch {
-      // Network failure or timeout: fall through to the error state so the sheet never hangs on "loading".
-    }
-    setLookup((current) =>
-      current?.word === word ? { word, sentence, status: info ? "found" : "error", info } : current,
-    );
-  };
-
-  const handleToggleSave = async (current: WordLookupState) => {
-    const isSaved = !savedWords.has(current.word);
-    const update = (save: boolean) =>
-      setSavedWords((prev) => {
-        const next = new Set(prev);
-        if (save) next.add(current.word);
-        else next.delete(current.word);
-        return next;
-      });
-    update(isSaved);
-    const result = await setSavedWord({
-      word: current.word,
-      sentence: current.sentence,
-      videoId: lesson.videoId,
-      entry: current.info ? { ...current.info } : null,
-      isSaved,
-    });
-    if (result.ok) return;
-    update(!isSaved);
-    if (result.error === "signed-out") await signInWithGoogle();
-  };
-
   const handleWordClick = (token: string, sentence: string) => {
-    const word = normalizeWord(token);
-    if (!word) return;
-    pause();
-    fetchLookup(word, sentence);
+    if (openWord(token, sentence)) pause();
   };
 
   // Stable callbacks for the memoised transcript rows; they call the latest handlers through a ref.
@@ -285,6 +242,18 @@ export function LessonPlayer({
       }
     };
   });
+  useMediaSession({
+    title: lesson.media ? (isHideText ? lesson.title : (sentences[currentIndex]?.text ?? lesson.title)) : null,
+    artist: lesson.title,
+    artworkUrl: lesson.media?.imageUrl,
+    isPlaying,
+    onPlay: play,
+    onPause: pause,
+    onPrevious: () => goToSentence(currentIndex - 1),
+    onNext: () => goToSentence(currentIndex + 1),
+    onSeekBackward: () => seekTo(Math.max(0, currentTime - 5)),
+  });
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => shortcutRef.current(event);
     window.addEventListener("keydown", onKeyDown);
@@ -561,14 +530,7 @@ export function LessonPlayer({
         />
       )}
 
-      {lookup && (
-        <WordLookupSheet
-          lookup={lookup}
-          onClose={() => setLookup(null)}
-          onRetry={() => fetchLookup(lookup.word, lookup.sentence)}
-          saved={isAuthAvailable ? { isSaved: savedWords.has(lookup.word), onToggle: () => handleToggleSave(lookup) } : undefined}
-        />
-      )}
+      {sheetProps && <WordLookupSheet {...sheetProps} />}
     </div>
   );
 }

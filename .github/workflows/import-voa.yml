@@ -1,12 +1,16 @@
-# Imports VOA Learning English lessons into Supabase (scripts/voa/import_voa.py). Run it by hand from the
-# Actions tab. Needs repository secrets NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and migration 010.
+# Imports VOA Learning English lessons into Supabase (scripts/voa/import_voa.py). Runs every morning for the
+# News tab (newest stories first), or by hand from the Actions tab. Needs repository secrets
+# NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, and migrations 010 and 013.
 name: Import VOA lessons
 
 on:
+  schedule:
+    # 06:00 in Vietnam; As It Is publishes during the US day.
+    - cron: "0 23 * * *"
   workflow_dispatch:
     inputs:
       programs:
-        description: "Programs (comma-separated): lets-learn-english-1, lets-learn-english-2, everyday-grammar, health-lifestyle, words-and-their-stories. Empty = all"
+        description: "Programs (comma-separated), e.g. as-it-is, science-technology, health-lifestyle, arts-culture, lets-learn-english-1, everyday-grammar, american-stories. Empty = all"
         required: false
         default: ""
       limit:
@@ -17,6 +21,14 @@ on:
         description: "Optional: VOA article or section URLs (space-separated), instead of the programs"
         required: false
         default: ""
+      newest_first:
+        description: "Take the newest articles first (news)"
+        type: boolean
+        default: false
+      backfill:
+        description: "Only add category, date and paragraphs to news lessons imported earlier"
+        type: boolean
+        default: false
       dry_run:
         description: "Dry run (parse and align, write nothing)"
         type: boolean
@@ -57,8 +69,11 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PROGRAMS: ${{ inputs.programs }}
-          LIMIT: ${{ inputs.limit }}
+          # Scheduled runs have no inputs: take a few of the newest news stories.
+          PROGRAMS: ${{ github.event_name == 'schedule' && 'as-it-is,science-technology,health-lifestyle,arts-culture' || inputs.programs }}
+          LIMIT: ${{ github.event_name == 'schedule' && '8' || inputs.limit }}
+          NEWEST_FIRST: ${{ github.event_name == 'schedule' || inputs.newest_first }}
+          BACKFILL: ${{ inputs.backfill }}
           URLS: ${{ inputs.urls }}
           DRY_RUN: ${{ inputs.dry_run }}
           DUMP_DIR: ${{ inputs.dry_run && format('{0}/voa-pages', runner.temp) || '' }}

@@ -43,6 +43,9 @@ export interface CuratedVideo {
   collection?: CollectionId;
   // false when the transcript isn't stored yet: the video opens in listen-and-note mode.
   hasTranscript?: boolean;
+  // News lessons (VOA As It Is and similar) only: shown in the News tab, newest first.
+  category?: string;
+  publishedAt?: string;
 }
 
 export const CHANNEL_NAME = "English Sponge";

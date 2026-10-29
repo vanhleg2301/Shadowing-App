@@ -11,6 +11,8 @@ Settings come from environment variables:
   URLS       optional space-separated article or section URLs, used instead of PROGRAMS
   LIMIT      new lessons per run (default 20)
   DRY_RUN    "true" to parse and align without writing anything
+  NEWEST_FIRST  "true" to take the newest articles first (daily news runs)
+  BACKFILL   "true" to add category, date and paragraphs to news lessons imported earlier
 """
 
 from __future__ import annotations
@@ -56,6 +58,8 @@ class Program:
     names: list[str]
     level: str
     topic: str
+    # Set for programs shown in the app's News tab.
+    news_category: str | None = None
 
 
 PROGRAMS: dict[str, Program] = {
@@ -63,12 +67,12 @@ PROGRAMS: dict[str, Program] = {
     "lets-learn-english-1": Program(["Let's Learn English - Level 1", "Let's Learn English Level 1"], "A1", "Everyday Words"),
     "lets-learn-english-2": Program(["Let's Learn English - Level 2", "Let's Learn English Level 2"], "A2", "Everyday Words"),
     "everyday-grammar": Program(["Everyday Grammar"], "B1", "Everyday Words"),
-    "health-lifestyle": Program(["Health & Lifestyle", "Health and Lifestyle"], "B1", "Health"),
+    "health-lifestyle": Program(["Health & Lifestyle", "Health and Lifestyle"], "B1", "Health", "Health"),
     "words-and-their-stories": Program(["Words & Their Stories", "Words and Their Stories"], "B1", "Everyday Words"),
     "american-stories": Program(["American Stories"], "B1", "Free Time"),
-    "arts-culture": Program(["Arts & Culture", "Arts and Culture"], "B1", "Free Time"),
-    "science-technology": Program(["Science & Technology", "Science and Technology"], "B1", "Everyday Words"),
-    "as-it-is": Program(["As It Is"], "B1", "Everyday Words"),
+    "arts-culture": Program(["Arts & Culture", "Arts and Culture"], "B1", "Free Time", "Arts & Culture"),
+    "science-technology": Program(["Science & Technology", "Science and Technology"], "B1", "Everyday Words", "Science"),
+    "as-it-is": Program(["As It Is"], "B1", "Everyday Words", "World"),
     "ask-a-teacher": Program(["Ask a Teacher"], "B1", "Everyday Words"),
 }
 
@@ -153,11 +157,12 @@ def find_section_urls(wanted: list[str]) -> dict[str, str]:
     return found
 
 
-def list_section_articles(section_url: str) -> list[int]:
+def list_section_articles(section_url: str, newest_first: bool = False) -> list[int]:
     # Program pages (/p/) list their lessons once, with a slug; bare /a/<id>.html links there are guides.
     is_program_page = "/p/" in section_url
     ids: set[int] = set()
-    for page in range(MAX_SECTION_PAGES):
+    # Daily news runs only need the first pages.
+    for page in range(2 if newest_first else MAX_SECTION_PAGES):
         url = section_url if page == 0 else f"{section_url}?p={page}"
         try:
             html = fetch_html(url)
@@ -168,7 +173,7 @@ def list_section_articles(section_url: str) -> list[int]:
         if not page_ids - ids:
             break
         ids |= page_ids
-    return sorted(ids)
+    return sorted(ids, reverse=newest_first)
 
 
 # ---------- article parsing ----------
@@ -183,6 +188,7 @@ class Article:
     media_url: str
     paragraphs: list[str] = field(default_factory=list)
     section_paths: list[str] = field(default_factory=list)
+    published_at: str | None = None
 
 
 def pick_media_url(html: str) -> str | None:
@@ -215,6 +221,8 @@ def parse_article(article_id: int, url: str) -> Article | None:
     if image_url:
         image_url = re.sub(r"_w\d+_", "_w640_", image_url)
     section_paths = re.findall(r"/[zp]/\d+", html)
+    published = soup.find("meta", property="article:published_time") or soup.find("time", attrs={"datetime": True})
+    published_at = (published.get("content") or published.get("datetime")) if published else None
     body = soup.select_one("div.wsw")
     if not title or not body:
         log(f"  {article_id}: no {'title' if not title else 'article text'}, skipped")
@@ -252,7 +260,7 @@ def parse_article(article_id: int, url: str) -> Article | None:
         log(f"  {article_id}: no audio or video with a transcript, skipped")
         return None
     media_url, paragraphs = max(with_media, key=lambda seg: sum(len(p.split()) for p in seg[1]))
-    return Article(article_id, url, title, image_url, media_url, paragraphs, section_paths)
+    return Article(article_id, url, title, image_url, media_url, paragraphs, section_paths, published_at)
 
 
 # ---------- audio and alignment ----------
@@ -418,6 +426,22 @@ def to_lesson_sentences(timed: list[dict], duration: float) -> list[dict]:
     return out
 
 
+def assign_paragraphs(lesson_sentences: list[dict], paragraphs: list[str]) -> None:
+    """Marks each sentence with the article paragraph it comes from, so the app can lay the story out
+    like the original page. Sentences are matched in order by their first words."""
+    positions: list[tuple[str, int]] = [(w, pi) for pi, para in enumerate(paragraphs) for w in map(norm_word, para.split()) if w]
+    cursor = 0
+    current = 0
+    for sentence in lesson_sentences:
+        words = [w for w in map(norm_word, sentence["text"].split()) if w][:3]
+        for i in range(cursor, len(positions) - len(words) + 1):
+            if [positions[i + k][0] for k in range(len(words))] == words:
+                current = positions[i][1]
+                cursor = i + len(words)
+                break
+        sentence["paragraph"] = current
+
+
 def pick_topic(title: str, default: str) -> str:
     lower = title.lower()
     for topic, pattern in TOPIC_KEYWORDS:
@@ -463,6 +487,17 @@ class Supabase:
         if res.status_code >= 400:
             raise RuntimeError(f"{table} upsert failed: {res.status_code} {res.text}")
 
+    def patch(self, table: str, video_id: str, fields: dict) -> None:
+        res = requests.patch(
+            f"{self.url}/rest/v1/{table}",
+            params={"video_id": f"eq.{video_id}"},
+            data=json.dumps(fields),
+            headers={**self.headers, "Content-Type": "application/json", "Prefer": "return=minimal"},
+            timeout=30,
+        )
+        if res.status_code >= 400:
+            raise RuntimeError(f"{table} update failed: {res.status_code} {res.text}")
+
 
 # ---------- main ----------
 
@@ -487,6 +522,7 @@ def import_article(article: Article, program: Program, db: Supabase | None, work
         return None
     for s in lesson_sentences[:3]:
         log(f"    [{s['start']:.2f}-{s['end']:.2f}] {s['text']}")
+    assign_paragraphs(lesson_sentences, article.paragraphs)
 
     topic = pick_topic(article.title, program.topic)
     if db:
@@ -520,10 +556,59 @@ def import_article(article: Article, program: Program, db: Supabase | None, work
                 "is_published": True,
                 # VOA article ids grow over time, so lessons stay in publishing order (Lesson 1, 2, ...).
                 "sort_order": article.article_id,
+                "category": program.news_category,
+                "published_at": article.published_at,
             },
         )
     audio_path.unlink(missing_ok=True)
     return {"id": video_id, "title": article.title, "level": program.level, "topic": topic, "duration": format_duration(duration), "sentences": len(lesson_sentences)}
+
+
+def backfill_news(db: Supabase, wanted: list[str]) -> int:
+    """Adds category, publishing date and paragraph marks to news lessons imported before they existed.
+    Only re-reads the article pages; the audio and timings stay as they are."""
+    updated = 0
+    for key in wanted:
+        program = PROGRAMS[key]
+        if not program.news_category:
+            continue
+        res = requests.get(
+            f"{db.url}/rest/v1/videos",
+            params={"select": "video_id", "collection_id": f"eq.{COLLECTION}", "category": "is.null", "video_id": "like.voa-*"},
+            headers=db.headers,
+            timeout=30,
+        )
+        res.raise_for_status()
+        pending = {row["video_id"] for row in res.json()}
+        section = find_section_urls([key]).get(key)
+        if not section:
+            continue
+        for article_id in list_section_articles(section):
+            video_id = f"voa-{article_id}"
+            if video_id not in pending:
+                continue
+            try:
+                article = parse_article(article_id, f"{SITE}/a/{article_id}.html")
+                if not article:
+                    continue
+                lesson = requests.get(
+                    f"{db.url}/rest/v1/lessons",
+                    params={"select": "sentences", "video_id": f"eq.{video_id}"},
+                    headers=db.headers,
+                    timeout=30,
+                ).json()
+                if lesson:
+                    sentences = lesson[0]["sentences"]
+                    assign_paragraphs(sentences, article.paragraphs)
+                    db.patch("lessons", video_id, {"sentences": sentences})
+                db.patch("videos", video_id, {"category": program.news_category, "published_at": article.published_at})
+                pending.discard(video_id)
+                updated += 1
+                log(f"  {video_id}: {program.news_category}, {article.published_at}")
+            except Exception as error:  # one broken page must not stop the run
+                log(f"  {video_id}: backfill failed: {error}")
+    log(f"\nBackfilled {updated} news lessons.")
+    return 0
 
 
 def main() -> int:
@@ -543,6 +628,9 @@ def main() -> int:
             log("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY (repository secrets).")
             return 1
         db = Supabase(url, key)
+    if db and os.environ.get("BACKFILL", "").lower() == "true":
+        return backfill_news(db, wanted)
+    newest_first = os.environ.get("NEWEST_FIRST", "").lower() == "true"
     stored = db.stored_ids() if db else set()
     log(f"{len(stored)} VOA lessons already stored{' (dry run: nothing is written)' if is_dry_run else ''}")
 
@@ -560,7 +648,7 @@ def main() -> int:
         queues.append(direct)
     else:
         for key, section in find_section_urls(wanted).items():
-            ids = list_section_articles(section)
+            ids = list_section_articles(section, newest_first)
             log(f"{key}: {section} lists {len(ids)} articles")
             # Lessons on a program page don't link back to it, so only /z/ sections are checked.
             check_path = None if "/p/" in section else urlparse(section).path

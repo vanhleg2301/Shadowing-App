@@ -82,7 +82,7 @@ interface WordsProps {
 }
 
 // Karaoke: words already spoken turn green and the current word is highlighted (auto-caption videos only).
-function Words({ text, activeWord, onWordClick }: WordsProps) {
+export function Words({ text, activeWord, onWordClick }: WordsProps) {
   let wordIndex = -1;
   return text.split(/(\s+)/).map((token, j) => {
     if (token === "" || /\s/.test(token)) return token;

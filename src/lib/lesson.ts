@@ -5,6 +5,8 @@ export interface Sentence {
   translation?: string;
   // Start time of each whitespace-separated word in text (auto captions only), for karaoke highlighting.
   wordStarts?: number[];
+  // Index of the article paragraph the sentence belongs to (VOA news lessons), for the reader layout.
+  paragraph?: number;
 }
 
 export interface Lesson {

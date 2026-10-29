@@ -15,6 +15,8 @@ export interface VideoRow {
   is_published: boolean;
   sort_order: number;
   collection_id?: string;
+  category?: string | null;
+  published_at?: string | null;
 }
 
 // Bundled fallback: every collection, used when the videos table is missing or empty.
@@ -39,6 +41,7 @@ export function toCatalogVideo(row: VideoRow): CuratedVideo {
     duration: row.duration,
     channel: row.channel || undefined,
     collection: isCollectionId(row.collection_id) ? row.collection_id : DEFAULT_COLLECTION,
+    ...(row.category ? { category: row.category, publishedAt: row.published_at ?? undefined } : {}),
   };
 }
 
@@ -52,7 +55,7 @@ export async function getCatalog(): Promise<CuratedVideo[]> {
   if (!supabase) return BUNDLED_VIDEOS;
   const { data, error } = await supabase
     .from("videos")
-    .select("video_id, title, level, topic, duration, channel, is_published, sort_order, collection_id")
+    .select("video_id, title, level, topic, duration, channel, is_published, sort_order, collection_id, category, published_at")
     .eq("is_published", true)
     .order("sort_order", { ascending: true });
   if (error || !data || data.length === 0) return BUNDLED_VIDEOS;
@@ -68,6 +71,14 @@ export async function getCatalog(): Promise<CuratedVideo[]> {
 
 export async function getCatalogVideo(videoId: string): Promise<CuratedVideo | undefined> {
   return (await getCatalog()).find((v) => v.videoId === videoId);
+}
+
+// News lessons, newest first.
+export async function getNewsVideos(): Promise<CuratedVideo[]> {
+  const catalog = await getCatalog();
+  return catalog
+    .filter((v) => v.category && v.hasTranscript !== false)
+    .sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
 }
 
 export async function getCollectionVideos(collection: CollectionId): Promise<CuratedVideo[]> {
