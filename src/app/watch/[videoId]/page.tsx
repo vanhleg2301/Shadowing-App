@@ -6,7 +6,7 @@ import { ListenNotesPlayer } from "@/components/ListenNotesPlayer";
 import { LessonSkeleton } from "@/components/Skeleton";
 import { getCatalogVideo } from "@/lib/catalog";
 import { NO_SUBTITLES_ERROR } from "@/lib/captions";
-import { getLessonPart, getPartForSentence } from "@/lib/lesson-parts";
+import { getLessonPart, getPartForSentence, getTimePart, type TimePart } from "@/lib/lesson-parts";
 import { getLesson, type LessonResult } from "@/lib/lessons";
 import { getLessonUserState, getVideoNotes } from "@/lib/user-data";
 import { isValidVideoId } from "@/lib/youtube-url";
@@ -60,7 +60,15 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   // and a cached failure would outlive the transcript being stored later.
   const catalogVideo = await getCatalogVideo(videoId).catch(() => undefined);
   if (catalogVideo?.hasTranscript === false) {
-    return <NotesLoader videoId={videoId} title={catalogVideo.title} backHref={options.backHref} />;
+    return (
+      <NotesLoader
+        videoId={videoId}
+        title={catalogVideo.title}
+        backHref={options.backHref}
+        part={getTimePart(catalogVideo.duration, options.part)}
+        partQuery={options.query}
+      />
+    );
   }
 
   const userStatePromise = getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [], lastSentence: 0 }));
@@ -109,7 +117,15 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   );
 }
 
-async function NotesLoader({ videoId, title, backHref }: { videoId: string; title: string; backHref: string }) {
+interface NotesLoaderProps {
+  videoId: string;
+  title: string;
+  backHref: string;
+  part?: TimePart | null;
+  partQuery?: string;
+}
+
+async function NotesLoader({ videoId, title, backHref, part, partQuery }: NotesLoaderProps) {
   const notes = await getVideoNotes(videoId).catch(() => null);
-  return <ListenNotesPlayer videoId={videoId} title={title} initialNotes={notes} backHref={backHref} />;
+  return <ListenNotesPlayer videoId={videoId} title={title} initialNotes={notes} backHref={backHref} part={part ?? undefined} partQuery={partQuery} />;
 }

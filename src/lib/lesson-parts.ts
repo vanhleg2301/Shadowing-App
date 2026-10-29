@@ -21,6 +21,22 @@ function toSeconds(duration: string): number {
   return duration.split(":").reduce((total, part) => total * 60 + (Number(part) || 0), 0);
 }
 
+export interface TimePart {
+  index: number;
+  total: number;
+  start: number;
+  end: number;
+}
+
+// For videos without a transcript: equal slices of the video's length.
+export function getTimePart(duration: string | undefined, requested: number | null): TimePart | null {
+  const length = duration ? toSeconds(duration) : 0;
+  const total = getPartCount(length);
+  if (total === 1) return null;
+  const index = Math.min(Math.max(Math.round(requested ?? 1) || 1, 1), total);
+  return { index, total, start: ((index - 1) * length) / total, end: (index * length) / total };
+}
+
 // "3 × 5 min" for a catalog duration like "14:52"; null when the video stays whole.
 export function formatParts(duration: string | undefined): string | null {
   if (!duration) return null;

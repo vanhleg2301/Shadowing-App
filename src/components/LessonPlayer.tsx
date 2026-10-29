@@ -9,6 +9,7 @@ import { DictationPanel } from "@/components/DictationPanel";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { LessonSettingsSheet } from "@/components/LessonSettingsSheet";
+import { PartNav } from "@/components/PartNav";
 import { ShadowingPanel } from "@/components/ShadowingPanel";
 import { StudyTimer } from "@/components/StudyTimer";
 import { SummaryPanel } from "@/components/SummaryPanel";
@@ -443,7 +444,7 @@ export function LessonPlayer({
             </div>
           )}
           {part && (
-            <PartNav part={part} href={partHref} isOver={isPartOver} />
+            <PartNav index={part.index} total={part.total} href={partHref} isOver={isPartOver} />
           )}
           {sentences.map((sentence, i) => (
             <TranscriptRow
@@ -565,38 +566,6 @@ export function LessonPlayer({
       )}
 
       {sheetProps && <WordLookupSheet {...sheetProps} />}
-    </div>
-  );
-}
-
-interface PartNavProps {
-  part: LessonPart;
-  href: (index: number) => string;
-  isOver: boolean;
-}
-
-// Moves between the ~5-minute parts of a long video.
-function PartNav({ part, href, isOver }: PartNavProps) {
-  const hasNext = part.index < part.total;
-  return (
-    <div
-      className={`mb-3 flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm ${
-        isOver ? "animate-fade-in border-accent/40 bg-accent-soft" : "border-line bg-surface"
-      }`}
-    >
-      <span className="min-w-0 flex-1 text-ink">
-        {isOver ? (hasNext ? <b>Part {part.index} done. Ready for the next one?</b> : <b>Last part done!</b>) : <>Part <b>{part.index}</b> of {part.total} · about 5 minutes</>}
-      </span>
-      {part.index > 1 && (
-        <Link href={href(part.index - 1)} className="btn-3d shrink-0 px-3 py-1 text-sm">
-          Back
-        </Link>
-      )}
-      {hasNext && (
-        <Link href={href(part.index + 1)} className={`btn-3d shrink-0 px-3 py-1 text-sm ${isOver ? "btn-brand" : ""}`}>
-          Next part
-        </Link>
-      )}
     </div>
   );
 }

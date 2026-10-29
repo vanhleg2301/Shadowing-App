@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { addVideoNote, deleteVideoNote } from "@/app/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PartNav } from "@/components/PartNav";
 import { Icon } from "@/components/Icon";
 import { VideoFacade } from "@/components/VideoFacade";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
+import type { TimePart } from "@/lib/lesson-parts";
 import type { VideoNote } from "@/lib/user-data";
 
 interface ListenNotesPlayerProps {
@@ -15,6 +17,9 @@ interface ListenNotesPlayerProps {
   // null when signed out: notes are kept in this browser only.
   initialNotes: VideoNote[] | null;
   backHref: string;
+  // Long videos are played in ~5-minute slices.
+  part?: TimePart;
+  partQuery?: string;
 }
 
 const SKIP_S = 5;
@@ -43,8 +48,8 @@ function writeLocalNotes(videoId: string, notes: VideoNote[]) {
 
 // For videos without a stored transcript: listen with replay tools and write down what you hear,
 // each note pinned to the moment in the video so it can be replayed.
-export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: ListenNotesPlayerProps) {
-  const { containerRef, isActivated, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(videoId);
+export function ListenNotesPlayer({ videoId, title, initialNotes, backHref, part, partQuery = "" }: ListenNotesPlayerProps) {
+  const { containerRef, isActivated, isReady, isPlaying, currentTime, play, pause, seekTo, setRate } = useYouTubePlayer(videoId, part?.start ?? 0);
   const isSignedIn = initialNotes !== null;
   const [notes, setNotes] = useState<VideoNote[]>(initialNotes ?? []);
   const [draft, setDraft] = useState("");
@@ -65,7 +70,13 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
     if (loop?.end != null && currentTime >= loop.end) seekTo(loop.start);
   }, [currentTime, loop, seekTo]);
 
-  const skip = (delta: number) => seekTo(Math.max(0, currentTime + delta));
+  const isPartOver = part !== undefined && currentTime >= part.end;
+  useEffect(() => {
+    if (isPartOver && isPlaying && !loop) pause();
+  }, [isPartOver, isPlaying, loop, pause]);
+  const partHref = (index: number) => `/watch/${videoId}?${partQuery ? `${partQuery}&` : ""}part=${index}`;
+
+  const skip = (delta: number) => seekTo(Math.max(part?.start ?? 0, currentTime + delta));
 
   const handleLoop = () => {
     if (!loop) setLoop({ start: currentTime, end: null });
@@ -134,7 +145,9 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-bold text-ink">{title}</h1>
-          <p className="truncate text-sm text-muted">No subtitles yet · listen and take notes</p>
+          <p className="truncate text-sm text-muted">
+            {part ? `Part ${part.index} of ${part.total} · ` : ""}No subtitles yet · listen and take notes
+          </p>
         </div>
       </header>
 
@@ -168,6 +181,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 sm:px-4">
+        {part && <PartNav index={part.index} total={part.total} href={partHref} isOver={isPartOver} />}
         {notes.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">
             Write down words and phrases you hear. Each note remembers the moment, so you can tap it to hear that part again.
