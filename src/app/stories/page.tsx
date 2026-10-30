@@ -4,7 +4,8 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListSkeleton } from "@/components/Skeleton";
-import { STORIES, STORY_TOPICS, getStoryLabel, getStoryOfTheDay, type Story } from "@/data/stories";
+import { STORIES, STORY_TOPICS, getStoryLabel, getStoryOfTheDay, toStoryListItem } from "@/data/stories";
+import { StoryList } from "@/components/StoryList";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const metadata: Metadata = { title: "Daily stories · Shadowing English" };
@@ -69,25 +70,7 @@ async function StoriesContent({ topic }: { topic: string | null }) {
         ))}
       </nav>
 
-      <ul className="stagger mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-        {stories.map((story) => (
-          <StoryCard key={story.id} story={story} />
-        ))}
-      </ul>
+      <StoryList stories={stories.map(toStoryListItem)} />
     </>
-  );
-}
-
-function StoryCard({ story }: { story: Story }) {
-  return (
-    <li>
-      <Link href={`/stories/${story.id}`} className="pressable block h-full rounded-3xl border border-line bg-surface p-4 hover:border-brand">
-        <p className="text-xs font-bold uppercase tracking-wide text-accent">
-          {getStoryLabel(story)}
-        </p>
-        <p className="mt-1 font-bold text-ink">{story.title}</p>
-        <p className="mt-1 line-clamp-2 text-sm text-muted">{story.summary}</p>
-      </Link>
-    </li>
   );
 }

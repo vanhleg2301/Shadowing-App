@@ -663,6 +663,19 @@ export function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]+["”]?\s*|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [text];
 }
 
+// What story lists and "Up next" need, small enough to hand to client components.
+export interface StoryListItem {
+  id: string;
+  title: string;
+  summary: string;
+  topic: string;
+  label: string;
+}
+
+export function toStoryListItem(story: Story): StoryListItem {
+  return { id: story.id, title: story.title, summary: story.summary, topic: story.topic, label: getStoryLabel(story) };
+}
+
 // "Small talk · A2" or "Story · Travel · A2", without repeating "Small talk" twice.
 export function getStoryLabel(story: Story): string {
   const kind = story.kind === "small-talk" ? "Small talk" : "Story";

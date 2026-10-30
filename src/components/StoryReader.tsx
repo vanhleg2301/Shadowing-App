@@ -1,18 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { READER_SIZES, READER_SPACINGS, useReaderPrefs } from "@/hooks/useReaderPrefs";
 import { useWordLookup } from "@/hooks/useWordLookup";
-import { getStoryLabel, splitSentences, type Story } from "@/data/stories";
+import { getStoryLabel, splitSentences, type Story, type StoryListItem } from "@/data/stories";
+import { markStoryRead, pickNextStory, useReadStories } from "@/lib/story-progress";
 import { speak, type Accent } from "@/lib/speech";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface StoryReaderProps {
   story: Story;
   initialSavedWords: string[];
+  allStories: StoryListItem[];
 }
 
 interface StorySentence {
@@ -25,13 +28,16 @@ const RATES = [0.9, 0.75, 1];
 
 // Read a story or dialogue, or listen to it like a podcast in the browser's own voice (free, works offline
 // once loaded). In dialogues each speaker gets a different accent.
-export function StoryReader({ story, initialSavedWords }: StoryReaderProps) {
+export function StoryReader({ story, initialSavedWords, allStories }: StoryReaderProps) {
   const { lookup, openWord, sheetProps } = useWordLookup(story.id, initialSavedWords);
   const { prefs } = useReaderPrefs();
   const [active, setActive] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [rateIndex, setRateIndex] = useState(0);
   const playingRef = useRef(false);
+  const endRef = useRef<HTMLDivElement>(null);
+  const readStories = useReadStories();
+  const nextStory = pickNextStory(allStories, story.id, readStories);
 
   const speakers = [...new Set(story.lines.map((l) => l.speaker).filter(Boolean))];
   const sentences: StorySentence[] = story.lines.flatMap((line, i) =>
@@ -39,6 +45,17 @@ export function StoryReader({ story, initialSavedWords }: StoryReaderProps) {
   );
 
   useEffect(() => () => speechSynthesis.cancel(), []);
+
+  // Reaching the end of the page (past the words and grammar) counts as having read the story.
+  useEffect(() => {
+    const end = endRef.current;
+    if (!end) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) markStoryRead(story.id);
+    });
+    observer.observe(end);
+    return () => observer.disconnect();
+  }, [story.id]);
 
   const stop = () => {
     playingRef.current = false;
@@ -50,6 +67,7 @@ export function StoryReader({ story, initialSavedWords }: StoryReaderProps) {
     if (index >= sentences.length) {
       stop();
       setActive(-1);
+      markStoryRead(story.id);
       return;
     }
     playingRef.current = true;
@@ -154,6 +172,22 @@ export function StoryReader({ story, initialSavedWords }: StoryReaderProps) {
           ))}
         </ul>
       </section>
+
+      {nextStory && (
+        <section className="mt-8">
+          <h2 className="text-xl font-extrabold text-ink">Up next</h2>
+          <Link
+            href={`/stories/${nextStory.id}`}
+            className="pressable mt-3 block rounded-3xl border border-brand/25 bg-gradient-to-br from-brand-soft to-surface p-4 hover:border-brand"
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-accent">{nextStory.label}</p>
+            <p className="mt-1 font-bold text-ink">{nextStory.title}</p>
+            <p className="mt-1 line-clamp-2 text-sm text-muted">{nextStory.summary}</p>
+            <p className="mt-2 text-sm font-semibold text-brand">Read next →</p>
+          </Link>
+        </section>
+      )}
+      <div ref={endRef} aria-hidden="true" className="h-px" />
 
       <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 px-4 md:bottom-6">
         <div className="mx-auto flex max-w-md items-center gap-2 rounded-3xl border border-line bg-surface p-2 shadow-lg">

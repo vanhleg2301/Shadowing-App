@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { LessonSkeleton } from "@/components/Skeleton";
 import { StoryReader } from "@/components/StoryReader";
-import { STORIES, getStory } from "@/data/stories";
+import { STORIES, getStory, toStoryListItem } from "@/data/stories";
 import { getLessonUserState } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -32,5 +32,5 @@ async function StoryContent({ id }: { id: string }) {
   const story = getStory(id);
   if (!story) notFound();
   const userState = await getLessonUserState(id).catch(() => ({ savedWords: [] as string[] }));
-  return <StoryReader story={story} initialSavedWords={userState.savedWords} />;
+  return <StoryReader story={story} initialSavedWords={userState.savedWords} allStories={STORIES.map(toStoryListItem)} />;
 }
