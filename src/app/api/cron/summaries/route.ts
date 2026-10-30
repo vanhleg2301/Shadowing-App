@@ -7,8 +7,9 @@ const LESSONS_PER_RUN = 20;
 // Up to 20 Claude calls in one run.
 export const maxDuration = 300;
 
-// Runs once a day (vercel.json): writes summaries for lessons added since the last run (seed, VOA import).
-// Does nothing, and costs nothing, when every lesson already has one.
+// Writes summaries for lessons added since the last run (seed, VOA import). Does nothing, and costs nothing,
+// when every lesson already has one. Not scheduled while there are no API credits: add it back to the crons
+// in vercel.json ("0 20 * * *") to run it daily.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {

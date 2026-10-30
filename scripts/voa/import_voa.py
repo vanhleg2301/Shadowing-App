@@ -12,7 +12,8 @@ Settings come from environment variables:
   LIMIT      new lessons per run (default 20)
   DRY_RUN    "true" to parse and align without writing anything
   NEWEST_FIRST  "true" to take the newest articles first (daily news runs)
-  BACKFILL   "true" to add category, date and paragraphs to news lessons imported earlier
+  BACKFILL   "true" to add category, date and paragraphs to news lessons imported earlier, and a free
+             summary (the page's description and "Words in This Story") to VOA lessons without one
 """
 
 from __future__ import annotations
@@ -98,6 +99,15 @@ CUT_MARKERS = re.compile(
     r"^(words in this story|words in the story|new words|vocabulary|quiz\b|test yourself|try it\b|_{3,}|do you have a question)",
     re.I,
 )
+# The free lesson summary: the page's description and VOA's own word list ("aspect – n. the verb form that ...").
+GLOSSARY_HEADING = re.compile(r"^(words in (this|the) (story|lesson|report|article)|new words)\b", re.I)
+GLOSSARY_ENTRY = re.compile(r"^(?P<word>[^–—]{1,60}?)\s*(?:[–—]|\s-{1,2}\s)\s*(?P<meaning>.{3,})$")
+PART_OF_SPEECH = re.compile(
+    r"^\(?\s*(?:n|v|adj|adv|prep|conj|pron|interj|pl|noun|verb|adjective|adverb|phrasal verb|phrase|idiom|expression)\s*[.)]+\s*"
+    r"(?:\(?\s*(?:pl|plural|informal|formal|US)\s*[.)]+\s*)?",
+    re.I,
+)
+MAX_KEY_WORDS = 10
 SPEAKER_LABEL = re.compile(r"^([A-Z][\w.'’-]*(?: [A-Z][\w.'’-]*){0,2}):\s+")
 NON_SPEECH = re.compile(r"\[[^\]]*\]|\((?:[A-Z ]+|music|sound[^)]*|laughter)\)", re.I)
 TITLE_ABBREVIATIONS = {"Mr.", "Mrs.", "Ms.", "Dr.", "St.", "Prof."}
@@ -189,6 +199,8 @@ class Article:
     paragraphs: list[str] = field(default_factory=list)
     section_paths: list[str] = field(default_factory=list)
     published_at: str | None = None
+    description: str | None = None
+    glossary: list[dict] = field(default_factory=list)
 
 
 def pick_media_url(html: str) -> str | None:
@@ -210,6 +222,43 @@ def pick_media_url(html: str) -> str | None:
     return min(mp4, key=resolution)
 
 
+def parse_glossary_entry(text: str) -> dict | None:
+    match = GLOSSARY_ENTRY.match(text)
+    if not match:
+        return None
+    word = match.group("word").strip(" *:,.")
+    meaning = PART_OF_SPEECH.sub("", match.group("meaning")).strip()
+    if not word or len(word.split()) > 6 or not meaning:
+        return None
+    return {"word": word, "meaning": meaning[0].upper() + meaning[1:]}
+
+
+def parse_glossary(body) -> list[dict]:
+    entries: list[dict] = []
+    is_inside = False
+    for el in body.find_all(["p", "h2", "h3", "h4"]):
+        text = re.sub(r"\s+", " ", el.get_text(" ", strip=True)).replace("\u200b", "").strip()
+        if not is_inside:
+            is_inside = bool(GLOSSARY_HEADING.match(text))
+            continue
+        if not text:
+            continue
+        entry = parse_glossary_entry(text) if el.name == "p" else None
+        if entry:
+            entries.append(entry)
+        elif entries:
+            break
+    return entries[:MAX_KEY_WORDS]
+
+
+def build_summary(article: Article) -> dict | None:
+    """A lesson summary without AI: VOA's own description of the story and its word list."""
+    overview = article.description or (article.paragraphs[0] if article.paragraphs else "")
+    if not overview or not article.glossary:
+        return None
+    return {"overview": overview, "keyPoints": [], "keyWords": article.glossary, "source": "free"}
+
+
 def parse_article(article_id: int, url: str) -> Article | None:
     html = fetch_html(url)
     soup = BeautifulSoup(html, "html.parser")
@@ -223,6 +272,8 @@ def parse_article(article_id: int, url: str) -> Article | None:
     section_paths = re.findall(r"/[zp]/\d+", html)
     published = soup.find("meta", property="article:published_time") or soup.find("time", attrs={"datetime": True})
     published_at = (published.get("content") or published.get("datetime")) if published else None
+    meta_description = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", property="og:description")
+    description = re.sub(r"\s+", " ", meta_description.get("content") or "").strip() if meta_description else None
     body = soup.select_one("div.wsw")
     if not title or not body:
         log(f"  {article_id}: no {'title' if not title else 'article text'}, skipped")
@@ -260,7 +311,7 @@ def parse_article(article_id: int, url: str) -> Article | None:
         log(f"  {article_id}: no audio or video with a transcript, skipped")
         return None
     media_url, paragraphs = max(with_media, key=lambda seg: sum(len(p.split()) for p in seg[1]))
-    return Article(article_id, url, title, image_url, media_url, paragraphs, section_paths, published_at)
+    return Article(article_id, url, title, image_url, media_url, paragraphs, section_paths, published_at, description or None, parse_glossary(body))
 
 
 # ---------- audio and alignment ----------
@@ -541,6 +592,7 @@ def import_article(article: Article, program: Program, db: Supabase | None, work
                 "sentences": lesson_sentences,
                 "has_translation": False,
                 "caption_source": "aligned",
+                "summary": build_summary(article),
             },
         )
         db.upsert(
@@ -608,7 +660,36 @@ def backfill_news(db: Supabase, wanted: list[str]) -> int:
             except Exception as error:  # one broken page must not stop the run
                 log(f"  {video_id}: backfill failed: {error}")
     log(f"\nBackfilled {updated} news lessons.")
+    backfill_summaries(db)
     return 0
+
+
+def backfill_summaries(db: Supabase) -> None:
+    """Adds the free summary to VOA lessons that have none. Only re-reads the article pages."""
+    res = requests.get(
+        f"{db.url}/rest/v1/lessons",
+        params={"select": "video_id", "video_id": "like.voa-*", "summary": "is.null"},
+        headers=db.headers,
+        timeout=30,
+    )
+    res.raise_for_status()
+    pending = sorted(row["video_id"] for row in res.json())
+    log(f"\n{len(pending)} VOA lessons without a summary")
+    added = 0
+    for video_id in pending:
+        article_id = int(video_id.removeprefix("voa-"))
+        try:
+            article = parse_article(article_id, f"{SITE}/a/{article_id}.html")
+            summary = build_summary(article) if article else None
+            if not summary:
+                log(f"  {video_id}: no word list on the page")
+                continue
+            db.patch("lessons", video_id, {"summary": summary})
+            added += 1
+            log(f"  {video_id}: {len(summary['keyWords'])} words")
+        except Exception as error:  # one broken page must not stop the run
+            log(f"  {video_id}: summary failed: {error}")
+    log(f"\nAdded {added} free summaries.")
 
 
 def main() -> int:

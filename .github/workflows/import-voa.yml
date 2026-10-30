@@ -23,7 +23,7 @@ on:
         type: boolean
         default: false
       backfill:
-        description: "Only add category, date and paragraphs to news lessons imported earlier"
+        description: "Only fill in lessons imported earlier: category, date and paragraphs for news, free summaries for all"
         type: boolean
         default: false
       dry_run:

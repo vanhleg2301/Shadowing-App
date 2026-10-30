@@ -1,5 +1,5 @@
 // Writes a short learner-friendly summary for stored lessons (public.lessons.summary) with Claude, once per
-// video, so learners never trigger a paid call. Used by scripts/summarize-lessons.ts and the daily cron
+// video, so learners never trigger a paid call. Used by scripts/summarize-lessons.ts and the cron route
 // /api/cron/summaries. Kept free of Next.js imports so the script can use it.
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
