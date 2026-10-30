@@ -89,7 +89,7 @@ export function PlacementTest() {
           </li>
         ))}
       </ul>
-      <button type="button" onClick={() => handleAnswer("")} className="mt-4 text-sm font-semibold text-muted hover:text-ink">
+      <button type="button" onClick={() => handleAnswer("")} className="mt-2 px-1 py-2 text-sm font-semibold text-muted hover:text-ink">
         I don&apos;t know
       </button>
     </div>

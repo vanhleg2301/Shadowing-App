@@ -107,9 +107,9 @@ export function NewsReader({ lesson, category, dateLabel, initialSavedWords }: N
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
       <div className="flex items-center justify-between gap-3">
         <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: lesson.title }]} className="min-w-0" />
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <OfflineButton path={`/news/${lesson.videoId}`} title={lesson.title} audioUrl={lesson.media.audioUrl} imageUrl={lesson.media.imageUrl} />
-          <button type="button" onClick={() => setIsTextSheetOpen(true)} className="btn-3d size-10 rounded-full text-sm font-extrabold" aria-label="Text size and spacing">
+          <button type="button" onClick={() => setIsTextSheetOpen(true)} className="btn-3d size-10 shrink-0 rounded-full text-sm font-extrabold" aria-label="Text size and spacing">
             Aa
           </button>
         </div>
@@ -178,7 +178,7 @@ export function NewsReader({ lesson, category, dateLabel, initialSavedWords }: N
               {RATES[rateIndex]}×
             </button>
           </div>
-          <Link href={`/watch/${lesson.videoId}?mode=shadow`} className="w-20 text-right text-xs font-bold text-brand">
+          <Link href={`/watch/${lesson.videoId}?mode=shadow`} className="w-20 py-2 text-right text-xs font-bold text-brand">
             Shadow it
           </Link>
         </div>

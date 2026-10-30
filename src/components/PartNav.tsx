@@ -27,12 +27,12 @@ export function PartNav({ index, total, href, isOver, className = "mb-3" }: Part
         )}
       </span>
       {index > 1 && (
-        <Link href={href(index - 1)} className="btn-3d shrink-0 px-3 py-1 text-sm">
+        <Link href={href(index - 1)} className="btn-3d shrink-0 px-3 py-1.5 text-sm">
           Back
         </Link>
       )}
       {hasNext && (
-        <Link href={href(index + 1)} className={`btn-3d shrink-0 px-3 py-1 text-sm ${isOver ? "btn-brand" : ""}`}>
+        <Link href={href(index + 1)} className={`btn-3d shrink-0 px-3 py-1.5 text-sm ${isOver ? "btn-brand" : ""}`}>
           Next part
         </Link>
       )}

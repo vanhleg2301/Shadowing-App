@@ -26,7 +26,7 @@ export function Breadcrumbs({ items, className = "mb-3" }: BreadcrumbsProps) {
                 </span>
               )}
               {crumb.href && !isLast ? (
-                <Link href={crumb.href} className="font-semibold text-brand hover:text-brand-dark">
+                <Link href={crumb.href} className="-my-2 inline-block py-2 font-semibold text-brand hover:text-brand-dark">
                   {crumb.label}
                 </Link>
               ) : (

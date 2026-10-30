@@ -49,13 +49,13 @@ export function NewsList({ stories, categories, category, page, totalPages }: Ne
       </div>
 
       {lead && page === 1 ? (
-        <Link href={`/news/${lead.videoId}`} className="group mt-5 block overflow-hidden rounded-3xl border border-line bg-surface">
-          <div className="relative aspect-video bg-cream">
-            <Image src={getThumbnailUrl(lead.videoId)} alt="" fill priority sizes="(min-width: 768px) 60vw, 100vw" className="object-cover" />
+        <Link href={`/news/${lead.videoId}`} className="group mt-5 block overflow-hidden rounded-3xl border border-line bg-surface md:flex">
+          <div className="relative aspect-video bg-cream md:w-3/5 md:shrink-0">
+            <Image src={getThumbnailUrl(lead.videoId)} alt="" fill priority sizes="(min-width: 768px) 40vw, 100vw" className="object-cover" />
           </div>
-          <div className="p-4">
+          <div className="p-4 md:flex md:flex-col md:justify-center md:p-6">
             <StoryMeta story={lead} />
-            <p className="mt-1 text-xl font-extrabold leading-snug text-ink group-hover:text-brand">{lead.title}</p>
+            <p className="mt-1 text-xl font-extrabold leading-snug md:text-2xl text-ink group-hover:text-brand">{lead.title}</p>
           </div>
         </Link>
       ) : null}

@@ -207,7 +207,7 @@ export function CourseDayView({
                   aria-label={`Mark "${block.title}" as done`}
                   disabled={isPending}
                   onClick={() => toggleBlock(block.id, !isDone)}
-                  className={`grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+                  className={`relative grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors after:absolute after:-inset-2 ${
                     isDone ? "border-brand bg-brand text-on-brand" : "border-line bg-surface"
                   }`}
                 >

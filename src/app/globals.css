@@ -60,11 +60,13 @@
 
 @theme {
 
-  --animate-fade-up: fade-up 0.4s ease-out both;
+  /* Transform animations fill backwards only: a transform left on an element after the animation, even
+     an identity one, pins its position: fixed descendants (players, sheets) to it instead of the screen. */
+  --animate-fade-up: fade-up 0.4s ease-out backwards;
   --animate-fade-in: fade-in 0.2s ease-out both;
-  --animate-sheet-up: sheet-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-sheet-up: sheet-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   --animate-pop: pop 0.35s ease-out;
-  /* Page content after a navigation (AppShell). */
+  /* Page content after a navigation (AppShell). Opacity only: pages hold fixed players and sheets. */
   --animate-page-in: page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 
   @keyframes fade-up {
@@ -98,11 +100,9 @@
   @keyframes page-in {
     from {
       opacity: 0;
-      transform: translateY(6px);
     }
     to {
       opacity: 1;
-      transform: none;
     }
   }
   @keyframes pop {
@@ -162,7 +162,7 @@
    "Show more", come in together). */
 @utility stagger {
   & > * {
-    animation: fade-up 0.35s ease-out both;
+    animation: fade-up 0.35s ease-out backwards;
   }
   & > :nth-child(2) { animation-delay: 40ms; }
   & > :nth-child(3) { animation-delay: 80ms; }
