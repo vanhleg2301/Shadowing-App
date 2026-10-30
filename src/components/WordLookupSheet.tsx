@@ -32,6 +32,9 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
   return (
     <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Meaning of ${lookup.word}`}
         lang="en"
         className="max-h-[85dvh] w-full max-w-lg animate-sheet-up overflow-y-auto rounded-t-[2rem] border border-line bg-surface p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] sm:pb-5 shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}

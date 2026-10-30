@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/seed-lessons.ts",
     "resegment:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/resegment-lessons.ts",
-    "summarize:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/summarize-lessons.ts"
+    "summarize:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/summarize-lessons.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
@@ -23,6 +24,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
