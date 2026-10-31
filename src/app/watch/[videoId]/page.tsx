@@ -65,6 +65,7 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   if (catalogVideo?.hasTranscript === false) {
     return (
       <NotesLoader
+        key={options.part ?? 1}
         videoId={videoId}
         title={catalogVideo.title}
         backHref={options.backHref}
@@ -103,9 +104,13 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   // Long videos open in parts of about 5 minutes; without ?part= the learner resumes in the part they were in.
   const cut = getLessonPart(result.lesson, options.part ?? getPartForSentence(result.lesson, lastSentence));
   const lesson = cut?.lesson ?? result.lesson;
-  const initialSentence = cut ? Math.min(Math.max(lastSentence - cut.part.offset, 0), lesson.sentences.length - 1) : lastSentence;
+  // Saved progress only applies inside its own part; any other part starts at its first sentence.
+  const sentenceInPart = cut ? lastSentence - cut.part.offset : lastSentence;
+  const initialSentence = sentenceInPart >= 0 && sentenceInPart < lesson.sentences.length ? sentenceInPart : 0;
   return (
     <LessonPlayer
+      // Each part starts fresh: its first sentence, with the video cued at the part's start.
+      key={cut?.part.index ?? 0}
       lesson={lesson}
       part={cut?.part}
       partQuery={options.query}

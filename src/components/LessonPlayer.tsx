@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
 import { recordProgress } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
@@ -76,6 +77,7 @@ export function LessonPlayer({
 }: LessonPlayerProps) {
   const { user } = useAuth();
   const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
+  const router = useRouter();
   const { sentences } = lesson;
   const startSeconds = lesson.sentences[initialSentence]?.start ?? 0;
   // Both hooks are always called; only the one matching the lesson's media mounts a player.
@@ -155,7 +157,18 @@ export function LessonPlayer({
   useEffect(() => {
     if (isPartOver && isPlaying && loopIndex === null) pause();
   }, [isPartOver, isPlaying, loopIndex, pause]);
-  const partHref = (index: number) => `/watch/${lesson.videoId}?${partQuery ? `${partQuery}&` : ""}part=${index}`;
+  const hasNextPart = part !== undefined && part.index < part.total;
+  const isAtPartEnd = isPartOver || (isPractice && practiceIndex === sentences.length - 1);
+  // The next part opens as a new player, so the link carries what the learner has chosen since opening this one.
+  const partHref = (index: number) => {
+    const params = new URLSearchParams(partQuery);
+    params.set("mode", mode);
+    if (!isSessionListenFirst) params.delete("listen");
+    if (speed === 1) params.delete("rate");
+    else params.set("rate", String(speed));
+    params.set("part", String(index));
+    return `/watch/${lesson.videoId}?${params}`;
+  };
 
   useEffect(() => {
     if (highlightIndex < 0 || !prefs.autoScroll || isFollowPaused) return;
@@ -207,6 +220,10 @@ export function LessonPlayer({
   };
 
   const goToSentence = (index: number) => {
+    if (part && hasNextPart && index >= sentences.length) {
+      router.push(partHref(part.index + 1));
+      return;
+    }
     if (index < 0 || index >= sentences.length) return;
     hasInteractedRef.current = true;
     setIsResumeVisible(false);
@@ -452,6 +469,7 @@ export function LessonPlayer({
             </button>
           )}
         </div>
+        {part && <PartNav index={part.index} total={part.total} href={partHref} isOver={isAtPartEnd} className="sticky -top-3 z-10 mb-3" />}
         {panel === "summary" ? (
           <SummaryPanel lesson={lesson} onPlaySentence={replaySentence} />
         ) : (
@@ -465,9 +483,6 @@ export function LessonPlayer({
                 Start over
               </button>
             </div>
-          )}
-          {part && (
-            <PartNav index={part.index} total={part.total} href={partHref} isOver={isPartOver} />
           )}
           {sentences.map((sentence, i) => (
             <TranscriptRow
@@ -506,6 +521,7 @@ export function LessonPlayer({
             sentence={sentences[practiceIndex]}
             index={practiceIndex}
             total={sentences.length}
+            hasNextPart={hasNextPart}
             showTranslation={showTranslation}
             onPlaySentence={() => playSentence(practiceIndex)}
             onPrev={() => goToSentence(practiceIndex - 1)}
@@ -519,6 +535,7 @@ export function LessonPlayer({
             sentence={sentences[practiceIndex]}
             index={practiceIndex}
             total={sentences.length}
+            hasNextPart={hasNextPart}
             onListen={() => playSentence(practiceIndex)}
             onPrev={() => goToSentence(practiceIndex - 1)}
             onNext={() => goToSentence(practiceIndex + 1)}
@@ -531,6 +548,7 @@ export function LessonPlayer({
             sentence={sentences[practiceIndex]}
             index={practiceIndex}
             total={sentences.length}
+            hasNextPart={hasNextPart}
             onListen={() => playSentence(practiceIndex)}
             onPrev={() => goToSentence(practiceIndex - 1)}
             onNext={() => goToSentence(practiceIndex + 1)}

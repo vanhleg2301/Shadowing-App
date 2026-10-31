@@ -184,7 +184,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref, part
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-cream px-3 py-3 sm:px-4">
-        {part && <PartNav index={part.index} total={part.total} href={partHref} isOver={isPartOver} />}
+        {part && <PartNav index={part.index} total={part.total} href={partHref} isOver={isPartOver} className="sticky -top-3 z-10 mb-3" />}
         {notes.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">
             Write down words and phrases you hear. Each note remembers the moment, so you can tap it to hear that part again.

@@ -69,6 +69,19 @@ test("a story is remembered as read and suggests the next one", async ({ page })
   await expect(page.locator("main ul a").last()).toHaveAttribute("href", "/stories/story-00049");
 });
 
+test("the last sentence of a part leads to the next part, in the same mode", async ({ page, isMobile }) => {
+  // A two-part Bob the Canadian lesson from day 1 of the course.
+  await openPage(page, "/watch/ovl9kM46r10?mode=shadow&from=course-1");
+  if (isMobile) await page.locator("select").first().selectOption("dictation");
+  const rows = page.getByRole("button", { name: /^Play from sentence/ });
+  await rows.last().click();
+  await expect(page.getByText(/^Part 1 done/)).toBeVisible();
+  await expectInViewport(page, page.getByRole("link", { name: "Next part" }), "next part link");
+  await page.getByRole("button", { name: "Next sentence" }).click();
+  await expect(page).toHaveURL(new RegExp(`mode=${isMobile ? "dictation" : "shadow"}.*part=2`));
+  await expect(page.getByText(/^Sentence 1\/\d+/).first()).toBeVisible();
+});
+
 test("tapping a word opens the lookup sheet on screen", async ({ page }) => {
   await openPage(page, "/stories/story-00049");
   await page.getByRole("button", { name: "fever", exact: true }).first().click();

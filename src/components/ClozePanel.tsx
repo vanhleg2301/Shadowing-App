@@ -9,13 +9,14 @@ interface ClozePanelProps {
   sentence: Sentence;
   index: number;
   total: number;
+  hasNextPart?: boolean;
   onListen: () => void;
   onPrev: () => void;
   onNext: () => void;
   onReveal: () => void;
 }
 
-export function ClozePanel({ sentence, index, total, onListen, onPrev, onNext, onReveal }: ClozePanelProps) {
+export function ClozePanel({ sentence, index, total, hasNextPart, onListen, onPrev, onNext, onReveal }: ClozePanelProps) {
   const tokens = tokenize(sentence.text);
   const blanks = pickClozeIndexes(tokens);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -81,7 +82,7 @@ export function ClozePanel({ sentence, index, total, onListen, onPrev, onNext, o
         </p>
       )}
 
-      <PracticeNav index={index} total={total} onPrev={onPrev} onNext={onNext} onListen={onListen}>
+      <PracticeNav index={index} total={total} hasNextPart={hasNextPart} onPrev={onPrev} onNext={onNext} onListen={onListen}>
         <button type="button" className="btn-3d btn-brand py-3 text-sm" onClick={handleCheck} disabled={isChecked}>
           Check
         </button>

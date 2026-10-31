@@ -6,13 +6,15 @@ import { Icon } from "@/components/Icon";
 interface PracticeNavProps {
   index: number;
   total: number;
+  // The last sentence's next button then moves on to the next part.
+  hasNextPart?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onListen: () => void;
   children: ReactNode;
 }
 
-export function PracticeNav({ index, total, onPrev, onNext, onListen, children }: PracticeNavProps) {
+export function PracticeNav({ index, total, hasNextPart = false, onPrev, onNext, onListen, children }: PracticeNavProps) {
   return (
     <div className="mt-4 grid grid-cols-[1fr_1.4fr_1.4fr_1fr] gap-2">
       <button type="button" className="btn-3d py-3" onClick={onPrev} disabled={index === 0} aria-label="Previous sentence">
@@ -23,7 +25,7 @@ export function PracticeNav({ index, total, onPrev, onNext, onListen, children }
         Listen
       </button>
       {children}
-      <button type="button" className="btn-3d py-3" onClick={onNext} disabled={index >= total - 1} aria-label="Next sentence">
+      <button type="button" className="btn-3d py-3" onClick={onNext} disabled={index >= total - 1 && !hasNextPart} aria-label="Next sentence">
         <Icon name="next" />
       </button>
     </div>
