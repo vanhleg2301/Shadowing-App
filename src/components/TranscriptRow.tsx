@@ -37,6 +37,7 @@ export const TranscriptRow = memo(function TranscriptRow({
   return (
     <div
       ref={(el) => registerRow(index, el)}
+      aria-current={isHighlighted ? "true" : undefined}
       onClick={() => {
         // Don't hijack a text selection (e.g. copying a sentence).
         if (window.getSelection()?.toString()) return;

@@ -75,6 +75,31 @@ test("news, stories and AI & Tech articles have a favorite button", async ({ pag
   }
 });
 
+test("the transcript scrolls freely until Current brings it back", async ({ page }) => {
+  await openPage(page, "/news");
+  await openPage(page, (await firstHref(page, "/news/voa-")).replace("/news/", "/watch/"));
+  await page.getByRole("button", { name: "Next sentence" }).click();
+  const transcript = page.getByTestId("transcript");
+  const current = transcript.locator('[aria-current="true"]');
+  await expect(current).toBeVisible();
+  await transcript.hover();
+  // Regression: small scrolls with the sentence still on screen used to pull the list straight back.
+  const positions: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    await page.mouse.wheel(0, 60);
+    await page.waitForTimeout(150);
+    positions.push(await transcript.evaluate((el) => el.scrollTop));
+  }
+  expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  expect(positions[5]).toBeGreaterThan(positions[0]);
+  await page.waitForTimeout(1000);
+  expect(await transcript.evaluate((el) => el.scrollTop)).toBeGreaterThanOrEqual(positions[5]);
+  await page.mouse.wheel(0, 5000);
+  await page.getByRole("button", { name: "Back to current sentence" }).click();
+  await expect(page.getByRole("button", { name: "Back to current sentence" })).toBeHidden();
+  await expect(current).toBeInViewport();
+});
+
 test("search finds a phrase and opens the lesson", async ({ page }) => {
   await openPage(page, "/search?q=look%20forward%20to");
   const lesson = await firstHref(page, "/watch/");

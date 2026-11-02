@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type UIEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { recordProgress } from "@/app/actions";
 import { ClozePanel } from "@/components/ClozePanel";
 import { DictationPanel } from "@/components/DictationPanel";
@@ -104,6 +104,7 @@ export function LessonPlayer({
   const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   const activeIndex = findActiveIndex(sentences, currentTime);
   const isPractice = mode !== "watch";
@@ -170,28 +171,33 @@ export function LessonPlayer({
     return `/watch/${lesson.videoId}?${params}`;
   };
 
+  // Moves only the transcript; scrollIntoView could also move the page around it.
+  const centerRow = useCallback((index: number) => {
+    const view = transcriptRef.current;
+    const row = rowRefs.current.get(index);
+    if (!view || !row) return;
+    const offset = row.getBoundingClientRect().top - view.getBoundingClientRect().top;
+    view.scrollTo({ top: view.scrollTop + offset - (view.clientHeight - row.offsetHeight) / 2, behavior: "smooth" });
+  }, []);
+
   useEffect(() => {
     if (highlightIndex < 0 || !prefs.autoScroll || isFollowPaused) return;
-    rowRefs.current.get(highlightIndex)?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [highlightIndex, prefs.autoScroll, isFollowPaused]);
+    centerRow(highlightIndex);
+  }, [highlightIndex, prefs.autoScroll, isFollowPaused, centerRow]);
 
-  // Once the learner scrolls away, the transcript stays where they left it until they tap
-  // "Back to current sentence" or scroll the playing sentence back into view themselves.
+  // Once the learner scrolls, the transcript stays where they left it until they tap "Current" or choose a sentence.
   const handleManualScroll = () => {
     if (!isFollowPaused) setIsFollowPaused(true);
   };
 
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    const row = rowRefs.current.get(highlightIndex);
-    if (!isFollowPaused || !row) return;
-    const view = event.currentTarget.getBoundingClientRect();
-    const box = row.getBoundingClientRect();
-    if (box.top >= view.top && box.bottom <= view.bottom) setIsFollowPaused(false);
+  // A press on the transcript itself, not on a row inside it, is the scrollbar being dragged.
+  const handleTranscriptPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) handleManualScroll();
   };
 
   const jumpToCurrent = () => {
     setIsFollowPaused(false);
-    rowRefs.current.get(Math.max(highlightIndex, 0))?.scrollIntoView({ block: "center", behavior: "smooth" });
+    centerRow(Math.max(highlightIndex, 0));
   };
 
   const playOneSentence = async (index: number): Promise<void> => {
@@ -213,6 +219,7 @@ export function LessonPlayer({
   // Clicking a transcript row plays just that sentence once, in every mode.
   const replaySentence = (index: number) => {
     hasInteractedRef.current = true;
+    setIsFollowPaused(false);
     setIsResumeVisible(false);
     if (mode === "watch" && isHideText) setRevealed((prev) => new Set(prev).add(index));
     if (isPractice) setPracticeIndex(index);
@@ -226,6 +233,7 @@ export function LessonPlayer({
     }
     if (index < 0 || index >= sentences.length) return;
     hasInteractedRef.current = true;
+    setIsFollowPaused(false);
     setIsResumeVisible(false);
     if (isPractice) {
       setPracticeIndex(index);
@@ -431,8 +439,10 @@ export function LessonPlayer({
       <div
         onWheel={handleManualScroll}
         onTouchMove={handleManualScroll}
-        onScroll={handleScroll}
-        className="relative min-h-0 flex-[2] overflow-y-auto bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
+        onPointerDown={handleTranscriptPointerDown}
+        ref={transcriptRef}
+        data-testid="transcript"
+        className="relative min-h-0 flex-[2] overflow-y-auto overscroll-contain bg-cream px-3 py-3 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:border-l lg:border-line lg:bg-surface lg:px-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2">
           <div role="tablist" aria-label="Lesson panel" className="flex rounded-xl border border-line bg-surface p-0.5">
@@ -500,15 +510,18 @@ export function LessonPlayer({
               onWordClick={onWordClick}
             />
           ))}
+          {/* No height of its own, so showing it never moves the sentences. */}
           {isFollowPaused && (
-            <button
-              type="button"
-              onClick={jumpToCurrent}
-              className="btn-3d btn-brand sticky bottom-3 left-1/2 mx-auto flex -translate-x-0 animate-fade-in rounded-full px-4 py-2 text-sm"
-            >
-              <Icon name="chevronDown" className="size-4" />
-              Back to current sentence
-            </button>
+            <div className="sticky bottom-0 z-10 h-0">
+              <button
+                type="button"
+                onClick={jumpToCurrent}
+                aria-label="Back to current sentence"
+                className="btn-3d btn-brand absolute bottom-1 right-0 animate-fade-in rounded-full px-3 py-1.5 text-xs"
+              >
+                Current
+              </button>
+            </div>
           )}
           </>
         )}
