@@ -4,12 +4,14 @@ import { AppShell } from "@/components/AppShell";
 import { Icon } from "@/components/Icon";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
+import { CourseGuide } from "@/components/course/CourseGuide";
 import { CoursePlanSwitch } from "@/components/course/CoursePlanSwitch";
 import { getCourse, hasGentlePlan, type Course } from "@/data/courses";
 import type { CollectionId } from "@/data/collections";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
+import { buildDaySchedule } from "@/lib/course-schedule";
 import { getCourseProgress } from "@/lib/user-data";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
@@ -58,6 +60,13 @@ async function CourseWithProgress() {
   return (
     <>
       <CourseHeader course={course} />
+      <div className="mt-4">
+        <CourseGuide
+          planTitle={course.title}
+          scheduleTitle="Ví dụ từ ngày 2 của khóa bạn đang chọn; ngày 1 không có phần ôn bài."
+          schedule={buildDaySchedule(course.getBlocks(course.days[1], collection))}
+        />
+      </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <CollectionSwitcher current={collection} counts={counts} />
         <p className="min-w-0 flex-1 basis-56 text-sm text-muted">Videos come from this collection. Each collection keeps its own progress.</p>

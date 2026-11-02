@@ -82,6 +82,14 @@ test("the last sentence of a part leads to the next part, in the same mode", asy
   await expect(page.getByText(/^Sentence 1\/\d+/).first()).toBeVisible();
 });
 
+test("the course guide shows a timetable for the day", async ({ page }) => {
+  await openPage(page, "/course/2");
+  await page.getByRole("button", { name: "Học thế nào?" }).click();
+  const guide = page.getByRole("dialog", { name: "Học khóa 7 ngày thế nào?" });
+  await expect(guide.getByText("8:00")).toBeVisible();
+  await expect(guide.getByText("Lịch gợi ý cho ngày 2.", { exact: false })).toBeVisible();
+});
+
 test("tapping a word opens the lookup sheet on screen", async ({ page }) => {
   await openPage(page, "/stories/story-00049");
   await page.getByRole("button", { name: "fever", exact: true }).first().click();

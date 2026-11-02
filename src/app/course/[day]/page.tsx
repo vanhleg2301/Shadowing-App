@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { CourseDayView } from "@/components/course/CourseDayView";
+import { CourseGuide } from "@/components/course/CourseGuide";
 import { ListSkeleton } from "@/components/Skeleton";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
@@ -10,6 +11,7 @@ import { getCourse } from "@/data/courses";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
+import { buildDaySchedule } from "@/lib/course-schedule";
 import { getCourseProgress } from "@/lib/user-data";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
@@ -46,7 +48,10 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Breadcrumbs items={[{ label: "7-day course", href: "/course" }, { label: `Day ${day.day}` }]} className="" />
-        <CollectionSwitcher current={collection} counts={counts} />
+        <div className="flex flex-wrap items-center gap-2">
+          <CourseGuide planTitle={course.title} scheduleTitle={`Lịch gợi ý cho ngày ${day.day}.`} schedule={buildDaySchedule(blocks)} />
+          <CollectionSwitcher current={collection} counts={counts} />
+        </div>
       </div>
       <p className="mt-3 text-xs font-bold uppercase tracking-wide text-accent">Day {day.day} of 7</p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">{day.title}</h1>
