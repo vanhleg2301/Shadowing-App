@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SignInList, type SignInEventRow } from "@/components/admin/SignInList";
 import { deleteUserFavorite, deleteUserWord, resetUserProgress } from "@/app/admin/actions";
+import { getFavoriteHref } from "@/lib/media";
 import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { AdminLayout, formatDate } from "@/components/admin/AdminLayout";
 import { getAdminVideos, requireAdmin, summarizeUser } from "@/lib/admin";
@@ -135,7 +136,7 @@ async function UserDetails({ id }: { id: string }) {
         <ul className="mt-3 divide-y divide-line text-sm">
           {favoriteRows.map((f) => (
             <li key={f.video_id} className="flex items-center justify-between gap-3 py-2">
-              <Link href={`/watch/${f.video_id}`} className="text-ink hover:text-brand">
+              <Link href={getFavoriteHref(f.video_id)} className="text-ink hover:text-brand">
                 {f.title}
               </Link>
               <AdminActionButton

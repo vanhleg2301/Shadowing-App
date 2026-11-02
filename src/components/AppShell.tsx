@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Suspense, type ReactNode } from "react";
+import { Suspense, cache, type ReactNode } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
+import { MoreMenu } from "@/components/MoreMenu";
 import { SidebarNav, type SidebarGroup } from "@/components/SidebarNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ICON_SYMBOLS } from "@/data/app-icons";
@@ -14,20 +15,20 @@ interface NavItem {
   shortLabel: string;
   icon: IconName;
   href: string;
-  // The phone tab bar has room for five; the rest stay in the sidebar and the profile menu.
-  isDesktopOnly?: boolean;
+  // The phone tab bar has room for five: four of these and More, which holds the rest.
+  isInMoreMenu?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
   { label: "Daily stories", shortLabel: "Stories", icon: "chat", href: "/stories" },
-  { label: "News", shortLabel: "News", icon: "news", href: "/news", isDesktopOnly: true },
+  { label: "News", shortLabel: "News", icon: "news", href: "/news" },
   { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
-  { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review" },
-  { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary" },
-  { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isDesktopOnly: true },
-  { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isDesktopOnly: true },
-  { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isDesktopOnly: true },
+  { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review", isInMoreMenu: true },
+  { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary", isInMoreMenu: true },
+  { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isInMoreMenu: true },
+  { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isInMoreMenu: true },
+  { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isInMoreMenu: true },
 ];
 
 const toSidebarItems = (hrefs: string[]) =>
@@ -38,6 +39,8 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   { label: "Practice", items: toSidebarItems(["/review", "/vocabulary", "/search"]) },
   { label: "My library", items: toSidebarItems(["/favorites", "/offline"]) },
 ];
+
+const MORE_GROUPS = SIDEBAR_GROUPS.filter((group) => group.label !== "Learn");
 
 interface AppShellProps {
   active: string;
@@ -89,7 +92,7 @@ export function AppShell({ active, children }: AppShellProps) {
         aria-label="Main"
         className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 flex justify-around rounded-[1.75rem] border border-line bg-surface/90 p-1.5 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.25)] backdrop-blur-xl md:hidden"
       >
-        {NAV_ITEMS.filter((item) => !item.isDesktopOnly).map((item) => {
+        {NAV_ITEMS.filter((item) => !item.isInMoreMenu).map((item) => {
           const isActive = item.href === active;
           return (
             <Link
@@ -105,15 +108,29 @@ export function AppShell({ active, children }: AppShellProps) {
             </Link>
           );
         })}
+        <MoreMenu
+          groups={MORE_GROUPS}
+          active={active}
+          adminLink={
+            <Suspense fallback={null}>
+              <AdminNavLink isActive={active === "/admin"} />
+            </Suspense>
+          }
+        />
       </nav>
     </div>
   );
 }
 
+// Cached because the sidebar and the phone menu both ask on every page.
+const getIsAdmin = cache(async () => {
+  const ctx = await getUserContext().catch(() => null);
+  return Boolean(ctx && isAdminEmail(ctx.user.email));
+});
+
 // Streams in after the static shell, only for the two admin accounts.
 async function AdminNavLink({ isActive }: { isActive: boolean }) {
-  const ctx = await getUserContext().catch(() => null);
-  if (!ctx || !isAdminEmail(ctx.user.email)) return null;
+  if (!(await getIsAdmin())) return null;
   return (
     <Link
       href="/admin"

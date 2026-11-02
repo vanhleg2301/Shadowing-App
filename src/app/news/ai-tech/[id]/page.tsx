@@ -26,8 +26,8 @@ async function Article({ id }: { id: string }) {
   if (!/^tc-\d{8}$/.test(id)) notFound();
   const [article, userState] = await Promise.all([
     getTechArticle(id).catch(() => null),
-    getLessonUserState(id).catch(() => ({ savedWords: [] as string[] })),
+    getLessonUserState(id).catch(() => ({ isFavorite: false, savedWords: [] as string[] })),
   ]);
   if (!article) notFound();
-  return <TechArticleReader article={article} dateLabel={formatNewsDate(article.published_at)} initialSavedWords={userState.savedWords} />;
+  return <TechArticleReader article={article} dateLabel={formatNewsDate(article.published_at)} initialSavedWords={userState.savedWords} initialIsFavorite={userState.isFavorite} />;
 }

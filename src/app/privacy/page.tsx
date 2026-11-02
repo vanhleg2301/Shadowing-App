@@ -38,7 +38,7 @@ export default function PrivacyPage() {
             <b>Your Google account basics</b> when you sign in: name, email address and profile picture.
           </li>
           <li>
-            <b>Your learning data</b>: saved words (with the sentence they came from), favorite videos, lesson progress,
+            <b>Your learning data</b>: saved words (with the sentence they came from), favorites, lesson progress,
             review history and the days you studied.
           </li>
           <li>

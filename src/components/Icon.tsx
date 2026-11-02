@@ -15,6 +15,7 @@ const PATHS = {
   close: "M6 6l12 12M18 6 6 18",
   record: "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z",
   stop: "M7 7h10v10H7z",
+  menu: "M4 7h16M4 12h16M4 17h16",
   chevronDown: "M6 9l6 6 6-6",
   chevronLeft: "M15 6l-6 6 6 6",
   chevronRight: "M9 6l6 6-6 6",

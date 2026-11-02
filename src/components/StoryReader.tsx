@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
@@ -18,6 +19,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 interface StoryReaderProps {
   story: Story;
   initialSavedWords: string[];
+  initialIsFavorite: boolean;
   allStories: StoryListItem[];
   audio: StoryAudio | null;
 }
@@ -32,7 +34,7 @@ const RATES = [1, 0.9, 0.75];
 
 // Read a story or dialogue, or listen to it like a podcast: its generated narration when there is one, otherwise
 // the browser's own voice. In dialogues each speaker gets a different accent.
-export function StoryReader({ story, initialSavedWords, allStories, audio }: StoryReaderProps) {
+export function StoryReader({ story, initialSavedWords, initialIsFavorite, allStories, audio }: StoryReaderProps) {
   const { lookup, openWord, sheetProps } = useWordLookup(story.id, initialSavedWords);
   const { prefs } = useReaderPrefs();
   const [spokenIndex, setSpokenIndex] = useState(-1);
@@ -122,7 +124,10 @@ export function StoryReader({ story, initialSavedWords, allStories, audio }: Sto
 
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
-      <Breadcrumbs items={[{ label: "Daily stories", href: "/stories" }, { label: story.title }]} className="" />
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs items={[{ label: "Daily stories", href: "/stories" }, { label: story.title }]} className="min-w-0" />
+        <FavoriteButton videoId={story.id} title={story.title} initialIsFavorite={initialIsFavorite} />
+      </div>
       <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">
         {getStoryLabel(story)}
       </p>

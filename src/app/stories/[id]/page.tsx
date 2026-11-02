@@ -33,8 +33,8 @@ async function StoryContent({ id }: { id: string }) {
   const story = getStory(id);
   if (!story) notFound();
   const [userState, audio] = await Promise.all([
-    getLessonUserState(id).catch(() => ({ savedWords: [] as string[] })),
+    getLessonUserState(id).catch(() => ({ isFavorite: false, savedWords: [] as string[] })),
     getStoryAudio(story).catch(() => null),
   ]);
-  return <StoryReader story={story} initialSavedWords={userState.savedWords} allStories={STORIES.map(toStoryListItem)} audio={audio} />;
+  return <StoryReader story={story} initialSavedWords={userState.savedWords} initialIsFavorite={userState.isFavorite} allStories={STORIES.map(toStoryListItem)} audio={audio} />;
 }

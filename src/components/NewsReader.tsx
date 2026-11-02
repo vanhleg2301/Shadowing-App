@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BottomSheet } from "@/components/BottomSheet";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { OfflineButton } from "@/components/OfflineButton";
 import { Words } from "@/components/TranscriptRow";
@@ -20,6 +21,7 @@ interface NewsReaderProps {
   category: string;
   dateLabel: string | null;
   initialSavedWords: string[];
+  initialIsFavorite: boolean;
 }
 
 const RATES = [1, 0.9, 0.75];
@@ -34,7 +36,7 @@ function formatTime(seconds: number): string {
 
 // Read a VOA news story like the original page while its audio plays: the sentence being read is
 // highlighted, any word opens its meaning, and any sentence can be replayed.
-export function NewsReader({ lesson, category, dateLabel, initialSavedWords }: NewsReaderProps) {
+export function NewsReader({ lesson, category, dateLabel, initialSavedWords, initialIsFavorite }: NewsReaderProps) {
   const { sentences } = lesson;
   const { isPlaying, currentTime, play, pause, seekTo, setRate } = useAudioPlayer(lesson.media.audioUrl);
   const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
@@ -108,6 +110,7 @@ export function NewsReader({ lesson, category, dateLabel, initialSavedWords }: N
       <div className="flex items-center justify-between gap-3">
         <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: lesson.title }]} className="min-w-0" />
         <div className="flex shrink-0 items-center gap-2">
+          <FavoriteButton videoId={lesson.videoId} title={lesson.title} initialIsFavorite={initialIsFavorite} />
           <OfflineButton path={`/news/${lesson.videoId}`} title={lesson.title} audioUrl={lesson.media.audioUrl} imageUrl={lesson.media.imageUrl} />
           <button type="button" onClick={() => setIsTextSheetOpen(true)} className="btn-3d size-10 shrink-0 rounded-full text-sm font-extrabold" aria-label="Text size and spacing">
             Aa

@@ -49,6 +49,32 @@ test("a news story loads with its player fixed on screen", async ({ page }) => {
   await expectInViewport(page, page.getByRole("slider", { name: "Position" }), "news player");
 });
 
+test("the phone's More tab reaches every sidebar page", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the tab bar is only on phones");
+  await openPage(page, "/stories");
+  const tabs = page.getByRole("navigation", { name: "Main" });
+  for (const name of ["Home", "Stories", "News", "Course"]) await expect(tabs.getByRole("link", { name, exact: true })).toBeVisible();
+  await tabs.getByRole("button", { name: "More" }).click();
+  const sheet = page.getByRole("dialog", { name: "More" });
+  for (const name of ["Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "Privacy"]) {
+    await expect(sheet.getByRole("link", { name })).toBeVisible();
+  }
+  await sheet.getByRole("link", { name: "Favorites" }).click();
+  await expect(page).toHaveURL(/\/favorites$/);
+  await expect(sheet).toBeHidden();
+});
+
+test("news, stories and AI & Tech articles have a favorite button", async ({ page }) => {
+  await openPage(page, "/news");
+  const news = await firstHref(page, "/news/voa-");
+  await openPage(page, "/news/ai-tech");
+  const article = await firstHref(page, "/news/ai-tech/tc-");
+  for (const path of [news, article, "/stories/story-00049"]) {
+    await openPage(page, path);
+    await expect(page.getByRole("button", { name: "Add to favorites" })).toBeVisible();
+  }
+});
+
 test("search finds a phrase and opens the lesson", async ({ page }) => {
   await openPage(page, "/search?q=look%20forward%20to");
   const lesson = await firstHref(page, "/watch/");

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
@@ -15,13 +16,14 @@ interface TechArticleReaderProps {
   article: TechArticle;
   dateLabel: string | null;
   initialSavedWords: string[];
+  initialIsFavorite: boolean;
 }
 
 const RATES = [1, 0.9, 0.75];
 
 // An article republished from The Conversation under CC BY-ND: its words stay as written, it credits the authors
 // and the source at the top, and it shows their page counter. Listening uses the voice on the learner's device.
-export function TechArticleReader({ article, dateLabel, initialSavedWords }: TechArticleReaderProps) {
+export function TechArticleReader({ article, dateLabel, initialSavedWords, initialIsFavorite }: TechArticleReaderProps) {
   const { lookup, openWord, sheetProps } = useWordLookup(article.id, initialSavedWords);
   const { prefs } = useReaderPrefs();
   const [active, setActive] = useState(-1);
@@ -79,7 +81,10 @@ export function TechArticleReader({ article, dateLabel, initialSavedWords }: Tec
 
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
-      <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: "AI & Tech", href: "/news/ai-tech" }, { label: article.title }]} className="" />
+      <div className="flex items-center justify-between gap-3">
+        <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: "AI & Tech", href: "/news/ai-tech" }, { label: article.title }]} className="min-w-0" />
+        <FavoriteButton videoId={article.id} title={article.title} initialIsFavorite={initialIsFavorite} />
+      </div>
       <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">
         Estimated level ≈{article.level}
         {dateLabel && <span className="text-muted"> · {dateLabel}</span>}

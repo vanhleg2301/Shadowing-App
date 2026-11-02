@@ -21,6 +21,14 @@ export function getHostedMedia(videoId: string): HostedMedia | null {
   return { audioUrl: `${base}.mp3`, imageUrl: `${base}.jpg` };
 }
 
+// Stories and AI & Tech articles have ids of the same length, so they can be favorites too.
+export function getFavoriteHref(id: string): string {
+  if (isHostedLesson(id)) return `/news/${id}`;
+  if (/^tc-\d{8}$/.test(id)) return `/news/ai-tech/${id}`;
+  if (/^story-\d{5}$/.test(id)) return `/stories/${id}`;
+  return `/watch/${id}`;
+}
+
 export function getThumbnailUrl(videoId: string): string {
   return getHostedMedia(videoId)?.imageUrl ?? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
 }

@@ -26,7 +26,7 @@ async function Story({ videoId }: { videoId: string }) {
   const [result, video, userState] = await Promise.all([
     getLesson(videoId).catch(() => null),
     getCatalogVideo(videoId).catch(() => undefined),
-    getLessonUserState(videoId).catch(() => ({ savedWords: [] as string[] })),
+    getLessonUserState(videoId).catch(() => ({ isFavorite: false, savedWords: [] as string[] })),
   ]);
   const lesson = result && result.error === undefined ? result.lesson : null;
   if (!lesson?.media) notFound();
@@ -37,6 +37,7 @@ async function Story({ videoId }: { videoId: string }) {
       category={video?.category ?? "News"}
       dateLabel={formatNewsDate(video?.publishedAt)}
       initialSavedWords={userState.savedWords}
+      initialIsFavorite={userState.isFavorite}
     />
   );
 }
