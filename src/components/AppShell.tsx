@@ -37,7 +37,7 @@ interface AppShellProps {
 export function AppShell({ active, children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line bg-surface px-4 py-5 md:flex">
+      <aside className="no-scrollbar sticky top-0 hidden h-dvh w-64 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-4 py-5 md:flex">
         <Link href="/" className="flex items-center gap-2 px-2">
           <Suspense fallback={<span className="size-10 rounded-xl bg-brand" />}>
             <BrandMark />
