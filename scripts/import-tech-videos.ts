@@ -53,7 +53,14 @@ async function main() {
   const stored = new Set((existing as { video_id: string }[]).map((r) => r.video_id));
 
   const queues = await Promise.all(
-    CHANNELS.map(async (channel) => (await readChannelFeed(channel.id)).filter((v) => !stored.has(v.videoId)).map((video) => ({ channel, video }))),
+    CHANNELS.map(async (channel) => {
+      // One channel's feed being down must not stop the others.
+      const videos = await readChannelFeed(channel.id).catch((e: unknown) => {
+        console.log(`  no feed for ${channel.name}: ${String(e)}`);
+        return [];
+      });
+      return videos.filter((v) => !stored.has(v.videoId)).map((video) => ({ channel, video }));
+    }),
   );
   console.log(`${queues.flat().length} new videos in the feeds, ${stored.size} already stored`);
 
