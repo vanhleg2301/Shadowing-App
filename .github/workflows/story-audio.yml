@@ -1,0 +1,58 @@
+# Narrates the daily stories with Kokoro (scripts/story-audio/generate_audio.py), by hand from the Actions tab.
+# Needs migration 024 and repository secrets NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+name: Generate story audio
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Story ids (comma-separated), e.g. story-00017,story-00049. Empty = all"
+        required: false
+        default: ""
+      limit:
+        description: "Stories in this run. Empty = no limit"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: story-audio
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ffmpeg and espeak-ng
+        run: |
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg espeak-ng
+      # The CPU build of PyTorch is much smaller, and runners have no GPU.
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -r scripts/story-audio/requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: kokoro-82m
+      - name: Export stories
+        run: npx tsx scripts/story-audio/export-stories.ts > "$RUNNER_TEMP/stories.json"
+      - name: Generate
+        run: python scripts/story-audio/generate_audio.py
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          STORIES_JSON: ${{ runner.temp }}/stories.json
+          ONLY: ${{ inputs.only }}
+          LIMIT: ${{ inputs.limit }}

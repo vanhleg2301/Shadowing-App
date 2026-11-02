@@ -5,17 +5,21 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { READER_SIZES, READER_SPACINGS, useReaderPrefs } from "@/hooks/useReaderPrefs";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { getStoryLabel, splitSentences, type Story, type StoryListItem } from "@/data/stories";
 import { markStoryRead, pickNextStory, useReadStories } from "@/lib/story-progress";
+import { findActiveIndex } from "@/lib/lesson";
 import { speak, type Accent } from "@/lib/speech";
+import type { StoryAudio } from "@/lib/story-audio";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface StoryReaderProps {
   story: Story;
   initialSavedWords: string[];
   allStories: StoryListItem[];
+  audio: StoryAudio | null;
 }
 
 interface StorySentence {
@@ -26,13 +30,13 @@ interface StorySentence {
 
 const RATES = [0.9, 0.75, 1];
 
-// Read a story or dialogue, or listen to it like a podcast in the browser's own voice (free, works offline
-// once loaded). In dialogues each speaker gets a different accent.
-export function StoryReader({ story, initialSavedWords, allStories }: StoryReaderProps) {
+// Read a story or dialogue, or listen to it like a podcast: its generated narration when there is one, otherwise
+// the browser's own voice. In dialogues each speaker gets a different accent.
+export function StoryReader({ story, initialSavedWords, allStories, audio }: StoryReaderProps) {
   const { lookup, openWord, sheetProps } = useWordLookup(story.id, initialSavedWords);
   const { prefs } = useReaderPrefs();
-  const [active, setActive] = useState(-1);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [spokenIndex, setSpokenIndex] = useState(-1);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [rateIndex, setRateIndex] = useState(0);
   const playingRef = useRef(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -44,7 +48,22 @@ export function StoryReader({ story, initialSavedWords, allStories }: StoryReade
     splitSentences(line.text).map((text) => ({ text, line: i, accent: speakers.indexOf(line.speaker) === 1 ? "uk" : "us" })),
   );
 
+  const narration = useAudioPlayer(audio?.url ?? null);
+  const { setRate: setNarrationRate } = narration;
+  const hasStarted = narration.isPlaying || narration.currentTime > 0;
+  const active = !audio ? spokenIndex : hasStarted ? findActiveIndex(audio.sentences, narration.currentTime) : -1;
+  const isPlaying = audio ? narration.isPlaying : isSpeaking;
+  const lastEnd = audio?.sentences.at(-1)?.end;
+
   useEffect(() => () => speechSynthesis.cancel(), []);
+
+  useEffect(() => {
+    setNarrationRate(RATES[0]);
+  }, [setNarrationRate]);
+
+  useEffect(() => {
+    if (lastEnd !== undefined && narration.currentTime >= lastEnd) markStoryRead(story.id);
+  }, [lastEnd, narration.currentTime, story.id]);
 
   // Reaching the end of the page (past the words and grammar) counts as having read the story.
   useEffect(() => {
@@ -59,20 +78,27 @@ export function StoryReader({ story, initialSavedWords, allStories }: StoryReade
 
   const stop = () => {
     playingRef.current = false;
-    setIsPlaying(false);
+    setIsSpeaking(false);
     speechSynthesis.cancel();
+    narration.pause();
   };
 
   const playFrom = (index: number, rate = RATES[rateIndex]) => {
     if (index >= sentences.length) {
       stop();
-      setActive(-1);
+      setSpokenIndex(-1);
+      if (audio) narration.seekTo(0);
       markStoryRead(story.id);
       return;
     }
+    if (audio) {
+      narration.seekTo(audio.sentences[index].start);
+      narration.play();
+      return;
+    }
     playingRef.current = true;
-    setIsPlaying(true);
-    setActive(index);
+    setIsSpeaking(true);
+    setSpokenIndex(index);
     speak(sentences[index].text, sentences[index].accent, rate, () => {
       if (playingRef.current) playFrom(index + 1, rate);
     });
@@ -81,6 +107,10 @@ export function StoryReader({ story, initialSavedWords, allStories }: StoryReade
   const handleRate = () => {
     const next = (rateIndex + 1) % RATES.length;
     setRateIndex(next);
+    if (audio) {
+      narration.setRate(RATES[next]);
+      return;
+    }
     if (playingRef.current) playFrom(Math.max(active, 0), RATES[next]);
   };
 

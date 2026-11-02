@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { LessonSkeleton } from "@/components/Skeleton";
 import { StoryReader } from "@/components/StoryReader";
 import { STORIES, getStory, toStoryListItem } from "@/data/stories";
+import { getStoryAudio } from "@/lib/story-audio";
 import { getLessonUserState } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -31,6 +32,9 @@ export default function StoryPage({ params }: PageProps<"/stories/[id]">) {
 async function StoryContent({ id }: { id: string }) {
   const story = getStory(id);
   if (!story) notFound();
-  const userState = await getLessonUserState(id).catch(() => ({ savedWords: [] as string[] }));
-  return <StoryReader story={story} initialSavedWords={userState.savedWords} allStories={STORIES.map(toStoryListItem)} />;
+  const [userState, audio] = await Promise.all([
+    getLessonUserState(id).catch(() => ({ savedWords: [] as string[] })),
+    getStoryAudio(story).catch(() => null),
+  ]);
+  return <StoryReader story={story} initialSavedWords={userState.savedWords} allStories={STORIES.map(toStoryListItem)} audio={audio} />;
 }
