@@ -32,9 +32,7 @@ function loadYouTubeApi(): Promise<void> {
 // A null videoId mounts nothing (hosted-audio lessons use useAudioPlayer instead).
 // The YouTube player (about 1 MB of scripts) only loads on the first play, seek or segment; until then
 // the page shows the thumbnail. Calls made before it is ready run once it is.
-// hasOwnControls hides YouTube's control bar and keyboard shortcuts, for pages with their own. They stay where the
-// page couldn't replace YouTube's fullscreen button (iPhones).
-export function useYouTubePlayer(videoId: string | null, startSeconds = 0, hasOwnControls = false) {
+export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
   const [isActivated, setIsActivated] = useState(false);
@@ -59,19 +57,11 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0, hasOw
       // YT replaces its target element with an iframe, so give it a node React doesn't own.
       const target = document.createElement("div");
       container.appendChild(target);
-      const hidesControls = hasOwnControls && document.fullscreenEnabled;
       playerRef.current = new window.YT.Player(target, {
         videoId,
         width: "100%",
         height: "100%",
-        playerVars: {
-          playsinline: 1,
-          rel: 0,
-          cc_load_policy: 0,
-          iv_load_policy: 3,
-          start: Math.floor(startRef.current),
-          ...(hidesControls ? { controls: 0, disablekb: 1, fs: 0 } : {}),
-        },
+        playerVars: { playsinline: 1, rel: 0, cc_load_policy: 0, iv_load_policy: 3, start: Math.floor(startRef.current) },
         events: {
           onReady: (event) => {
             isPlayerReadyRef.current = true;
@@ -95,7 +85,7 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0, hasOw
       isPlayerReadyRef.current = false;
       container.innerHTML = "";
     };
-  }, [videoId, isActivated, hasOwnControls]);
+  }, [videoId, isActivated]);
 
   useEffect(() => {
     if (!isPlaying) return;

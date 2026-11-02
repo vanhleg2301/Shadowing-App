@@ -105,17 +105,6 @@ test("sidebar modules collapse and stay collapsed", async ({ page, isMobile }) =
   await expect(sidebar.getByRole("link", { name: "My words" })).toBeVisible();
 });
 
-test("a lesson plays in a player without YouTube's control bar, with its own full screen button", async ({ page }) => {
-  await openPage(page, "/watch/ovl9kM46r10");
-  await page.getByRole("button", { name: "Next sentence" }).click();
-  const iframe = page.locator('iframe[src*="youtube"]');
-  await expect(iframe).toHaveAttribute("src", /controls=0/);
-  await page.getByRole("button", { name: "Full screen", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Exit full screen" })).toBeVisible();
-  await page.getByRole("button", { name: "Exit full screen" }).click();
-  await expect(page.getByRole("button", { name: "Exit full screen" })).toBeHidden();
-});
-
 test("tapping a word opens the lookup sheet on screen", async ({ page }) => {
   await openPage(page, "/stories/story-00049");
   await page.getByRole("button", { name: "fever", exact: true }).first().click();
