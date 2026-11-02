@@ -10,6 +10,7 @@
     "seed:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/seed-lessons.ts",
     "resegment:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/resegment-lessons.ts",
     "summarize:lessons": "node --env-file=.env.local --experimental-websocket --import tsx scripts/summarize-lessons.ts",
+    "import:tech-videos": "node --env-file=.env.local --experimental-websocket --import tsx scripts/import-tech-videos.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
