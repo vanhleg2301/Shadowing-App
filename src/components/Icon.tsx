@@ -15,6 +15,8 @@ const PATHS = {
   close: "M6 6l12 12M18 6 6 18",
   record: "M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z",
   stop: "M7 7h10v10H7z",
+  fullscreen: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5",
+  fullscreenExit: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5",
   chevronDown: "M6 9l6 6 6-6",
   chevronLeft: "M15 6l-6 6 6 6",
   chevronRight: "M9 6l6 6-6 6",

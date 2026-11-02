@@ -18,6 +18,7 @@ import { TranscriptRow } from "@/components/TranscriptRow";
 import { VideoFacade } from "@/components/VideoFacade";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { useAuth } from "@/hooks/useAuth";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { useLessonPrefs, type TextSize } from "@/hooks/useLessonPrefs";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useMediaSession } from "@/hooks/useMediaSession";
@@ -81,7 +82,9 @@ export function LessonPlayer({
   const { sentences } = lesson;
   const startSeconds = lesson.sentences[initialSentence]?.start ?? 0;
   // Both hooks are always called; only the one matching the lesson's media mounts a player.
-  const youTube = useYouTubePlayer(lesson.media ? null : lesson.videoId, startSeconds);
+  const youTube = useYouTubePlayer(lesson.media ? null : lesson.videoId, startSeconds, true);
+  const { containerRef: fullscreenRef, isSupported: isFullscreenSupported, isFullscreen, toggle: toggleFullscreen } = useFullscreen<HTMLDivElement>();
+  const canFullscreen = !lesson.media && isFullscreenSupported;
   const audio = useAudioPlayer(lesson.media?.audioUrl ?? null, startSeconds);
   const { containerRef } = youTube;
   const { isReady, isPlaying, currentTime, play, pause, seekTo, playSegment, setRate } = lesson.media ? audio : youTube;
@@ -390,7 +393,7 @@ export function LessonPlayer({
       {/* Listening comes first: on phones, while watching, the video and the sentence being spoken
           take more of the screen than the transcript list. */}
       <div className={`flex flex-col lg:flex-none lg:px-6 lg:pt-6 ${mode === "watch" ? "min-h-0 flex-[3]" : "shrink-0"}`}>
-        <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
+        <div ref={fullscreenRef} className="relative aspect-video w-full shrink-0 overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
           {lesson.media ? (
             <button
               type="button"
@@ -409,6 +412,17 @@ export function LessonPlayer({
             <>
               <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
               {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={isPractice ? () => void playSentence(practiceIndex) : play} />}
+              {/* Phones have no Esc key, so full screen needs its own way out. */}
+              {isFullscreen && (
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  aria-label="Exit full screen"
+                  className="absolute right-3 top-3 grid size-11 place-items-center rounded-full bg-black/60 text-white"
+                >
+                  <Icon name="fullscreenExit" className="size-5" />
+                </button>
+              )}
             </>
           )}
           {!isReady && (
@@ -556,7 +570,7 @@ export function LessonPlayer({
           />
         )}
         {mode === "watch" && (
-          <div className="grid grid-cols-5 gap-2 lg:max-w-xl">
+          <div className={`grid gap-2 lg:max-w-xl ${canFullscreen ? "grid-cols-6" : "grid-cols-5"}`}>
             <button type="button" className="btn-3d py-3" onClick={() => goToSentence(currentIndex - 1)} aria-label="Previous sentence">
               <Icon name="prev" />
             </button>
@@ -583,6 +597,11 @@ export function LessonPlayer({
             <button type="button" className="btn-3d py-3 text-sm" onClick={handleSpeedChange} aria-label="Playback speed">
               {speed}x
             </button>
+            {canFullscreen && (
+              <button type="button" className="btn-3d py-3" onClick={toggleFullscreen} aria-label="Full screen">
+                <Icon name="fullscreen" />
+              </button>
+            )}
           </div>
         )}
         <p className="mt-3 hidden text-xs text-muted lg:block">
