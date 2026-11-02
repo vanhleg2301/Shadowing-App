@@ -7,6 +7,8 @@ Settings come from environment variables:
   STORIES_JSON   output of export-stories.ts
   ONLY           optional comma-separated story ids
   LIMIT          optional number of stories to generate in this run
+  PREVIEW_VOICES optional voice pairs to compare, e.g. af_bella+bm_lewis,af_nicole+bm_george: narrates the
+                 ONLY stories with each pair into stories/preview/ and leaves the app's audio alone
 """
 
 from __future__ import annotations
@@ -28,48 +30,111 @@ BUCKET = "lesson-media"
 SAMPLE_RATE = 24000
 SENTENCE_PAUSE_S = 0.25
 LINE_PAUSE_S = 0.5
-# (language code, voice): "a" is American English, "b" is British. The second speaker of a dialogue gets the
-# other accent, as in the browser voices these replace.
-FIRST_VOICE = ("a", "af_heart")
-SECOND_VOICE = ("b", "bm_george")
+# The narrator and first speaker, then the second speaker of a dialogue. A voice's first letter is its accent:
+# "a" American English, "b" British.
+Voices = tuple[str, str]
+DEFAULT_VOICES: Voices = ("af_heart", "bm_george")
+# Part of the text hash: raise it when the way audio is generated changes, so every story is narrated again.
+GENERATION = 2
 
 
 def log(message: str) -> None:
     print(message, flush=True)
 
 
-def get_voice(story: dict, speaker: str | None) -> tuple[str, str]:
+def get_voice(story: dict, speaker: str | None, voices: Voices) -> str:
     speakers = list(dict.fromkeys(line["speaker"] for line in story["lines"] if line["speaker"]))
-    return SECOND_VOICE if speaker and speakers.index(speaker) == 1 else FIRST_VOICE
+    return voices[1] if speaker and speakers.index(speaker) == 1 else voices[0]
 
 
 def get_text_hash(story: dict) -> str:
-    source = json.dumps([story["lines"], FIRST_VOICE, SECOND_VOICE], sort_keys=True)
+    source = json.dumps([story["lines"], DEFAULT_VOICES, GENERATION], sort_keys=True)
     return hashlib.sha256(source.encode()).hexdigest()[:12]
 
 
-def synthesize(pipeline: KPipeline, text: str, voice: str) -> np.ndarray:
-    chunks = [np.asarray(result.audio) for result in pipeline(text, voice=voice, speed=1.0) if result.audio is not None]
+def synthesize(pipeline: KPipeline, text: str, voice: str) -> tuple[np.ndarray, list[tuple[str, float | None, float | None]]]:
+    """The audio for a text, and each of Kokoro's tokens with its time in that audio."""
+    chunks: list[np.ndarray] = []
+    tokens: list[tuple[str, float | None, float | None]] = []
+    length = 0
+    for result in pipeline(text, voice=voice, speed=1.0):
+        if result.audio is None:
+            continue
+        audio = np.asarray(result.audio)
+        offset = length / SAMPLE_RATE
+        for token in result.tokens or []:
+            start = token.start_ts + offset if token.start_ts is not None else None
+            end = token.end_ts + offset if token.end_ts is not None else None
+            tokens.append((token.text, start, end))
+        chunks.append(audio)
+        length += len(audio)
     if not chunks:
         raise RuntimeError(f"No audio for: {text}")
-    return np.concatenate(chunks)
+    return np.concatenate(chunks), tokens
 
 
-def narrate(story: dict, pipelines: dict[str, KPipeline]) -> tuple[np.ndarray, list[dict]]:
+def count_letters(text: str) -> int:
+    return sum(c.isalnum() for c in text)
+
+
+def time_sentences(sentences: list[str], tokens: list[tuple[str, float | None, float | None]]) -> list[tuple[float, float]] | None:
+    """Finds where each sentence starts and ends by walking the tokens, counting letters and digits because
+    tokens split words and punctuation their own way. None when they can't be matched up."""
+    if sum(count_letters(t[0]) for t in tokens) != sum(count_letters(s) for s in sentences):
+        return None
+    times: list[tuple[float, float]] = []
+    index = 0
+    for sentence in sentences:
+        remaining = count_letters(sentence)
+        starts: list[float] = []
+        ends: list[float] = []
+        while remaining > 0:
+            text, start, end = tokens[index]
+            index += 1
+            remaining -= count_letters(text)
+            if count_letters(text) and start is not None:
+                starts.append(start)
+            if count_letters(text) and end is not None:
+                ends.append(end)
+        if remaining < 0 or not starts or not ends:
+            return None
+        times.append((starts[0], ends[-1]))
+    return times
+
+
+def narrate(story: dict, pipelines: dict[str, KPipeline], voices: Voices = DEFAULT_VOICES) -> tuple[np.ndarray, list[dict]]:
+    """Each line is read in one go, which keeps its intonation flowing from sentence to sentence. A line
+    whose sentence times can't be found is read one sentence at a time instead."""
     parts: list[np.ndarray] = []
     timings: list[dict] = []
     position = 0
+
+    def add(audio: np.ndarray) -> None:
+        nonlocal position
+        parts.append(audio)
+        position += len(audio)
+
+    def add_pause(seconds: float) -> None:
+        add(np.zeros(int(seconds * SAMPLE_RATE), dtype=np.float32))
+
     for line in story["lines"]:
-        lang, voice = get_voice(story, line["speaker"])
+        pipeline = pipelines[(voice := get_voice(story, line["speaker"], voices))[0]]
+        if parts:
+            add_pause(LINE_PAUSE_S)
+        audio, tokens = synthesize(pipeline, " ".join(line["sentences"]), voice)
+        times = time_sentences(line["sentences"], tokens)
+        if times:
+            for sentence, (start, end) in zip(line["sentences"], times):
+                timings.append({"text": sentence, "start": round(position / SAMPLE_RATE + start, 2), "end": round(position / SAMPLE_RATE + end, 2)})
+            add(audio)
+            continue
+        log(f"  {story['id']}: no sentence times for a line, reading it sentence by sentence")
         for i, sentence in enumerate(line["sentences"]):
-            if parts:
-                pause = np.zeros(int((SENTENCE_PAUSE_S if i > 0 else LINE_PAUSE_S) * SAMPLE_RATE), dtype=np.float32)
-                parts.append(pause)
-                position += len(pause)
-            audio = synthesize(pipelines[lang], sentence, voice)
+            if i > 0:
+                add_pause(SENTENCE_PAUSE_S)
+            audio, _ = synthesize(pipeline, sentence, voice)
             timings.append({"text": sentence, "start": round(position / SAMPLE_RATE, 2), "end": round((position + len(audio)) / SAMPLE_RATE, 2)})
-            parts.append(audio)
-            position += len(audio)
+            add(audio)
     return np.concatenate(parts), timings
 
 
@@ -95,10 +160,29 @@ def main() -> int:
     pending = [s for s in stories if (not only or s["id"] in only) and stored.get(s["id"]) != get_text_hash(s)][:limit]
     log(f"{len(pending)} stories to narrate, {len(stored)} already stored")
 
+    previews = [tuple(pair.split("+")) for pair in os.environ.get("PREVIEW_VOICES", "").split(",") if pair.strip()]
+    if previews:
+        pending = [s for s in stories if s["id"] in only]
+
     pipelines = {"a": KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M"), "b": KPipeline(lang_code="b", repo_id="hexgrad/Kokoro-82M")}
     done = 0
     failed = 0
     with tempfile.TemporaryDirectory() as tmp:
+        for story, voices in ((s, v) for s in pending for v in previews):
+            audio, timings = narrate(story, pipelines, voices)
+            mp3_path = Path(tmp) / f"{story['id']}.mp3"
+            encode_mp3(audio, mp3_path)
+            audio_path = f"stories/preview/{story['id']}-{voices[0]}-{voices[1]}.mp3"
+            upload = requests.post(
+                f"{url}/storage/v1/object/{BUCKET}/{audio_path}",
+                data=mp3_path.read_bytes(),
+                headers={**headers, "Content-Type": "audio/mpeg", "x-upsert": "true", "Cache-Control": "max-age=60"},
+                timeout=120,
+            )
+            upload.raise_for_status()
+            log(f"{timings[-1]['end']:.0f}s {url}/storage/v1/object/public/{BUCKET}/{audio_path}")
+        if previews:
+            return 0
         for story in pending:
             try:
                 text_hash = get_text_hash(story)

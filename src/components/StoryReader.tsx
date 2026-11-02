@@ -28,7 +28,7 @@ interface StorySentence {
   accent: Accent;
 }
 
-const RATES = [0.9, 0.75, 1];
+const RATES = [1, 0.9, 0.75];
 
 // Read a story or dialogue, or listen to it like a podcast: its generated narration when there is one, otherwise
 // the browser's own voice. In dialogues each speaker gets a different accent.

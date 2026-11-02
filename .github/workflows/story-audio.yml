@@ -13,6 +13,10 @@ on:
         description: "Stories in this run. Empty = no limit"
         required: false
         default: ""
+      preview_voices:
+        description: "Optional voice pairs to compare, e.g. af_bella+bm_lewis,af_nicole+bm_george (with story ids; the app's audio stays as it is)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -56,3 +60,4 @@ jobs:
           STORIES_JSON: ${{ runner.temp }}/stories.json
           ONLY: ${{ inputs.only }}
           LIMIT: ${{ inputs.limit }}
+          PREVIEW_VOICES: ${{ inputs.preview_voices }}
