@@ -19,6 +19,8 @@ const MAX_DURATION_SEC = 1200;
 // The same gentle pace and stopping rule as seed-lessons.ts.
 const PAUSE_MS = 6000;
 const MAX_RATE_LIMITED_IN_A_ROW = 3;
+const FEED_TRIES = 3;
+const FEED_RETRY_MS = 5000;
 
 interface FeedVideo {
   videoId: string;
@@ -33,7 +35,12 @@ function formatDuration(seconds: number): string {
 }
 
 async function readChannelFeed(channelId: string): Promise<FeedVideo[]> {
-  const response = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  // These feeds sometimes answer 404 or 500 for a moment, so each gets a few tries before giving up for this run.
+  let response = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  for (let attempt = 1; !response.ok && attempt < FEED_TRIES; attempt++) {
+    await sleep(FEED_RETRY_MS);
+    response = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  }
   if (!response.ok) throw new Error(`Feed request failed: ${response.status}`);
   const xml = await response.text();
   return [...xml.matchAll(/<entry>[\s\S]*?<\/entry>/g)].flatMap(([entry]) => {
