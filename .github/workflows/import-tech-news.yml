@@ -1,0 +1,37 @@
+# Adds one AI article a day from The Conversation to News > AI & Tech (scripts/tech-news/import_tech_news.py).
+# Needs migration 025 and repository secrets NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+name: Import AI and tech articles
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "New articles in this run"
+        required: false
+        default: "1"
+      dry_run:
+        description: "Dry run (print articles and levels, write nothing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Import
+        run: python scripts/tech-news/import_tech_news.py
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LIMIT: ${{ inputs.limit }}
+          DRY_RUN: ${{ inputs.dry_run }}

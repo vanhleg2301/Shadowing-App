@@ -46,6 +46,9 @@ export function NewsList({ stories, categories, category, page, totalPages }: Ne
             {c ?? "All"}
           </Link>
         ))}
+        <Link href="/news/ai-tech" className="shrink-0 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors">
+          AI &amp; Tech
+        </Link>
       </div>
 
       {lead && page === 1 ? (

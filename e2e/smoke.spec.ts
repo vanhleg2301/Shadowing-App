@@ -31,7 +31,7 @@ async function expectInViewport(page: Page, locator: ReturnType<Page["locator"]>
     .toBe(true);
 }
 
-const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/stories", "/placement", "/privacy", "/offline"];
+const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news/ai-tech", "/stories", "/placement", "/privacy", "/offline"];
 
 for (const path of STATIC_PAGES) {
   test(`page ${path} loads`, async ({ page }) => {
@@ -42,7 +42,7 @@ for (const path of STATIC_PAGES) {
 
 test("a news story loads with its player fixed on screen", async ({ page }) => {
   await openPage(page, "/news");
-  const story = await firstHref(page, "/news/");
+  const story = await firstHref(page, "/news/voa-");
   await openPage(page, story);
   await page.mouse.wheel(0, 1500);
   // Regression: a transform left by a page animation once pinned this player to the end of the page.

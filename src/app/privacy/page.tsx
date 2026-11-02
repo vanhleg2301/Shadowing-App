@@ -75,6 +75,11 @@ export default function PrivacyPage() {
             for Claude, the sentence it appears in, to produce the dictionary entry. No account information is sent.
           </li>
           <li>
+            <b>The Conversation</b> counts views of the AI &amp; Tech articles republished from it. Opening one loads a
+            small image from its server, which sees the page address, your browser version and your IP address (used
+            for the city). No account information is sent.
+          </li>
+          <li>
             <b>Vercel</b> hosts the app.
           </li>
         </ul>
