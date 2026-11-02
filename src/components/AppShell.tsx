@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
+import { SidebarNav, type SidebarGroup } from "@/components/SidebarNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ICON_SYMBOLS } from "@/data/app-icons";
 import { isAdminEmail } from "@/lib/admin-emails";
@@ -29,6 +30,15 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isDesktopOnly: true },
 ];
 
+const toSidebarItems = (hrefs: string[]) =>
+  hrefs.flatMap((href) => NAV_ITEMS.filter((item) => item.href === href).map(({ label, icon }) => ({ label, icon, href })));
+
+const SIDEBAR_GROUPS: SidebarGroup[] = [
+  { label: "Learn", items: toSidebarItems(["/", "/stories", "/news", "/course"]) },
+  { label: "Practice", items: toSidebarItems(["/review", "/vocabulary", "/search"]) },
+  { label: "My library", items: toSidebarItems(["/favorites", "/offline"]) },
+];
+
 interface AppShellProps {
   active: string;
   children: ReactNode;
@@ -47,23 +57,8 @@ export function AppShell({ active, children }: AppShellProps) {
           </span>
         </Link>
 
-        <nav className="mt-8 flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.href === active;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition-colors ${
-                  isActive ? "bg-brand-soft text-brand" : "text-ink/80 hover:bg-cream hover:text-ink"
-                }`}
-              >
-                <Icon name={item.icon} className="size-5" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="mt-6 flex flex-col">
+          <SidebarNav groups={SIDEBAR_GROUPS} active={active} />
           <Suspense fallback={null}>
             <AdminNavLink isActive={active === "/admin"} />
           </Suspense>

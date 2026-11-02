@@ -84,10 +84,25 @@ test("the last sentence of a part leads to the next part, in the same mode", asy
 
 test("the course guide shows a timetable for the day", async ({ page }) => {
   await openPage(page, "/course/2");
-  await page.getByRole("button", { name: "Học thế nào?" }).click();
-  const guide = page.getByRole("dialog", { name: "Học khóa 7 ngày thế nào?" });
+  await page.getByRole("button", { name: "How to study" }).click();
+  const guide = page.getByRole("dialog", { name: "How to study this course" });
   await expect(guide.getByText("8:00")).toBeVisible();
-  await expect(guide.getByText("Lịch gợi ý cho ngày 2.", { exact: false })).toBeVisible();
+  await expect(guide.getByText("This is the plan for day 2.", { exact: false })).toBeVisible();
+});
+
+test("sidebar modules collapse and stay collapsed", async ({ page, isMobile }) => {
+  test.skip(isMobile, "The sidebar is desktop only");
+  await openPage(page, "/stories");
+  const sidebar = page.locator("aside");
+  await sidebar.getByRole("button", { name: "Practice" }).click();
+  await expect(sidebar.getByRole("link", { name: "Review" })).toBeHidden();
+  await page.reload();
+  await expect(sidebar.getByRole("button", { name: "Practice" })).toHaveAttribute("aria-expanded", "false");
+  // The current page's module stays open, even when it was collapsed before.
+  await sidebar.getByRole("button", { name: "Practice" }).click();
+  await sidebar.getByRole("link", { name: "Review" }).click();
+  await expect(page).toHaveURL(/\/review/);
+  await expect(sidebar.getByRole("link", { name: "My words" })).toBeVisible();
 });
 
 test("tapping a word opens the lookup sheet on screen", async ({ page }) => {

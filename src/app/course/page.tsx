@@ -63,7 +63,7 @@ async function CourseWithProgress() {
       <div className="mt-4">
         <CourseGuide
           planTitle={course.title}
-          scheduleTitle="Ví dụ từ ngày 2 của khóa bạn đang chọn; ngày 1 không có phần ôn bài."
+          scheduleTitle="This is day 2 of your plan; day 1 has no review."
           schedule={buildDaySchedule(course.getBlocks(course.days[1], collection))}
         />
       </div>

@@ -49,7 +49,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Breadcrumbs items={[{ label: "7-day course", href: "/course" }, { label: `Day ${day.day}` }]} className="" />
         <div className="flex flex-wrap items-center gap-2">
-          <CourseGuide planTitle={course.title} scheduleTitle={`Lịch gợi ý cho ngày ${day.day}.`} schedule={buildDaySchedule(blocks)} />
+          <CourseGuide planTitle={course.title} scheduleTitle={`This is the plan for day ${day.day}.`} schedule={buildDaySchedule(blocks)} />
           <CollectionSwitcher current={collection} counts={counts} />
         </div>
       </div>
