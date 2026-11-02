@@ -147,7 +147,8 @@ def main() -> int:
     if not is_dry_run and (not url or not key):
         print("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY")
         return 1
-    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+    # Supabase rejects secret keys (401) from anything that looks like a browser, so no "Mozilla" here.
+    headers = {"apikey": key, "Authorization": f"Bearer {key}", "User-Agent": "ShadowingAppImporter/1.0"}
 
     stored: set[str] = set()
     if not is_dry_run:
