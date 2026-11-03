@@ -113,6 +113,7 @@ export function LessonPlayer({
 
   const activeIndex = findActiveIndex(sentences, currentTime);
   const isPractice = mode !== "watch";
+  const isPlayThrough = mode === "shadow" && prefs.shadowPlayThrough;
   const highlightIndex = isPractice ? practiceIndex : activeIndex;
   const currentIndex = isPractice ? practiceIndex : Math.max(activeIndex, 0);
   const isMasked = (i: number) =>
@@ -165,9 +166,15 @@ export function LessonPlayer({
   // was started from the video itself (its play button or YouTube's own controls), so the learner can answer.
   const practiceEnd = isPractice ? sentences[practiceIndex]?.end : undefined;
   useEffect(() => {
-    if (practiceEnd === undefined || !isPlaying || loopIndex !== null || isSegmentPlayingRef.current) return;
+    if (practiceEnd === undefined || !isPlaying || loopIndex !== null || isSegmentPlayingRef.current || isPlayThrough) return;
     if (currentTime >= practiceEnd) pause();
-  }, [practiceEnd, currentTime, isPlaying, loopIndex, pause]);
+  }, [practiceEnd, currentTime, isPlaying, loopIndex, pause, isPlayThrough]);
+
+  // Playing straight through, the sentence to shadow is whichever one is being spoken.
+  useEffect(() => {
+    if (!isPlayThrough || !isPlaying || activeIndex < 0 || isSegmentPlayingRef.current) return;
+    setPracticeIndex(activeIndex);
+  }, [isPlayThrough, isPlaying, activeIndex]);
 
   // A part ends where its last sentence ends, not where the video does.
   const partEnd = part ? sentences[sentences.length - 1].end : null;
@@ -255,6 +262,18 @@ export function LessonPlayer({
     seekTo(sentences[index].start);
     play();
     return Promise.resolve();
+  };
+
+  // Resumes where the learner paused; after moving to another sentence, starts from that sentence.
+  const playThrough = () => {
+    const sentence = sentences[practiceIndex];
+    if (currentTime < sentence.start || currentTime > sentence.end + 0.5) seekTo(sentence.start);
+    play();
+  };
+
+  const handlePlayThroughChange = (isOn: boolean) => {
+    updatePrefs({ shadowPlayThrough: isOn });
+    if (isOn) playThrough();
   };
 
   // Clicking a transcript row plays just that sentence once, in every mode.
@@ -345,8 +364,9 @@ export function LessonPlayer({
       if (isTyping || lookup || event.metaKey || event.ctrlKey || event.altKey) return;
       if (event.key === " ") {
         event.preventDefault();
-        if (isPractice) playSentence(practiceIndex);
-        else if (isPlaying) pause();
+        if (isPlaying && (isPlayThrough || !isPractice)) pause();
+        else if (isPlayThrough) playThrough();
+        else if (isPractice) playSentence(practiceIndex);
         else play();
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
@@ -444,7 +464,7 @@ export function LessonPlayer({
           {lesson.media ? (
             <button
               type="button"
-              onClick={isPlaying ? pause : isPractice ? () => void playSentence(practiceIndex) : play}
+              onClick={isPlaying ? pause : isPlayThrough ? playThrough : isPractice ? () => void playSentence(practiceIndex) : play}
               aria-label={isPlaying ? "Pause" : "Play"}
               className="group absolute inset-0"
             >
@@ -458,7 +478,7 @@ export function LessonPlayer({
           ) : (
             <>
               <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
-              {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={isPractice ? () => void playSentence(practiceIndex) : play} />}
+              {!youTube.isActivated && <VideoFacade videoId={lesson.videoId} onPlay={isPlayThrough ? playThrough : isPractice ? () => void playSentence(practiceIndex) : play} />}
             </>
           )}
           {!isReady && (
@@ -597,6 +617,10 @@ export function LessonPlayer({
             onPrev={() => goToSentence(practiceIndex - 1)}
             onNext={() => goToSentence(practiceIndex + 1)}
             onBeforeRecord={pause}
+            isPlayThrough={isPlayThrough}
+            onPlayThroughChange={handlePlayThroughChange}
+            isPlaying={isPlaying}
+            onPlayPause={isPlaying ? pause : playThrough}
           />
         )}
         {mode === "dictation" && (

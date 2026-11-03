@@ -161,6 +161,18 @@ test("the last sentence of a part leads to the next part, in the same mode", asy
   await expect(page.getByText(/^Sentence 1\/\d+/).first()).toBeVisible();
 });
 
+test("shadowing can play straight through and pause when the learner wants", async ({ page }) => {
+  await openPage(page, "/watch/ovl9kM46r10?mode=shadow&part=1");
+  await page.getByText("Play through").click();
+  // Sentence 1 is under two seconds; without play through the video would stop at its end.
+  await expect(page.getByText(/^Sentence [3-9]\/\d+/).first()).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Pause to shadow" }).click();
+  await expect(page.getByRole("button", { name: "Play", exact: true }).last()).toBeVisible();
+  // The choice is remembered for the next lesson.
+  await page.reload();
+  await expect(page.getByRole("switch", { name: /Play through/ })).toBeChecked();
+});
+
 test("the course guide shows a timetable for the day", async ({ page }) => {
   await openPage(page, "/course/2");
   await page.getByRole("button", { name: "How to study" }).click();

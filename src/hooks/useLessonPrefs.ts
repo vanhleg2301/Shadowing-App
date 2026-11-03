@@ -10,10 +10,12 @@ export interface LessonPrefs {
   hideText: boolean;
   autoScroll: boolean;
   showTranslation: boolean;
+  // Shadowing plays the video straight through; the learner pauses when they want to repeat a line.
+  shadowPlayThrough: boolean;
 }
 
 const STORAGE_KEY = "lesson-prefs";
-const DEFAULTS: LessonPrefs = { textSize: "md", hideText: false, autoScroll: true, showTranslation: true };
+const DEFAULTS: LessonPrefs = { textSize: "md", hideText: false, autoScroll: true, showTranslation: true, shadowPlayThrough: false };
 
 // Per-device reading preferences; a convenience only, so storage failures fall back to defaults.
 export function useLessonPrefs() {
