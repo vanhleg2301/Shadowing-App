@@ -31,6 +31,7 @@ import { getLessonTrail } from "@/lib/lesson-trail";
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 // Progress is saved at most this often while the learner moves through sentences.
 const PROGRESS_INTERVAL_MS = 10000;
+const AUTO_NEXT_PART_S = 3;
 
 const TEXT_SIZE_CLASS: Record<TextSize, string> = {
   sm: "text-[15px]",
@@ -61,6 +62,8 @@ interface LessonPlayerProps {
   // Set when a long video is studied in parts; lesson.sentences then holds only this part.
   part?: LessonPart;
   partQuery?: string;
+  // Opened by the previous part running to its end: start playing straight away.
+  isAutoplay?: boolean;
 }
 
 export function LessonPlayer({
@@ -74,6 +77,7 @@ export function LessonPlayer({
   initialRate = 1,
   part,
   partQuery = "",
+  isAutoplay = false,
 }: LessonPlayerProps) {
   const { user } = useAuth();
   const { lookup, openWord, sheetProps } = useWordLookup(lesson.videoId, initialSavedWords);
@@ -103,6 +107,7 @@ export function LessonPlayer({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
+  const [autoNextIn, setAutoNextIn] = useState<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
   const transcriptRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +127,18 @@ export function LessonPlayer({
   useEffect(() => {
     if (initialRate !== 1) setRate(initialRate);
     // Only on open; the speed button changes it afterwards.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isAutoplay) return;
+    // Without the flag, reloading this part would start it again on its own.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("autoplay");
+    window.history.replaceState(window.history.state, "", url);
+    // Browsers may block it without a fresh tap (iPhones especially); the play button then still works.
+    play();
+    // Only on open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -155,14 +172,20 @@ export function LessonPlayer({
   // A part ends where its last sentence ends, not where the video does.
   const partEnd = part ? sentences[sentences.length - 1].end : null;
   const isPartOver = partEnd !== null && currentTime >= partEnd + 0.3;
-  useEffect(() => {
-    if (isPartOver && isPlaying && loopIndex === null) pause();
-  }, [isPartOver, isPlaying, loopIndex, pause]);
   const hasNextPart = part !== undefined && part.index < part.total;
+  useEffect(() => {
+    if (!isPartOver || !isPlaying || loopIndex !== null) return;
+    pause();
+    // Watching straight through a part carries on into the next one; practice modes stop for the learner.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to the player reaching the part's end
+    if (mode === "watch" && hasNextPart) setAutoNextIn(AUTO_NEXT_PART_S);
+  }, [isPartOver, isPlaying, loopIndex, pause, mode, hasNextPart]);
   const isAtPartEnd = isPartOver || (isPractice && practiceIndex === sentences.length - 1);
   // The next part opens as a new player, so the link carries what the learner has chosen since opening this one.
-  const partHref = (index: number) => {
+  const partHref = (index: number, isAutoNext = false) => {
     const params = new URLSearchParams(partQuery);
+    if (isAutoNext) params.set("autoplay", "1");
+    else params.delete("autoplay");
     params.set("mode", mode);
     if (!isSessionListenFirst) params.delete("listen");
     if (speed === 1) params.delete("rate");
@@ -170,6 +193,24 @@ export function LessonPlayer({
     params.set("part", String(index));
     return `/watch/${lesson.videoId}?${params}`;
   };
+
+  useEffect(() => {
+    if (autoNextIn === null || !part) return;
+    if (autoNextIn === 0) {
+      router.push(partHref(part.index + 1, true));
+      return;
+    }
+    const id = setTimeout(() => setAutoNextIn(autoNextIn - 1), 1000);
+    return () => clearTimeout(id);
+    // partHref changes every render; the countdown only needs to restart when the count does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoNextIn]);
+
+  // Playing again (or anything that starts playback) means the learner wants to stay on this part.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the player's state
+    if (isPlaying) setAutoNextIn(null);
+  }, [isPlaying]);
 
   // Moves only the transcript; scrollIntoView could also move the page around it.
   const centerRow = useCallback((index: number) => {
@@ -247,6 +288,7 @@ export function LessonPlayer({
 
   const handleModeChange = (next: Mode) => {
     setMode(next);
+    setAutoNextIn(null);
     setLoopIndex(null);
     setRevealed(new Set());
     if (next !== "watch") {
@@ -397,7 +439,7 @@ export function LessonPlayer({
 
       {/* Listening comes first: on phones, while watching, the video and the sentence being spoken
           take more of the screen than the transcript list. */}
-      <div className={`flex flex-col lg:flex-none lg:px-6 lg:pt-6 ${mode === "watch" ? "min-h-0 flex-[3]" : "shrink-0"}`}>
+      <div className={`flex flex-col lg:flex-none lg:px-6 lg:pt-6 ${mode === "watch" && !isHideText ? "min-h-0 flex-[3]" : "shrink-0"}`}>
         <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-black lg:rounded-3xl lg:shadow-[0_4px_0_0_var(--color-line)]">
           {lesson.media ? (
             <button
@@ -424,9 +466,14 @@ export function LessonPlayer({
           )}
         </div>
         {mode === "watch" && (
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden border-b border-line bg-surface px-5 py-3 text-center lg:hidden">
+          <div
+            className={`flex items-center justify-center overflow-hidden border-b border-line bg-surface px-5 text-center lg:hidden ${
+              isHideText ? "py-1.5" : "min-h-0 flex-1 py-3"
+            }`}
+          >
+            {/* With nothing to read, the space goes to the transcript instead. */}
             {isHideText ? (
-              <p className="text-sm font-semibold text-muted">Listen first. The text is hidden.</p>
+              <p className="text-xs font-semibold text-muted">Listen first. The text is hidden.</p>
             ) : (
               <p key={currentIndex} className="line-clamp-4 animate-fade-in text-xl font-bold leading-snug text-ink">
                 {sentences[currentIndex]?.text}
@@ -479,7 +526,17 @@ export function LessonPlayer({
             </button>
           )}
         </div>
-        {part && <PartNav index={part.index} total={part.total} href={partHref} isOver={isAtPartEnd} className="sticky -top-3 z-10 mb-3" />}
+        {part && (
+          <PartNav
+            index={part.index}
+            total={part.total}
+            href={partHref}
+            isOver={isAtPartEnd}
+            autoNextIn={autoNextIn}
+            onCancelAutoNext={() => setAutoNextIn(null)}
+            className="sticky -top-3 z-10 mb-3"
+          />
+        )}
         {panel === "summary" ? (
           <SummaryPanel lesson={lesson} onPlaySentence={replaySentence} />
         ) : (

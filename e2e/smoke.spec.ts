@@ -100,6 +100,34 @@ test("the transcript scrolls freely until Current brings it back", async ({ page
   await expect(current).toBeInViewport();
 });
 
+test("a part that plays to its end opens the next part and keeps playing", async ({ page }) => {
+  await openPage(page, "/watch/ovl9kM46r10?part=1");
+  const rows = page.getByTestId("transcript").getByRole("button", { name: /^Play from sentence/ });
+  await rows.last().click();
+  await expect(page.getByText(/Next part in \d/)).toBeVisible({ timeout: 30_000 });
+  await expect(page).toHaveURL(/part=2/, { timeout: 10_000 });
+  // The flag is dropped so a reload doesn't start the part by itself.
+  await expect(page).not.toHaveURL(/autoplay/);
+  await expect(page.locator('iframe[src*="youtube"]')).toBeAttached();
+});
+
+test("Cancel keeps the learner on the part", async ({ page }) => {
+  await openPage(page, "/watch/ovl9kM46r10?part=1");
+  await page.getByTestId("transcript").getByRole("button", { name: /^Play from sentence/ }).last().click();
+  await page.getByRole("button", { name: "Cancel" }).click({ timeout: 30_000 });
+  await page.waitForTimeout(4000);
+  await expect(page).toHaveURL(/part=1/);
+});
+
+test("listen first keeps the hidden-text note small on phones", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "the note is only on phones");
+  await openPage(page, "/watch/ovl9kM46r10?listen=1");
+  const note = page.getByText("Listen first. The text is hidden.");
+  await expect(note).toBeVisible();
+  const box = await note.locator("..").boundingBox();
+  expect(box?.height ?? 999).toBeLessThan(50);
+});
+
 test("search finds a phrase and opens the lesson", async ({ page }) => {
   await openPage(page, "/search?q=look%20forward%20to");
   const lesson = await firstHref(page, "/watch/");

@@ -19,6 +19,8 @@ interface LessonOptions {
   isListenFirst: boolean;
   backHref: string;
   playbackRate: number;
+  // Set when the previous part ran to its end and opened this one.
+  isAutoplay: boolean;
   part: number | null;
   // Opens at this sentence (from phrase search) instead of where the learner left off.
   sentence: number | null;
@@ -38,6 +40,7 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
     isListenFirst: first(sp.listen) === "1",
     backHref: courseDay ? `/course/${courseDay}` : "/",
     playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
+    isAutoplay: first(sp.autoplay) === "1",
     part: Number(first(sp.part)) || null,
     sentence: /^\d{1,5}$/.test(first(sp.s) ?? "") ? Number(first(sp.s)) : null,
     query: new URLSearchParams(
@@ -121,6 +124,7 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
       isListenFirst={options.isListenFirst}
       backHref={options.backHref}
       initialRate={options.playbackRate}
+      isAutoplay={options.isAutoplay}
     />
   );
 }
