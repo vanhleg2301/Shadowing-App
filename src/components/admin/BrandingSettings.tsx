@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ChangeEvent } from "react";
 import { resetShareImage, setIconSymbol, uploadBrandImage, type AdminResult } from "@/app/admin/actions";
+import { SymbolArt } from "@/components/SymbolArt";
 import { ICON_SYMBOL_IDS, ICON_SYMBOLS, type AppIconSetting, type IconSymbol } from "@/data/app-icons";
 
 interface BrandingSettingsProps {
@@ -150,9 +151,7 @@ export function BrandingSettings({ icon, iconColor, shareImageUrl }: BrandingSet
 function SymbolTile({ symbol, color }: { symbol: IconSymbol; color: string }) {
   return (
     <span className="grid size-12 place-items-center rounded-xl" style={{ background: color }} aria-hidden="true">
-      <svg viewBox="0 0 24 24" className="size-7" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-        <path d={ICON_SYMBOLS[symbol].path} />
-      </svg>
+      <SymbolArt symbol={symbol} color="white" className="size-8" />
     </span>
   );
 }

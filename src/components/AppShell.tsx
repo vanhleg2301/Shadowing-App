@@ -4,8 +4,8 @@ import { AuthButton } from "@/components/AuthButton";
 import { Icon, type IconName } from "@/components/Icon";
 import { MoreMenu } from "@/components/MoreMenu";
 import { SidebarNav, type SidebarGroup } from "@/components/SidebarNav";
+import { SymbolArt } from "@/components/SymbolArt";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ICON_SYMBOLS } from "@/data/app-icons";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { getAppSettings } from "@/lib/app-settings";
 import { getUserContext } from "@/lib/user-data";
@@ -154,9 +154,7 @@ async function BrandMark() {
   }
   return (
     <span className="grid size-10 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_3px_0_0_var(--color-brand-dark)]">
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d={ICON_SYMBOLS[icon.symbol].path} />
-      </svg>
+      <SymbolArt symbol={icon.symbol} className="size-6" lineWidth={2} />
     </span>
   );
 }

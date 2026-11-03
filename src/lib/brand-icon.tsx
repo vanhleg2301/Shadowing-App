@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { ICON_SYMBOLS, type AppIconSetting } from "@/data/app-icons";
+import { SymbolArt } from "@/components/SymbolArt";
+import { type AppIconSetting } from "@/data/app-icons";
 
 // App icon from Admin -> Theme: a white symbol on the palette's icon colour, or the uploaded image.
 // `padding` leaves a safe zone for maskable icons, which Android crops into a circle.
@@ -35,9 +36,7 @@ export function renderBrandIcon(size: number, color: string, icon: AppIconSettin
             // eslint-disable-next-line @next/next/no-img-element -- ImageResponse only understands plain <img>
             <img src={icon.url} alt="" width={inner} height={inner} style={{ objectFit: "cover" }} />
           ) : (
-            <svg width={inner * 0.55} height={inner * 0.55} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <path d={ICON_SYMBOLS[icon.symbol].path} />
-            </svg>
+            <SymbolArt symbol={icon.symbol} color="white" size={inner * 0.6} />
           )}
         </div>
       </div>

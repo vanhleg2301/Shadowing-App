@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { ICON_SYMBOLS } from "@/data/app-icons";
+import { SymbolArt } from "@/components/SymbolArt";
 import { getAppSettings } from "@/lib/app-settings";
 
 export const alt = "Shadowing English: learn English from real videos";
@@ -34,9 +34,7 @@ export default async function OpenGraphImage() {
             // eslint-disable-next-line @next/next/no-img-element -- ImageResponse only understands plain <img>
             <img src={icon.url} alt="" width={150} height={150} style={{ objectFit: "cover" }} />
           ) : (
-            <svg width={84} height={84} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <path d={ICON_SYMBOLS[icon.symbol].path} />
-            </svg>
+            <SymbolArt symbol={icon.symbol} color="white" size={90} />
           )}
         </div>
         <div style={{ marginTop: 50, fontSize: 84, fontWeight: 800, lineHeight: 1.05 }}>Shadowing English</div>
