@@ -11,7 +11,8 @@ export function getCourseB1Id(collection: CollectionId): string {
   return `${COURSE_B1_ID}:${collection}`;
 }
 
-// Base videos are BBC Learning English; other collections replace them day by day below.
+// Base videos are BBC Learning English. Studio C uses them too: its sketches have no stored transcripts, and each
+// day is built from its main video's transcript. Easy Street replaces them day by day below.
 export const COURSE_B1_DAYS: CourseDay[] = [
   {
     day: 1,
@@ -19,8 +20,8 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     canDo: "I can start a casual chat, keep it going and react naturally.",
     videos: [
       { id: "d0GKyzG9OWA", title: "Talking About Socialising" },
-      { id: "u6QrbYDsj1g", title: "Anxious About Talking to New People?" },
-      { id: "Qk-69B86pEo", title: "Networking" },
+      { id: "31y2Bq1RYQA", title: "Saying Where You're From" },
+      { id: "wUF33157hYI", title: "Talking About Likes and Dislikes" },
     ],
     phrases: [
       { text: "How's it going?", meaning: "a casual 'how are you?'", example: "Hey Tom, how's it going?" },
@@ -52,9 +53,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     title: "Family and friends",
     canDo: "I can tell a short story about people I know and how we get on.",
     videos: [
-      { id: "0b1sPJq1BaA", title: "Talking About Friends" },
-      { id: "x72gP4HrU58", title: "Talking About Family" },
-      { id: "mxwJsvMj7JA", title: "Making \"Mum Friends\"" },
+      { id: "v9EU41cuhHY", title: "How to Describe Your Family" },
+      { id: "lHZCWPdQr80", title: "Talking About Housemates" },
+      { id: "0UIcwcYrPek", title: "Talking About Pets" },
     ],
     phrases: [
       { text: "We grew up together", meaning: "we were children in the same place", example: "Jake and I grew up together." },
@@ -86,9 +87,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     title: "Shopping and services",
     canDo: "I can ask for what I want, deal with a problem and complain politely.",
     videos: [
-      { id: "GfFqCV02J0E", title: "Placing an Order" },
+      { id: "2mnL9jPVzsk", title: "Clothes Shopping" },
       { id: "E3G-dsvZHGU", title: "When Is It OK to Complain?" },
-      { id: "7CCaA8lfJkU", title: "Dealing With IT Support" },
+      { id: "bVRIpmjTSxM", title: "Talking About Restaurants" },
     ],
     phrases: [
       { text: "I'm just looking, thanks", meaning: "I don't need help yet", example: "Can I help you? — I'm just looking, thanks." },
@@ -120,9 +121,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     title: "Work and school",
     canDo: "I can make requests, ask for help and talk about my job or studies.",
     videos: [
-      { id: "sj-dX3fZmq0", title: "Answering Interview Questions" },
-      { id: "AG2kYShBZl0", title: "Asking for Help at Work" },
-      { id: "QWBwCoecvkM", title: "Making Polite Requests" },
+      { id: "O6h8qq5rBi0", title: "Talking About the Office" },
+      { id: "VFA53-P4yPo", title: "How Do Job Interviews Make You Feel?" },
+      { id: "DjA3naFOTvc", title: "Talking About School" },
     ],
     phrases: [
       { text: "Do you have a minute?", meaning: "can I talk to you now?", example: "Hi Sarah, do you have a minute?" },
@@ -154,9 +155,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     title: "Feelings and opinions",
     canDo: "I can say how I feel, give my opinion and disagree politely.",
     videos: [
-      { id: "yyClpj_GJDc", title: "How to Talk About Your Feelings" },
-      { id: "F5h3tLtgVrI", title: "Disagreeing Politely" },
-      { id: "s94XlBnJwZU", title: "Are Dating Apps Effective?" },
+      { id: "qfQ61oYIbxY", title: "Are You in a Good or Bad Mood?" },
+      { id: "fLB70DZdqIE", title: "Talking About Your Worries" },
+      { id: "gL6DT-PdLoQ", title: "Talking About Confidence" },
     ],
     phrases: [
       { text: "I'm a bit down", meaning: "I'm a little sad", example: "I'm a bit down today. I didn't sleep well." },
@@ -188,9 +189,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     title: "When things go wrong",
     canDo: "I can apologise, explain a misunderstanding and ask for help in a problem.",
     videos: [
-      { id: "qR34I4S9qUA", title: "Saying You're Sorry" },
-      { id: "bDVrNLKG1bg", title: "Explaining a Misunderstanding" },
       { id: "eK5Tsornvng", title: "Talking About Mistakes" },
+      { id: "bGxdYW_6rjQ", title: "Living in a City: Pros and Cons" },
+      { id: "M03vuos_nLI", title: "Talking About the News" },
     ],
     phrases: [
       { text: "My bad", meaning: "a casual 'it was my mistake'", example: "Oops, I took your seat. My bad!" },
@@ -223,8 +224,8 @@ export const COURSE_B1_DAYS: CourseDay[] = [
     canDo: "I can tell a funny or surprising story at natural speed and react to other people's stories.",
     videos: [
       { id: "kTf0V4HyFtM", title: "What You Did Last Weekend" },
-      { id: "BSABmr8hX7s", title: "Talking About Films" },
-      { id: "yHNOHXFbP78", title: "Talking About Your Childhood" },
+      { id: "WGZFo81hvj0", title: "Talking About Your Year" },
+      { id: "S7mfygW40Cs", title: "Talking About Days Out" },
     ],
     phrases: [
       { text: "You won't believe what happened", meaning: "start an exciting story", example: "You won't believe what happened on the bus today." },
@@ -254,49 +255,12 @@ export const COURSE_B1_DAYS: CourseDay[] = [
 ];
 
 const COLLECTION_DAY_VIDEOS: Partial<Record<CollectionId, Record<number, CourseDay["videos"]>>> = {
-  "studio-c": {
-    1: [
-      { id: "8t5PXQX4E1o", title: "Easily Offended Friends" },
-      { id: "HWsaHqtkzk4", title: "Two Truths and a Lie" },
-      { id: "lKimaAhyakc", title: "Would You Rather" },
-    ],
-    2: [
-      { id: "6ee1CntEVyU", title: "A Bad Family Game Night" },
-      { id: "9EckItGk5r8", title: "Christmas Cards" },
-      { id: "Aw3u_o9L5QU", title: "Betting On Friends Goes Too Far" },
-    ],
-    3: [
-      { id: "ZjdKPDsYA7o", title: "Longest Grocery Store Checkout Line" },
-      { id: "YIGEwAuWpB8", title: "Crazy Mall Kiosk Salesman" },
-      { id: "PL5q8HOYVU0", title: "The Restaurant of Life" },
-    ],
-    4: [
-      { id: "K72dRv5ejIc", title: "Worst Teacher Ever" },
-      { id: "y5Lfa_zLD1Q", title: "Career Placement Test" },
-      { id: "puZb1VUdo2M", title: "Foreign Exchange" },
-    ],
-    5: [
-      { id: "ktUHAp1zxFc", title: "How to Read Flirting Signals" },
-      { id: "G3yzzHMgRWk", title: "Most Accurate Mood Ring" },
-      { id: "3GeaFfhaYkI", title: "Operation Breakup" },
-    ],
-    6: [
-      { id: "yJc921NJqNM", title: "Worst Doctor Ever" },
-      { id: "OyGwyBoLEiI", title: "Worst Cop Ever" },
-      { id: "tu3v87_97Hc", title: "Robbery Stopped by Philosophical Questions" },
-    ],
-    7: [
-      { id: "LXSj1y9kl2Y", title: "Movie Trailer That Spoils Everything" },
-      { id: "hcdI20liY50", title: "Spoiler Alert" },
-      { id: "CE1UZY-7bq8", title: "Flip a Coin Worst Luck Ever" },
-    ],
-  },
   // Easy Street has few short videos, so days 6 and 7 keep the BBC ones.
   "easy-street": {
     1: [
-      { id: "AFer9rgkvPs", title: "British Hobbies" },
+      { id: "TwBYlBjbokU", title: "Everyday Conversations With Strangers" },
+      { id: "rPgykzyHg6I", title: "Small Talk Advice" },
       { id: "nvhcPK_IsIQ", title: "Why Do British People Love the Pub?" },
-      { id: "HOn6vWFzHw4", title: "The \"Don'ts\" of UK Culture" },
     ],
     2: [
       { id: "0cPmzcW5l1I", title: "What Are Your Plans Today? (Part 2)" },
@@ -305,18 +269,18 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<CollectionId, Record<number, CourseD
     ],
     3: [
       { id: "b7WcAmzNZ88", title: "Everyday Conversations for Shopping" },
-      { id: "DGdO1h9hBno", title: "Do People Love Junk Food?" },
-      { id: "BaS1iZs_AQ8", title: "Are British People Vegetarian?" },
+      { id: "yl--RTTtKLs", title: "Conversations for Shopping" },
+      { id: "7WvW2KZm8S0", title: "Favourite Food" },
     ],
     4: [
-      { id: "j1fh6RTIxx4", title: "Conversations and Words for Work" },
+      { id: "-WB_SGqeJo8", title: "What Do You Do for a Living?" },
       { id: "v8ecvyglvJ8", title: "Conversations for Tourists" },
       { id: "S3gaSvXqLH0", title: "Advice for Travelling by Train" },
     ],
     5: [
       { id: "yb21A3vrsOM", title: "What Makes People Happy?" },
-      { id: "OHN9xZywzm0", title: "The Best British Bands and Music" },
-      { id: "Yuvi8elkqvU", title: "What Is the Best Horror Movie?" },
+      { id: "ScO8_gSXqJQ", title: "What Are Your Phobias?" },
+      { id: "H3zJIP3BJ6Y", title: "Advice on Mental Health" },
     ],
   },
 };
@@ -325,19 +289,20 @@ function getDayVideos(day: CourseDay, collection: CollectionId): CourseDay["vide
   return COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos;
 }
 
-// Every video is heard first without subtitles, then shadowed; the speaking block ends with a retelling.
+// At B1 the main video is heard cold first, as real conversations are; its words and sentences come after.
 export function getB1Blocks(day: CourseDay, collection: CollectionId): CourseBlock[] {
   const [main, second, extra] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: review yesterday's phrases", minutes: 10 }] : []),
-    { id: "listen-1", kind: "listen", title: `Listen without subtitles: ${main.title}`, minutes: 20, videoId: main.id },
-    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 40, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: "Learn today's 15 phrases", minutes: 15 },
-    { id: "listen-2", kind: "listen", title: `Listen without subtitles: ${second.title}`, minutes: 15, videoId: second.id },
-    { id: "shadow-2", kind: "shadow", title: `Shadow: ${second.title}`, minutes: 30, videoId: second.id },
-    { id: "speak", kind: "speak", title: "Speak: answer and retell out loud", minutes: 30 },
-    { id: "roleplay", kind: "roleplay", title: "Role-play: act out a real conversation", minutes: 20 },
-    { id: "quiz", kind: "quiz", title: "Quiz: check today's phrases", minutes: 10 },
-    { id: "extra", kind: "extra", title: `Bonus shadowing: ${extra.title}`, minutes: 30, videoId: extra.id, isOptional: true },
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 10 }] : []),
+    { id: "listen-1", kind: "listen", title: `Listen 1, no subtitles: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "words", kind: "words", title: "Words and chunks from the video", minutes: 10 },
+    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 15 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 30, videoId: main.id },
+    { id: "listen-2", kind: "listen", title: `Same topic, no subtitles: ${second.title}`, minutes: 15, videoId: second.id },
+    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 10 },
+    { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 15, isOptional: true },
+    { id: "extra", kind: "extra", title: `Bonus listening: ${extra.title}`, minutes: 20, videoId: extra.id, isOptional: true },
   ];
 }

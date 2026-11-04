@@ -42,6 +42,14 @@ async function readStoredLesson(videoId: string): Promise<Lesson | null> {
   };
 }
 
+// Only what is already stored; never asks YouTube. Course days build their words and sentences from it.
+export async function getStoredLesson(videoId: string): Promise<Lesson | null> {
+  "use cache";
+  cacheLife("days");
+  cacheTag(lessonTag(videoId), LESSONS_TAG);
+  return readStoredLesson(videoId);
+}
+
 // Stored transcript first; otherwise fetch from YouTube (works from a home connection, usually not from
 // cloud hosts) and keep a copy when the service key is available, so pasted links only hit YouTube once.
 export async function getLesson(videoId: string): Promise<LessonResult> {

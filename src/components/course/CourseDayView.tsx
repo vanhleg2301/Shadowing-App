@@ -4,20 +4,26 @@ import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { PhraseQuiz } from "@/components/course/PhraseQuiz";
-import { RolePlay } from "@/components/course/RolePlay";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
+import { VideoSentence } from "@/components/course/VideoSentence";
 import { StudyTimer } from "@/components/StudyTimer";
 import { Icon, type IconName } from "@/components/Icon";
-import { type BlockKind, type CourseBlock, type CourseDay } from "@/data/course-a2";
-import type { CourseDialogue } from "@/data/course-a2-dialogues";
+import { WordLookupSheet } from "@/components/WordLookupSheet";
+import { type BlockKind, type CourseBlock, type CourseDay, type CoursePhrase } from "@/data/course-a2";
+import { isCourseDayComplete } from "@/data/courses";
 import { useAuth } from "@/hooks/useAuth";
+import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
+import type { DayStudy } from "@/lib/video-study";
 
 interface CourseDayViewProps {
   day: CourseDay;
   courseId: string;
   blocks: CourseBlock[];
-  dialogue: CourseDialogue | undefined;
+  // Words and sentences from the day's main video; null when its transcript isn't stored yet.
+  study: DayStudy | null;
+  // Yesterday's main video, for the warm-up.
+  previousStudy: DayStudy | null;
   initialDone: string[];
   isSignedIn: boolean;
   hasNextDay: boolean;
@@ -25,34 +31,37 @@ interface CourseDayViewProps {
   phraseCount?: number;
   promptCount?: number;
   playbackRate?: number;
-  sampleAnswers?: string[];
 }
 
 const KIND_ICON: Record<BlockKind, IconName> = {
   review: "repeat",
+  words: "book",
   listen: "headphones",
-  phrases: "book",
+  readalong: "volume",
+  phrases: "chat",
   shadow: "mic",
-  dictation: "settings",
   speak: "record",
-  roleplay: "user",
   quiz: "chart",
   extra: "plus",
 };
 
 const ACCENTS: Accent[] = ["uk", "us"];
+const DEFAULT_PROMPT_COUNT = 3;
 
-function blockHref(block: CourseBlock, day: number, playbackRate?: number): string | null {
-  const from = `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
-  if (block.kind === "review") return "/review";
+const fromCourse = (day: number, playbackRate?: number) => `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
+
+// The warm-up is its own section when yesterday's video gave sentences to hear again; otherwise it is Review.
+function blockHref(block: CourseBlock, day: number, playbackRate: number | undefined, hasReviewSection: boolean): string | null {
+  if (block.kind === "review") return hasReviewSection ? null : "/review";
   if (!block.videoId) return null;
-  if (block.kind === "listen") return `/watch/${block.videoId}?mode=watch&listen=1&${from}`;
-  if (block.kind === "dictation") return `/watch/${block.videoId}?mode=dictation&${from}`;
+  const from = fromCourse(day, playbackRate);
+  if (block.kind === "listen" || block.kind === "extra") return `/watch/${block.videoId}?mode=watch&listen=1&${from}`;
+  if (block.kind === "readalong") return `/watch/${block.videoId}?mode=watch&${from}`;
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-type SectionId = "phrases" | "speak" | "roleplay" | "quiz";
-const SECTION_IDS: readonly string[] = ["phrases", "speak", "roleplay", "quiz"];
+type SectionId = "review" | "words" | "phrases" | "speak" | "quiz";
+const SECTION_KINDS: readonly string[] = ["review", "words", "phrases", "speak", "quiz"];
 
 interface DaySectionProps {
   id: SectionId;
@@ -83,24 +92,43 @@ function DaySection({ id, title, hint, isDone, isOpen, onToggle, children }: Day
   );
 }
 
+interface Prompt {
+  text: string;
+  sampleAnswer?: string;
+}
+
+// Speaking starts from the video: retell it, then say something true about yourself with its own chunks,
+// copying the line from the video first.
+function getPrompts(study: DayStudy | null, day: CourseDay, count: number): Prompt[] {
+  if (!study) return day.speakingPrompts.slice(0, count).map((text) => ({ text }));
+  return [
+    { text: `Retell “${study.title}” in your own words. What is it about? Say three things you remember.` },
+    ...study.items.slice(0, count - 1).map((item) => ({ text: `Say something about your own life with “${item.text}”.`, sampleAnswer: item.sentence.text })),
+  ];
+}
+
 export function CourseDayView({
   day: fullDay,
   courseId,
   blocks,
-  dialogue,
+  study,
+  previousStudy,
   initialDone,
   isSignedIn,
   hasNextDay,
   phraseCount,
-  promptCount,
+  promptCount = DEFAULT_PROMPT_COUNT,
   playbackRate,
-  sampleAnswers,
 }: CourseDayViewProps) {
-  const day: CourseDay = {
-    ...fullDay,
-    phrases: phraseCount ? fullDay.phrases.slice(0, phraseCount) : fullDay.phrases,
-    speakingPrompts: promptCount ? fullDay.speakingPrompts.slice(0, promptCount) : fullDay.speakingPrompts,
-  };
+  const day: CourseDay = { ...fullDay, phrases: phraseCount ? fullDay.phrases.slice(0, phraseCount) : fullDay.phrases };
+  // Without a stored transcript the day falls back to its hand-written phrases.
+  const phrases: CoursePhrase[] = study
+    ? study.items.map((item) => ({ text: item.text, meaning: "", example: item.sentence.text }))
+    : day.phrases;
+  const prompts = getPrompts(study, day, promptCount);
+  const hasReviewSection = previousStudy !== null;
+  const sections = SECTION_KINDS.filter((kind) => kind !== "review" || hasReviewSection);
+  const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(() => new Set(initialDone));
   const [recorded, setRecorded] = useState(() => new Set<number>());
@@ -110,12 +138,13 @@ export function CourseDayView({
   const required = blocks.filter((b) => !b.isOptional);
   const requiredDone = required.filter((b) => done.has(b.id)).length;
   const minutesLeft = required.filter((b) => !done.has(b.id)).reduce((sum, b) => sum + b.minutes, 0);
-  const isDayComplete = requiredDone === required.length;
+  const isDayComplete = isCourseDayComplete(blocks, done);
   const nextBlock = required.find((b) => !done.has(b.id));
   const [openSection, setOpenSection] = useState<SectionId | null>(() => {
-    const first = blocks.find((b) => SECTION_IDS.includes(b.kind) && !initialDone.includes(b.id));
+    const first = blocks.find((b) => sections.includes(b.kind) && !initialDone.includes(b.id));
     return (first?.kind as SectionId | undefined) ?? null;
   });
+  const sentenceHref = (videoId: string, index: number) => `/watch/${videoId}?mode=shadow&s=${index}&${fromCourse(day.day, playbackRate)}`;
 
   const toggleSection = (id: SectionId) => setOpenSection((current) => (current === id ? null : id));
   const goToSection = (id: SectionId) => {
@@ -155,20 +184,24 @@ export function CourseDayView({
     }
     setPhraseMessage(null);
     startTransition(async () => {
-      const result = await savePhrasesToReview({ phrases: day.phrases });
+      const result = await savePhrasesToReview({
+        phrases: study
+          ? study.items.map((item) => ({ text: item.text.slice(0, 60), meaning: item.sentence.translation?.slice(0, 200) ?? "", example: item.sentence.text.slice(0, 300) }))
+          : day.phrases,
+      });
       if (!result.ok) {
         setPhraseMessage("Couldn't save the phrases. Please try again.");
         return;
       }
       setPhraseMessage("Added to Review. You'll see them as flashcards.");
-      if (!done.has("phrases")) toggleBlock("phrases", true);
+      if (!done.has("words")) toggleBlock("words", true);
     });
   };
 
   const handleRecorded = (index: number) => {
     const next = new Set(recorded).add(index);
     setRecorded(next);
-    if (next.size === day.speakingPrompts.length && !done.has("speak")) toggleBlock("speak", true);
+    if (next.size === prompts.length && !done.has("speak")) toggleBlock("speak", true);
   };
 
   const markDone = (blockId: string) => {
@@ -191,8 +224,8 @@ export function CourseDayView({
         <ol className="stagger mt-4 space-y-2">
           {blocks.map((block) => {
             const isDone = done.has(block.id);
-            const href = blockHref(block, day.day, playbackRate);
-            const section = SECTION_IDS.includes(block.kind) ? (block.kind as SectionId) : null;
+            const href = blockHref(block, day.day, playbackRate, hasReviewSection);
+            const section = sections.includes(block.kind) ? (block.kind as SectionId) : null;
             return (
               <li
                 key={block.id}
@@ -265,13 +298,41 @@ export function CourseDayView({
         </section>
       )}
 
+      {previousStudy && (
+        <DaySection
+          id="review"
+          title="Yesterday's sentences"
+          hint="Hear each one in yesterday's video. Can you understand it without the text? Tap to check."
+          isDone={done.has("review")}
+          isOpen={openSection === "review"}
+          onToggle={() => toggleSection("review")}
+        >
+          <ul className="space-y-3">
+            {previousStudy.sentences.slice(0, 5).map((sentence) => (
+              <VideoSentence
+                key={sentence.index}
+                sentence={sentence}
+                href={`/watch/${previousStudy.videoId}?mode=shadow&s=${sentence.index}&${fromCourse(day.day, playbackRate)}`}
+                isHiddenFirst
+                onWordClick={openWord}
+              />
+            ))}
+          </ul>
+          <SectionDoneButton isDone={done.has("review")} onDone={() => toggleBlock("review", true)} label="I've heard them all" />
+        </DaySection>
+      )}
+
       <DaySection
-        id="phrases"
-        title="Today's phrases"
-        hint="Say each one out loud twice. Tap UK or US to hear it."
-        isDone={done.has("phrases")}
-        isOpen={openSection === "phrases"}
-        onToggle={() => toggleSection("phrases")}
+        id="words"
+        title={study ? "Words from the video" : "Today's phrases"}
+        hint={
+          study
+            ? "These come up in today's video. Read each one in its sentence, hear it, and tap any word you don't know. Then you're ready to listen."
+            : "Say each one out loud twice. Tap UK or US to hear it."
+        }
+        isDone={done.has("words")}
+        isOpen={openSection === "words"}
+        onToggle={() => toggleSection("words")}
       >
         <div className="flex justify-end">
           <button type="button" onClick={handleSavePhrases} disabled={isPending} className="btn-3d btn-brand px-4 py-2 text-sm">
@@ -280,76 +341,122 @@ export function CourseDayView({
           </button>
         </div>
         {phraseMessage && <p className="mt-2 text-sm font-semibold text-brand">{phraseMessage}</p>}
-        <ul lang="en" className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {day.phrases.map((p) => (
-            <li key={p.text} className="rounded-2xl border border-line bg-surface p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-lg font-bold text-ink">{p.text}</p>
-                <div className="flex shrink-0 gap-1">
-                  {ACCENTS.map((accent) => (
-                    <button
-                      key={accent}
-                      type="button"
-                      onClick={() => speak(p.example, accent)}
-                      aria-label={`Listen to the example in ${accent.toUpperCase()} English`}
-                      className="min-h-9 min-w-10 rounded-lg bg-brand-soft px-2.5 text-xs font-bold text-brand"
-                    >
-                      {accent.toUpperCase()}
-                    </button>
-                  ))}
+        {study ? (
+          <ul className="mt-4 space-y-3">
+            {study.items.map((item) => (
+              <VideoSentence
+                key={item.text}
+                sentence={item.sentence}
+                highlight={item.text}
+                href={sentenceHref(study.videoId, item.sentence.index)}
+                onWordClick={openWord}
+              />
+            ))}
+          </ul>
+        ) : (
+          <ul lang="en" className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            {day.phrases.map((p) => (
+              <li key={p.text} className="rounded-2xl border border-line bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-lg font-bold text-ink">{p.text}</p>
+                  <div className="flex shrink-0 gap-1">
+                    {ACCENTS.map((accent) => (
+                      <button
+                        key={accent}
+                        type="button"
+                        onClick={() => speak(p.example, accent)}
+                        aria-label={`Listen to the example in ${accent.toUpperCase()} English`}
+                        className="min-h-9 min-w-10 rounded-lg bg-brand-soft px-2.5 text-xs font-bold text-brand"
+                      >
+                        {accent.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <p className="mt-1 text-sm text-muted">{p.meaning}</p>
-              <p className="mt-2 rounded-xl bg-cream px-3 py-2 text-sm italic text-ink/90">“{p.example}”</p>
-            </li>
-          ))}
-        </ul>
+                <p className="mt-1 text-sm text-muted">{p.meaning}</p>
+                <p className="mt-2 rounded-xl bg-cream px-3 py-2 text-sm italic text-ink/90">“{p.example}”</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <SectionDoneButton isDone={done.has("words")} onDone={() => toggleBlock("words", true)} label="Ready to listen" />
       </DaySection>
 
-      <DaySection
-        id="speak"
-        title="Speak"
-        hint="Answer each question out loud for 30–60 seconds. Record, listen back, then try once more. Recordings stay on your device."
-        isDone={done.has("speak")}
-        isOpen={openSection === "speak"}
-        onToggle={() => toggleSection("speak")}
-      >
-        <ol lang="en" className="space-y-3">
-          {day.speakingPrompts.map((prompt, i) => (
-            <SpeakingPrompt key={prompt} index={i} prompt={prompt} sampleAnswer={sampleAnswers?.[i]} onRecorded={() => handleRecorded(i)} />
-          ))}
-        </ol>
-        <p className="mt-3 text-sm text-muted">
-          {recorded.size}/{day.speakingPrompts.length} answered
-          {recorded.size === day.speakingPrompts.length ? " · speaking block done" : ""}
-        </p>
-      </DaySection>
-
-      {dialogue && (
+      {study && (
         <DaySection
-          id="roleplay"
-          title="Role-play"
-          hint="Act out a real conversation. Listen to your partner, then record your reply."
-          isDone={done.has("roleplay")}
-          isOpen={openSection === "roleplay"}
-          onToggle={() => toggleSection("roleplay")}
+          id="phrases"
+          title="Sentences from the video"
+          hint="Do this after the second listen. Hear each sentence in the video and say it with the speaker, a few times, until it feels easy."
+          isDone={done.has("phrases")}
+          isOpen={openSection === "phrases"}
+          onToggle={() => toggleSection("phrases")}
         >
-          <RolePlay dialogue={dialogue} onComplete={() => markDone("roleplay")} />
+          <ul className="space-y-3">
+            {study.sentences.map((sentence) => (
+              <VideoSentence key={sentence.index} sentence={sentence} href={sentenceHref(study.videoId, sentence.index)} onWordClick={openWord} />
+            ))}
+          </ul>
+          <SectionDoneButton isDone={done.has("phrases")} onDone={() => toggleBlock("phrases", true)} label="Done" />
         </DaySection>
       )}
 
       <DaySection
         id="quiz"
         title="Quiz"
-        hint={`${Math.min(day.phrases.length, 10)} quick questions on today's phrases. Get all but two right to finish the day.`}
+        hint={`${Math.min(phrases.length, 10)} quick questions${study ? " on the video's sentences" : " on today's phrases"}. Get all but two right to pass.`}
         isDone={done.has("quiz")}
         isOpen={openSection === "quiz"}
         onToggle={() => toggleSection("quiz")}
       >
-        <PhraseQuiz phrases={day.phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
+        <PhraseQuiz phrases={phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
       </DaySection>
 
-      {nextBlock && <NextStepButton block={nextBlock} day={day.day} playbackRate={playbackRate} onGoToSection={goToSection} />}
+      <DaySection
+        id="speak"
+        title="Speak"
+        hint="Optional, when you feel ready. Answer out loud, record, listen back, then try once more. Recordings stay on your device."
+        isDone={done.has("speak")}
+        isOpen={openSection === "speak"}
+        onToggle={() => toggleSection("speak")}
+      >
+        <ol lang="en" className="space-y-3">
+          {prompts.map((prompt, i) => (
+            <SpeakingPrompt key={prompt.text} index={i} prompt={prompt.text} sampleAnswer={prompt.sampleAnswer} onRecorded={() => handleRecorded(i)} />
+          ))}
+        </ol>
+        <p className="mt-3 text-sm text-muted">
+          {recorded.size}/{prompts.length} answered
+          {recorded.size === prompts.length ? " · speaking block done" : ""}
+        </p>
+      </DaySection>
+
+      {nextBlock && (
+        <NextStepButton
+          block={nextBlock}
+          day={day.day}
+          playbackRate={playbackRate}
+          hasReviewSection={hasReviewSection}
+          sections={sections}
+          onGoToSection={goToSection}
+        />
+      )}
+      {lookup && sheetProps && <WordLookupSheet {...sheetProps} />}
+    </div>
+  );
+}
+
+interface SectionDoneButtonProps {
+  isDone: boolean;
+  onDone: () => void;
+  label: string;
+}
+
+function SectionDoneButton({ isDone, onDone, label }: SectionDoneButtonProps) {
+  return (
+    <div className="mt-4 flex justify-end">
+      <button type="button" onClick={onDone} disabled={isDone} className="btn-3d btn-brand px-4 py-2 text-sm">
+        {isDone ? "Done" : label}
+      </button>
     </div>
   );
 }
@@ -358,12 +465,14 @@ interface NextStepButtonProps {
   block: CourseBlock;
   day: number;
   playbackRate?: number;
+  hasReviewSection: boolean;
+  sections: readonly string[];
   onGoToSection: (id: SectionId) => void;
 }
 
 // The next unfinished activity is always one tap away, just above the phone's bottom navigation.
-function NextStepButton({ block, day, playbackRate, onGoToSection }: NextStepButtonProps) {
-  const href = blockHref(block, day, playbackRate);
+function NextStepButton({ block, day, playbackRate, hasReviewSection, sections, onGoToSection }: NextStepButtonProps) {
+  const href = blockHref(block, day, playbackRate, hasReviewSection);
   const className =
     "btn-3d btn-brand fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 flex items-center gap-2 px-4 py-3 text-left md:hidden";
   const content = (
@@ -380,7 +489,7 @@ function NextStepButton({ block, day, playbackRate, onGoToSection }: NextStepBut
       </Link>
     );
   }
-  if (!SECTION_IDS.includes(block.kind)) return null;
+  if (!sections.includes(block.kind)) return null;
   return (
     <button type="button" onClick={() => onGoToSection(block.kind as SectionId)} className={className}>
       {content}

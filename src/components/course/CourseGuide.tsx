@@ -13,8 +13,8 @@ interface CourseGuideProps {
 
 const ROUTES = [
   { level: "Moving from A1 to A2", plan: "Choose a Slow collection and turn on the Gentle plan. About 60–75 minutes a day." },
-  { level: "You understand A2 but freeze when you speak", plan: "Choose a Slow or Medium collection and the full plan. About 2–3 hours a day." },
-  { level: "You are B1 but lose track when people talk fast", plan: "Choose a Natural collection. About 3 hours a day." },
+  { level: "You are around A2", plan: "Choose a Slow or Medium collection and the full plan. About 2 hours a day." },
+  { level: "You are B1 but lose track when people talk fast", plan: "Choose a Natural collection. About 2 hours a day." },
 ];
 
 // The "?" guide on the course pages, in plain English for learners who are still at A1–A2.

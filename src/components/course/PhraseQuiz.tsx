@@ -46,9 +46,10 @@ function buildQuestions(phrases: CoursePhrase[], seed: number): Question[] {
       ).slice(0, 3);
       const options = shuffle([p, ...distractors], seed + i + 100).map((o) => o.text);
       const index = p.example.toLowerCase().indexOf(p.text.toLowerCase());
-      if (i % 2 === 0 && index >= 0) {
+      // Phrases taken from a video have no written meaning, only the sentence they were heard in.
+      if ((i % 2 === 0 || !p.meaning) && index >= 0) {
         const prompt = p.example.slice(0, index) + BLANK + p.example.slice(index + p.text.length);
-        return { prompt, hint: "Complete the sentence.", answer: p.text, options };
+        return { prompt, hint: p.meaning ? "Complete the sentence." : "Complete the sentence from the video.", answer: p.text, options };
       }
       return { prompt: p.meaning, hint: "Which phrase means this?", answer: p.text, options };
     });

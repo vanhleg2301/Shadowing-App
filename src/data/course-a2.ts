@@ -11,7 +11,7 @@ export function getCourseId(collection: CollectionId): string {
   return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
 }
 
-export type BlockKind = "review" | "listen" | "phrases" | "shadow" | "dictation" | "speak" | "roleplay" | "quiz" | "extra";
+export type BlockKind = "review" | "words" | "listen" | "readalong" | "phrases" | "shadow" | "speak" | "quiz" | "extra";
 
 export interface CourseBlock {
   id: string;
@@ -279,8 +279,8 @@ export const COURSE_DAYS: CourseDay[] = [
   },
 ];
 
-// Blocks are generated from the day's content so every day has the same rhythm.
-// The same phrases, dialogues and quiz for every collection; only the videos change.
+// Blocks are generated from the day's videos so every day has the same rhythm. The words, sentences and quiz come
+// from the main video's transcript; the hand-written phrases are only used when it has none stored.
 // Collections without their own picks use the English Sponge videos.
 const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Record<number, CourseDay["videos"]>>> = {
   voa: {
@@ -337,8 +337,8 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "_T0yxFHtdpA", title: "More Words to Describe Food" },
     ],
     4: [
-      { id: "fxcOpbzUK4Q", title: "At the Mall" },
       { id: "3LoDWINL9Rw", title: "Common Clothing Words" },
+      { id: "fxcOpbzUK4Q", title: "At the Mall" },
       { id: "9iLcj6kfn_0", title: "50 Words and Their Opposites" },
     ],
     5: [
@@ -474,19 +474,22 @@ export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDa
   return collection === "sponge" ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
 }
 
+// Comprehensible input: the day is one main video, made understandable first with its own words, heard three
+// times, then a second video on the same topic. Speaking comes last and is optional.
 export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
   const [main, second, extra] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: review yesterday's phrases", minutes: 15 }] : []),
-    { id: "listen-1", kind: "listen", title: `Listen first: ${main.title}`, minutes: 25, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: "Learn today's 15 phrases", minutes: 20 },
-    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 40, videoId: main.id },
-    { id: "listen-2", kind: "listen", title: `Listen first: ${second.title}`, minutes: 20, videoId: second.id },
-    { id: "dictation-2", kind: "dictation", title: `Dictation: ${second.title}`, minutes: 20, videoId: second.id },
-    { id: "speak", kind: "speak", title: "Speak: answer 5 questions out loud", minutes: 30 },
-    { id: "roleplay", kind: "roleplay", title: "Role-play: act out a real conversation", minutes: 20 },
-    { id: "quiz", kind: "quiz", title: "Quiz: check today's phrases", minutes: 10 },
-    { id: "extra", kind: "extra", title: `Bonus shadowing: ${extra.title}`, minutes: 40, videoId: extra.id, isOptional: true },
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 10 }] : []),
+    { id: "words", kind: "words", title: "Before you listen: words from the video", minutes: 10 },
+    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 20 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 30, videoId: main.id },
+    { id: "listen-2", kind: "listen", title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id },
+    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 10 },
+    { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 15, isOptional: true },
+    { id: "extra", kind: "extra", title: `Bonus listening: ${extra.title}`, minutes: 20, videoId: extra.id, isOptional: true },
   ];
 }
 
@@ -494,8 +497,8 @@ export function getCourseDay(dayNumber: number): CourseDay | undefined {
   return COURSE_DAYS.find((d) => d.day === dayNumber);
 }
 
-// "Gentle" plan for A1 learners moving up to A2: the same days with fewer, shorter steps (about 60–75 minutes),
-// slower playback and example answers to copy. Block ids match the full plan, so progress carries over.
+// "Gentle" plan for A1 learners moving up to A2: the same days with fewer, shorter steps (about 60–75 minutes)
+// and slower playback. Block ids match the full plan, so progress carries over.
 export const GENTLE_PHRASE_COUNT = 8;
 export const GENTLE_PROMPT_COUNT = 3;
 export const GENTLE_PLAYBACK_RATE = 0.75;
@@ -503,12 +506,14 @@ export const GENTLE_PLAYBACK_RATE = 0.75;
 export function getGentleBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
   const [main, second] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: review yesterday's phrases", minutes: 10 }] : []),
-    { id: "listen-1", kind: "listen", title: `Listen first: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: `Learn ${GENTLE_PHRASE_COUNT} key phrases`, minutes: 15 },
-    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 20, videoId: main.id },
-    { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} questions, copy the example first`, minutes: 10 },
-    { id: "quiz", kind: "quiz", title: "Quiz: check the key phrases", minutes: 5 },
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
+    { id: "words", kind: "words", title: `Before you listen: ${GENTLE_PHRASE_COUNT} words from the video`, minutes: 10 },
+    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 15 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps", minutes: 5 },
+    { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} short answers, copy the video first`, minutes: 10, isOptional: true },
     { id: "extra", kind: "extra", title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true },
   ];
 }

@@ -16,19 +16,19 @@ export interface ScheduleSession {
 }
 
 const LABELS: Record<BlockKind, string> = {
-  review: "Review yesterday's phrases",
-  listen: "Listen first and try to get the main idea",
-  phrases: "Learn the phrases and say each one twice",
+  review: "Listen again to yesterday's sentences",
+  words: "Learn the video's words before you listen",
+  listen: "Listen with the text hidden and get the main idea",
+  readalong: "Listen with the text and tap the words you don't know",
+  phrases: "Hear and repeat the sentences from the video",
   shadow: "Shadow: listen and repeat each sentence",
-  dictation: "Dictation: listen and type",
-  speak: "Answer the questions out loud, record and listen back",
-  roleplay: "Role-play the conversation",
-  quiz: "Take the phrase quiz",
+  speak: "If you like: retell the video out loud",
+  quiz: "Fill the gaps in the video's sentences",
   extra: "If you have energy: bonus video",
 };
 
 const SESSION_STARTS = { morning: 8 * 60, midday: 13 * 60 + 30, evening: 20 * 60 };
-const EVENING_KINDS: BlockKind[] = ["speak", "roleplay", "quiz", "extra"];
+const EVENING_KINDS: BlockKind[] = ["speak", "quiz", "extra"];
 const LONG_STEP_MINUTES = 30;
 const LONG_BREAK_MINUTES = 10;
 const SHORT_BREAK_MINUTES = 5;

@@ -8,12 +8,25 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { COURSE_DAYS } from "@/data/course-a2";
 import { getCourse } from "@/data/courses";
+import type { CourseBlock } from "@/data/course-a2";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
 import { buildDaySchedule } from "@/lib/course-schedule";
+import { getStoredLesson } from "@/lib/lessons";
 import { getCourseProgress } from "@/lib/user-data";
+import { buildDayStudy, type DayStudy } from "@/lib/video-study";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+
+const FULL_STUDY_SIZE = 10;
+
+// The day's words and sentences come from its main video, the one heard first.
+async function getMainVideoStudy(blocks: CourseBlock[], size: number): Promise<DayStudy | null> {
+  const videoId = blocks.find((b) => b.id === "listen-1")?.videoId;
+  if (!videoId) return null;
+  const lesson = await getStoredLesson(videoId).catch(() => null);
+  return lesson ? buildDayStudy(lesson, size) : null;
+}
 
 export function generateStaticParams() {
   return COURSE_DAYS.map((d) => ({ day: String(d.day) }));
@@ -43,6 +56,12 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
   const courseId = course.getId(collection);
   const progress = await getCourseProgress(courseId).catch(() => null);
   const blocks = course.getBlocks(day, collection);
+  const studySize = course.phraseCount ?? FULL_STUDY_SIZE;
+  const previousDay = course.days.find((d) => d.day === dayNumber - 1);
+  const [study, previousStudy] = await Promise.all([
+    getMainVideoStudy(blocks, studySize),
+    previousDay ? getMainVideoStudy(course.getBlocks(previousDay, collection), studySize) : null,
+  ]);
 
   return (
     <>
@@ -63,14 +82,14 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           day={day}
           courseId={courseId}
           blocks={blocks}
-          dialogue={course.dialogues[day.day]}
+          study={study}
+          previousStudy={previousStudy}
           initialDone={progress?.[day.day] ?? []}
           isSignedIn={progress !== null}
           hasNextDay={day.day < course.days.length}
           phraseCount={course.phraseCount}
           promptCount={course.promptCount}
           playbackRate={course.playbackRate}
-          sampleAnswers={course.sampleAnswers?.[day.day]}
         />
       </div>
     </>

@@ -6,7 +6,7 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { CourseGuide } from "@/components/course/CourseGuide";
 import { CoursePlanSwitch } from "@/components/course/CoursePlanSwitch";
-import { getCourse, hasGentlePlan, type Course } from "@/data/courses";
+import { getCourse, hasGentlePlan, isCourseDayComplete, type Course } from "@/data/courses";
 import type { CollectionId } from "@/data/collections";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
@@ -98,8 +98,7 @@ function DayList({ course, collection, progress }: DayListProps) {
   const isComplete = (dayNumber: number) => {
     const day = days.find((d) => d.day === dayNumber);
     if (!day || !progress) return false;
-    const finished = new Set(progress[dayNumber] ?? []);
-    return course.getBlocks(day, collection).every((b) => b.isOptional || finished.has(b.id));
+    return isCourseDayComplete(course.getBlocks(day, collection), new Set(progress[dayNumber] ?? []));
   };
   const completedDays = days.filter((d) => isComplete(d.day)).length;
 

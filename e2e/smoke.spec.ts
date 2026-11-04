@@ -181,6 +181,20 @@ test("the course guide shows a timetable for the day", async ({ page }) => {
   await expect(guide.getByText("This is the plan for day 2.", { exact: false })).toBeVisible();
 });
 
+test("a course day is built from its video's own words and sentences", async ({ page }) => {
+  await openPage(page, "/course/2");
+  // The warm-up is yesterday's video, heard before it is read.
+  await expect(page.locator("#review").getByRole("button", { name: "Show the sentence" }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: /^Words from the video/ }).click();
+  const words = page.locator("#words");
+  await expect(words.locator("mark").first()).toBeVisible();
+  await expect(words.getByRole("link", { name: "Hear it in the video" }).first()).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=shadow&s=\d+&from=course-2/);
+
+  await page.getByRole("button", { name: /^Quiz/ }).click();
+  await expect(page.getByText("Complete the sentence from the video.")).toBeVisible();
+});
+
 test("sidebar modules collapse and stay collapsed", async ({ page, isMobile }) => {
   test.skip(isMobile, "The sidebar is desktop only");
   await openPage(page, "/stories");
