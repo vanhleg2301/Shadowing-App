@@ -20,7 +20,8 @@ const LINK_CLASS = "flex items-center gap-2 rounded-2xl border border-line px-3 
 export function MoreMenu({ groups, active, adminLink }: MoreMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const close = () => setIsOpen(false);
-  const isActive = active === "/account" || groups.some((group) => group.items.some((item) => item.href === active));
+  const isActive =
+    active === "/account" || active === "/about" || groups.some((group) => group.items.some((item) => item.href === active));
 
   return (
     <>
@@ -65,6 +66,9 @@ export function MoreMenu({ groups, active, adminLink }: MoreMenuProps) {
           <div className="mt-4 flex gap-4 text-sm text-muted">
             <Link href="/account" onClick={close}>
               Account
+            </Link>
+            <Link href="/about" onClick={close}>
+              About
             </Link>
             <Link href="/privacy" onClick={close}>
               Privacy

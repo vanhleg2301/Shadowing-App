@@ -74,6 +74,9 @@ export function AppShell({ active, children }: AppShellProps) {
             <Link href="/account" className="hover:text-ink">
               Account
             </Link>
+            <Link href="/about" className="hover:text-ink">
+              About
+            </Link>
             <Link href="/privacy" className="hover:text-ink">
               Privacy
             </Link>

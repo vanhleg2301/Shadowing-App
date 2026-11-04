@@ -31,7 +31,7 @@ async function expectInViewport(page: Page, locator: ReturnType<Page["locator"]>
     .toBe(true);
 }
 
-const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news/ai-tech", "/stories", "/placement", "/privacy", "/offline"];
+const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news/ai-tech", "/stories", "/placement", "/privacy", "/about", "/offline"];
 
 for (const path of STATIC_PAGES) {
   test(`page ${path} loads`, async ({ page }) => {
@@ -56,7 +56,7 @@ test("the phone's More tab reaches every sidebar page", async ({ page, isMobile 
   for (const name of ["Home", "Stories", "News", "Course"]) await expect(tabs.getByRole("link", { name, exact: true })).toBeVisible();
   await tabs.getByRole("button", { name: "More" }).click();
   const sheet = page.getByRole("dialog", { name: "More" });
-  for (const name of ["Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "Privacy"]) {
+  for (const name of ["Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "About", "Privacy"]) {
     await expect(sheet.getByRole("link", { name })).toBeVisible();
   }
   await sheet.getByRole("link", { name: "Favorites" }).click();
