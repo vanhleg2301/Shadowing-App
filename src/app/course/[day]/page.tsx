@@ -6,12 +6,12 @@ import { CourseGuide } from "@/components/course/CourseGuide";
 import { ListSkeleton } from "@/components/Skeleton";
 import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
-import { COURSE_DAYS } from "@/data/course-a2";
-import { getCourse } from "@/data/courses";
 import type { CourseBlock } from "@/data/course-a2";
+import { DAYS_PER_WEEK, dayInWeek, weekOf } from "@/data/course-weeks";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
+import { getCoursePlan, getDay, getDayBlocks, getProgressDay, getProgressId } from "@/lib/course-plan";
 import { buildDaySchedule } from "@/lib/course-schedule";
 import { getStoredLesson } from "@/lib/lessons";
 import { getCourseProgress } from "@/lib/user-data";
@@ -28,8 +28,9 @@ async function getMainVideoStudy(blocks: CourseBlock[], size: number): Promise<D
   return lesson ? buildDayStudy(lesson, size) : null;
 }
 
+// Week 1 is built ahead; later days render on first visit.
 export function generateStaticParams() {
-  return COURSE_DAYS.map((d) => ({ day: String(d.day) }));
+  return Array.from({ length: DAYS_PER_WEEK }, (_, i) => ({ day: String(i + 1) }));
 }
 
 export default function CourseDayPage({ params }: PageProps<"/course/[day]">) {
@@ -49,30 +50,36 @@ export default function CourseDayPage({ params }: PageProps<"/course/[day]">) {
 async function DayContent({ dayNumber }: { dayNumber: number }) {
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
   const mode = await getCourseMode();
-  const course = getCourse(collection, mode);
-  const day = course.days.find((d) => d.day === dayNumber);
+  const plan = await getCoursePlan(collection, mode);
+  const { course } = plan;
+  const day = getDay(plan, dayNumber);
   if (!day) notFound();
   const counts = await getCollectionCounts();
-  const courseId = course.getId(collection);
+  const courseId = getProgressId(plan, day.day);
   const progress = await getCourseProgress(courseId).catch(() => null);
-  const blocks = course.getBlocks(day, collection);
+  const blocks = getDayBlocks(plan, day);
   const studySize = course.phraseCount ?? FULL_STUDY_SIZE;
-  const previousDay = course.days.find((d) => d.day === dayNumber - 1);
+  // The warm-up replays the last video day, even across a review or free day.
+  const previousDay = plan.days.filter((d) => d.day < day.day && (d.kind ?? "study") === "study").at(-1);
+  const isStudyDay = (day.kind ?? "study") === "study";
   const [study, previousStudy] = await Promise.all([
-    getMainVideoStudy(blocks, studySize),
-    previousDay ? getMainVideoStudy(course.getBlocks(previousDay, collection), studySize) : null,
+    isStudyDay ? getMainVideoStudy(blocks, studySize) : null,
+    isStudyDay && previousDay ? getMainVideoStudy(getDayBlocks(plan, previousDay), studySize) : null,
   ]);
+  const week = weekOf(day.day);
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Breadcrumbs items={[{ label: "7-day course", href: "/course" }, { label: `Day ${day.day}` }]} className="" />
+        <Breadcrumbs items={[{ label: "Course", href: "/course" }, { label: `Week ${week} · Day ${dayInWeek(day.day)}` }]} className="" />
         <div className="flex flex-wrap items-center gap-2">
           <CourseGuide planTitle={course.title} scheduleTitle={`This is the plan for day ${day.day}.`} schedule={buildDaySchedule(blocks)} />
           <CollectionSwitcher current={collection} counts={counts} />
         </div>
       </div>
-      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-accent">Day {day.day} of 7</p>
+      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-accent">
+        Week {week} · Day {dayInWeek(day.day)} of {DAYS_PER_WEEK}
+      </p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">{day.title}</h1>
       <p className="mt-2 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3 text-ink">
         <b>Goal:</b> {day.canDo}
@@ -84,9 +91,10 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           blocks={blocks}
           study={study}
           previousStudy={previousStudy}
-          initialDone={progress?.[day.day] ?? []}
+          progressDay={getProgressDay(day.day)}
+          initialDone={progress?.[getProgressDay(day.day)] ?? []}
           isSignedIn={progress !== null}
-          hasNextDay={day.day < course.days.length}
+          hasNextDay={getDay(plan, day.day + 1) !== undefined}
           phraseCount={course.phraseCount}
           promptCount={course.promptCount}
           playbackRate={course.playbackRate}

@@ -260,7 +260,7 @@ export default function AboutPage() {
               Find a video
             </Link>
             <Link href="/course" className="btn-3d px-5 py-3">
-              See the 7-day course
+              See the course
             </Link>
           </div>
         </section>

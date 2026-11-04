@@ -6,8 +6,8 @@ import { setCourseMode } from "@/app/actions";
 import type { CourseMode } from "@/lib/course-mode";
 
 const PLANS: { mode: CourseMode; title: string; detail: string }[] = [
-  { mode: "gentle", title: "Gentle", detail: "A1 → A2 · about 1 hour a day" },
-  { mode: "full", title: "Full", detail: "Already A2 · 2–3 hours a day" },
+  { mode: "gentle", title: "Gentle", detail: "A1 → A2 · under an hour a day" },
+  { mode: "full", title: "Full", detail: "Already A2 · about an hour a day" },
 ];
 
 // Chooses between the full A2 course and the Gentle plan; progress is shared between them.

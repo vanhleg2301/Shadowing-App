@@ -23,7 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Home", shortLabel: "Home", icon: "home", href: "/" },
   { label: "Daily stories", shortLabel: "Stories", icon: "chat", href: "/stories" },
   { label: "News", shortLabel: "News", icon: "news", href: "/news" },
-  { label: "7-day course", shortLabel: "Course", icon: "course", href: "/course" },
+  { label: "Course", shortLabel: "Course", icon: "course", href: "/course" },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review", isInMoreMenu: true },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary", isInMoreMenu: true },
   { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isInMoreMenu: true },

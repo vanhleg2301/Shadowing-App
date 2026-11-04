@@ -9,7 +9,7 @@ import { speak } from "@/lib/speech";
 
 const LEVEL_ADVICE: Record<Level, string> = {
   A1: "Start with A1 videos: slow, clear speech about everyday things.",
-  A2: "A2 videos are your sweet spot. When you're ready to speak, try the 7-day course.",
+  A2: "A2 videos are your sweet spot. The course gives you one a day, with its words and sentences.",
   B1: "You're ready for B1 videos. Shadow them to sound more natural.",
 };
 
@@ -48,7 +48,7 @@ export function PlacementTest() {
           </Link>
           {level !== "A1" && (
             <Link href="/course" className="btn-3d px-5 py-2.5">
-              7-day speaking course
+              Start the course
             </Link>
           )}
         </div>

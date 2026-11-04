@@ -305,6 +305,19 @@ export async function getCourseProgress(courseId: string): Promise<Record<number
   return byDay;
 }
 
+// The same for several courses at once (each week of a course is stored as its own course). null when signed out.
+export async function getCoursesProgress(courseIds: string[]): Promise<Record<string, Record<number, string[]>> | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { data, error } = await ctx.supabase.from("course_progress").select("course_id, day, block_id").in("course_id", courseIds);
+  if (error) return {};
+  const byCourse: Record<string, Record<number, string[]>> = {};
+  for (const row of (data ?? []) as { course_id: string; day: number; block_id: string }[]) {
+    ((byCourse[row.course_id] ??= {})[row.day] ??= []).push(row.block_id);
+  }
+  return byCourse;
+}
+
 export interface StudyStats {
   totalMinutes: number;
   activeDays: number;

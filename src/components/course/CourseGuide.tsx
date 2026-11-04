@@ -12,9 +12,9 @@ interface CourseGuideProps {
 }
 
 const ROUTES = [
-  { level: "Moving from A1 to A2", plan: "Choose a Slow collection and turn on the Gentle plan. About 60–75 minutes a day." },
-  { level: "You are around A2", plan: "Choose a Slow or Medium collection and the full plan. About 2 hours a day." },
-  { level: "You are B1 but lose track when people talk fast", plan: "Choose a Natural collection. About 2 hours a day." },
+  { level: "Moving from A1 to A2", plan: "Choose English Sponge and turn on the Gentle plan. Under an hour a day." },
+  { level: "You are around A2", plan: "Choose English Sponge or Bob the Canadian and the full plan. About an hour a day." },
+  { level: "You are B1 but lose track when people talk fast", plan: "Choose a Natural collection. About an hour a day." },
 ];
 
 // The "?" guide on the course pages, in plain English for learners who are still at A1–A2.
@@ -84,11 +84,12 @@ export function CourseGuide({ planTitle, scheduleTitle, schedule }: CourseGuideP
             </section>
 
             <section>
-              <h3 className="text-base font-extrabold">4. After the 7 days</h3>
+              <h3 className="text-base font-extrabold">4. Week after week</h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>Every week has five video days, a day to hear the week&apos;s videos again and a free listening day.</li>
+                <li>The course doesn&apos;t end: a new week is ready when you finish one. Listening a little every day matters most.</li>
                 <li>Open Review every day for the words that are due, about 10 minutes.</li>
-                <li>Read or listen to one daily story, then shadow one short video.</li>
-                <li>When it feels easy, move to a faster collection. If a day is still hard, study it again.</li>
+                <li>When the videos feel easy, move to a faster collection. If a day is still hard, study it again.</li>
               </ul>
             </section>
           </div>

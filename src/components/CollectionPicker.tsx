@@ -44,6 +44,10 @@ export function CollectionPicker({ current, counts, onDone, isStacked = false }:
 
   return (
     <div>
+      <p className="mb-4 text-sm text-muted">
+        Not sure? Start with <b className="text-ink">English Sponge</b> if fast English is hard to follow, or{" "}
+        <b className="text-ink">Bob the Canadian</b> if you already understand slow English.
+      </p>
       <div className={`grid grid-cols-1 gap-5 ${isStacked ? "" : "md:grid-cols-3"}`}>
         {SPEEDS.map((speed) => (
           <section key={speed}>
@@ -61,44 +65,49 @@ export function CollectionPicker({ current, counts, onDone, isStacked = false }:
               <span className="font-semibold text-muted">· {formatVideoCount(sumBySpeed(counts, speed))}</span>
             </h3>
             <ul className="space-y-3">
-              {COLLECTIONS.filter((c) => c.speed === speed).map((c) => {
-                const isCurrent = c.id === current;
-                return (
-                  <li key={c.id}>
-                    <div
-                      className={`flex h-full flex-col rounded-3xl border-2 bg-surface p-4 transition-colors ${
-                        isCurrent ? "border-brand" : "border-line"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-bold uppercase tracking-wide text-accent">
-                          {c.levels} · {formatVideoCount(counts[c.id] ?? 0)}
-                        </span>
+              {COLLECTIONS.filter((c) => c.speed === speed)
+                .sort((a, b) => Number(Boolean(b.isRecommended)) - Number(Boolean(a.isRecommended)))
+                .map((c) => {
+                  const isCurrent = c.id === current;
+                  return (
+                    <li key={c.id}>
+                      <div
+                        className={`flex h-full flex-col rounded-3xl border-2 bg-surface p-4 transition-colors ${
+                          isCurrent ? "border-brand" : "border-line"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-bold uppercase tracking-wide text-accent">
+                            {c.levels} · {formatVideoCount(counts[c.id] ?? 0)}
+                          </span>
+                          {c.isRecommended && (
+                            <span className="shrink-0 rounded-full bg-brand px-2.5 py-0.5 text-xs font-bold text-on-brand">Recommended</span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-lg font-extrabold text-ink">{c.name}</p>
+                        <p className="mt-1 flex-1 text-sm text-muted">{c.description}</p>
+                        <div className="mt-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePick(c.id)}
+                            disabled={isPending}
+                            className={`btn-3d flex-1 px-4 py-2.5 text-sm ${isCurrent ? "" : "btn-brand"}`}
+                          >
+                            {isPending && pendingId === c.id ? "Saving..." : isCurrent ? "Current choice" : `Choose ${c.speedLabel.toLowerCase()}`}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => speak(SAMPLE, "uk", SAMPLE_RATE[c.speed])}
+                            className="btn-3d shrink-0 px-3 py-2.5 text-sm"
+                            aria-label={`Hear how ${c.speedLabel.toLowerCase()} speed sounds`}
+                          >
+                            Hear speed
+                          </button>
+                        </div>
                       </div>
-                      <p className="mt-2 text-lg font-extrabold text-ink">{c.name}</p>
-                      <p className="mt-1 flex-1 text-sm text-muted">{c.description}</p>
-                      <div className="mt-4 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handlePick(c.id)}
-                          disabled={isPending}
-                          className={`btn-3d flex-1 px-4 py-2.5 text-sm ${isCurrent ? "" : "btn-brand"}`}
-                        >
-                          {isPending && pendingId === c.id ? "Saving..." : isCurrent ? "Current choice" : `Choose ${c.speedLabel.toLowerCase()}`}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => speak(SAMPLE, "uk", SAMPLE_RATE[c.speed])}
-                          className="btn-3d shrink-0 px-3 py-2.5 text-sm"
-                          aria-label={`Hear how ${c.speedLabel.toLowerCase()} speed sounds`}
-                        >
-                          Hear speed
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
+                    </li>
+                  );
+                })}
             </ul>
           </section>
         ))}

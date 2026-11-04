@@ -195,6 +195,21 @@ test("a course day is built from its video's own words and sentences", async ({ 
   await expect(page.getByText("Complete the sentence from the video.")).toBeVisible();
 });
 
+test("the course goes on week after week, with review and free days", async ({ page }) => {
+  await openPage(page, "/course");
+  await expect(page.getByText("Week 2", { exact: true })).toBeAttached();
+
+  // Day 6 of every week hears the week's videos again; day 7 is free listening.
+  await openPage(page, "/course/6");
+  await expect(page.getByText("Week 1 · Day 6 of 7")).toBeVisible();
+  await expect(page.getByText(/^Hear it again, text hidden:/).first()).toBeVisible();
+
+  await openPage(page, "/course/8");
+  await expect(page.getByText("Week 2 · Day 1 of 7")).toBeVisible();
+  await page.getByRole("button", { name: /^Words from the video/ }).click();
+  await expect(page.locator("#words mark").first()).toBeVisible();
+});
+
 test("sidebar modules collapse and stay collapsed", async ({ page, isMobile }) => {
   test.skip(isMobile, "The sidebar is desktop only");
   await openPage(page, "/stories");

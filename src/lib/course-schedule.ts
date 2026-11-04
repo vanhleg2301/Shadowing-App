@@ -25,6 +25,7 @@ const LABELS: Record<BlockKind, string> = {
   speak: "If you like: retell the video out loud",
   quiz: "Fill the gaps in the video's sentences",
   extra: "If you have energy: bonus video",
+  free: "Listen to anything you enjoy",
 };
 
 const SESSION_STARTS = { morning: 8 * 60, midday: 13 * 60 + 30, evening: 20 * 60 };

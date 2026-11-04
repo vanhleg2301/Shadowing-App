@@ -34,7 +34,7 @@ const RATES = [0.5, 0.75, 1, 1.25];
 function parseOptions(sp: Record<string, string | string[] | undefined>): LessonOptions {
   const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const mode = first(sp.mode);
-  const courseDay = first(sp.from)?.match(/^course-(\d{1,2})$/)?.[1];
+  const courseDay = first(sp.from)?.match(/^course-(\d{1,3})$/)?.[1];
   return {
     mode: (MODES as readonly string[]).includes(mode ?? "") ? (mode as StartMode) : "watch",
     isListenFirst: first(sp.listen) === "1",

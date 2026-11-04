@@ -1,9 +1,9 @@
-// "Natural speed in 7 days": for the natural-speed collections (BBC, Easy Street, Studio C). Learners at
-// about B1 get used to fast, real English and answer back quickly. Almost all the time goes to listening
-// (first without subtitles) and speaking (shadowing, retelling, role-play); grammar and writing come later.
+// "Natural speed": the course for the natural-speed collections (BBC, Easy Street, Studio C). Learners at about
+// B1 get used to fast, real English by hearing each video cold first, then until all of it is clear. Week 1 is
+// hand-picked here; later weeks are built from the collection (src/data/course-weeks.ts).
 
 import type { CollectionId } from "./collections";
-import type { CourseBlock, CourseDay } from "./course-a2";
+import { getRestDayBlocks, type CourseBlock, type CourseDay } from "./course-a2";
 
 export const COURSE_B1_ID = "natural-b1-7";
 
@@ -184,78 +184,9 @@ export const COURSE_B1_DAYS: CourseDay[] = [
       "Tell me about a time you were really embarrassed.",
     ],
   },
-  {
-    day: 6,
-    title: "When things go wrong",
-    canDo: "I can apologise, explain a misunderstanding and ask for help in a problem.",
-    videos: [
-      { id: "eK5Tsornvng", title: "Talking About Mistakes" },
-      { id: "bGxdYW_6rjQ", title: "Living in a City: Pros and Cons" },
-      { id: "M03vuos_nLI", title: "Talking About the News" },
-    ],
-    phrases: [
-      { text: "My bad", meaning: "a casual 'it was my mistake'", example: "Oops, I took your seat. My bad!" },
-      { text: "I'm so sorry about", meaning: "apologise for something", example: "I'm so sorry about last night." },
-      { text: "It was an accident", meaning: "I didn't do it on purpose", example: "I didn't mean to break it. It was an accident." },
-      { text: "I didn't mean to", meaning: "it wasn't my plan", example: "I didn't mean to upset you." },
-      { text: "There's been a misunderstanding", meaning: "someone understood it wrong", example: "I think there's been a misunderstanding." },
-      { text: "What I meant was", meaning: "explain what you really wanted to say", example: "What I meant was, we could meet later." },
-      { text: "It won't happen again", meaning: "a promise after a mistake", example: "Sorry I was late. It won't happen again." },
-      { text: "Don't worry about it", meaning: "it's OK, I forgive you", example: "Don't worry about it. Everyone makes mistakes." },
-      { text: "I've lost my", meaning: "report something missing", example: "I've lost my wallet. Can you help me?" },
-      { text: "Someone stole my", meaning: "report a theft", example: "Someone stole my bike from outside the station." },
-      { text: "Calm down", meaning: "relax, don't panic", example: "Calm down, we'll find a solution." },
-      { text: "What happened?", meaning: "ask about a problem", example: "You look upset. What happened?" },
-      { text: "It's not my fault", meaning: "I didn't cause it", example: "The printer broke? It's not my fault!" },
-      { text: "Let's sort it out", meaning: "let's fix the problem", example: "Let's sort it out before the meeting." },
-      { text: "That was close", meaning: "something bad almost happened", example: "We nearly missed the flight. That was close!" },
-    ],
-    speakingPrompts: [
-      "You forgot your friend's birthday. Call them and apologise.",
-      "You've lost your bag in a train station. Explain to the staff what happened and what it looks like.",
-      "Tell me about a big mistake you made and what you learned.",
-      "Retell the main video in 1 minute, in your own words, without looking at the transcript.",
-      "A friend thinks you were rude, but it was a misunderstanding. Explain what you meant.",
-    ],
-  },
-  {
-    day: 7,
-    title: "Review: tell a good story",
-    canDo: "I can tell a funny or surprising story at natural speed and react to other people's stories.",
-    videos: [
-      { id: "kTf0V4HyFtM", title: "What You Did Last Weekend" },
-      { id: "WGZFo81hvj0", title: "Talking About Your Year" },
-      { id: "S7mfygW40Cs", title: "Talking About Days Out" },
-    ],
-    phrases: [
-      { text: "You won't believe what happened", meaning: "start an exciting story", example: "You won't believe what happened on the bus today." },
-      { text: "So there I was", meaning: "set the scene in a story", example: "So there I was, in the rain, with no umbrella." },
-      { text: "All of a sudden", meaning: "suddenly", example: "All of a sudden, the lights went out." },
-      { text: "Out of nowhere", meaning: "with no warning", example: "A dog ran out of nowhere." },
-      { text: "I couldn't believe it", meaning: "I was very surprised", example: "It was my old teacher! I couldn't believe it." },
-      { text: "And then", meaning: "move the story forward", example: "And then he started singing." },
-      { text: "The funny thing is", meaning: "point to the funny part", example: "The funny thing is, he didn't even notice." },
-      { text: "In the end", meaning: "finally", example: "In the end, we laughed about it." },
-      { text: "Spoiler alert", meaning: "warning: I'm going to tell you the ending", example: "Spoiler alert: the dog survives." },
-      { text: "It reminds me of", meaning: "it makes me think of", example: "That reminds me of my first job." },
-      { text: "What happened next?", meaning: "ask the speaker to go on", example: "Wait, what happened next?" },
-      { text: "Seriously?", meaning: "really? (surprise)", example: "He forgot the ring? Seriously?" },
-      { text: "That's hilarious", meaning: "that's very funny", example: "You fell into the pool? That's hilarious." },
-      { text: "You had to be there", meaning: "it was funnier in person", example: "OK, it doesn't sound funny. You had to be there." },
-      { text: "Anyway, that's what happened", meaning: "end a story", example: "Anyway, that's what happened. Crazy day." },
-    ],
-    speakingPrompts: [
-      "Tell a funny or surprising story from your life in 2 minutes. Use 'all of a sudden' and 'in the end'.",
-      "Describe a film or show you love without giving away the ending.",
-      "Your friend tells you they met a celebrity. React and ask three questions.",
-      "Retell one of this week's videos in 1 minute, in your own words.",
-      "What was the hardest part of this week's listening? What will you practise next?",
-    ],
-  },
 ];
 
 const COLLECTION_DAY_VIDEOS: Partial<Record<CollectionId, Record<number, CourseDay["videos"]>>> = {
-  // Easy Street has few short videos, so days 6 and 7 keep the BBC ones.
   "easy-street": {
     1: [
       { id: "TwBYlBjbokU", title: "Everyday Conversations With Strangers" },
@@ -285,24 +216,25 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<CollectionId, Record<number, CourseD
   },
 };
 
-function getDayVideos(day: CourseDay, collection: CollectionId): CourseDay["videos"] {
-  return COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos;
+export function getB1DayVideos(day: CourseDay, collection: CollectionId): CourseDay["videos"] {
+  return day.day > 7 ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
 }
 
 // At B1 the main video is heard cold first, as real conversations are; its words and sentences come after.
 export function getB1Blocks(day: CourseDay, collection: CollectionId): CourseBlock[] {
-  const [main, second, extra] = getDayVideos(day, collection);
+  if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
+  const [main, second, extra] = getB1DayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 10 }] : []),
-    { id: "listen-1", kind: "listen", title: `Listen 1, no subtitles: ${main.title}`, minutes: 15, videoId: main.id },
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
+    { id: "listen-1", kind: "listen", title: `Listen 1, no subtitles: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "words", kind: "words", title: "Words and chunks from the video", minutes: 10 },
-    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 15 },
-    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 30, videoId: main.id },
-    { id: "listen-2", kind: "listen", title: `Same topic, no subtitles: ${second.title}`, minutes: 15, videoId: second.id },
-    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 10 },
+    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 5 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 15, isOptional: true },
-    { id: "extra", kind: "extra", title: `Bonus listening: ${extra.title}`, minutes: 20, videoId: extra.id, isOptional: true },
+    ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, no subtitles: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
+    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 10, isOptional: true },
+    ...(extra ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${extra.title}`, minutes: 15, videoId: extra.id, isOptional: true }] : []),
   ];
 }

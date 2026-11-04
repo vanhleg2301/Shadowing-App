@@ -1,5 +1,5 @@
 // Video collections ("providers"): the learner picks one by speaking speed, and the library,
-// favorites, progress and the 7-day course all follow that choice.
+// favorites, progress and the course all follow that choice.
 import type { CuratedVideo } from "./curated";
 
 export const COLLECTION_IDS = ["sponge", "voa", "bob", "super-easy", "bbc", "easy-street", "studio-c"] as const;
@@ -14,6 +14,8 @@ export interface Collection {
   speedLabel: string;
   levels: string;
   description: string;
+  // The app's main collections: shown first and marked as recommended when choosing.
+  isRecommended?: boolean;
 }
 
 export const COLLECTIONS: Collection[] = [
@@ -25,6 +27,7 @@ export const COLLECTIONS: Collection[] = [
     speedLabel: "Slow",
     levels: "A1–B1",
     description: "Slow, clear stories told with pictures. Best if fast English still feels hard to follow.",
+    isRecommended: true,
   },
   {
     id: "voa",
@@ -43,6 +46,7 @@ export const COLLECTIONS: Collection[] = [
     speedLabel: "Medium",
     levels: "A2–B1",
     description: "A friendly teacher speaking clearly at almost normal speed, out and about in everyday places.",
+    isRecommended: true,
   },
   {
     id: "super-easy",

@@ -6,13 +6,13 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { CourseGuide } from "@/components/course/CourseGuide";
 import { CoursePlanSwitch } from "@/components/course/CoursePlanSwitch";
-import { getCourse, hasGentlePlan, isCourseDayComplete, type Course } from "@/data/courses";
-import type { CollectionId } from "@/data/collections";
+import { getCourse, hasGentlePlan, type Course } from "@/data/courses";
+import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
+import { getCoursePlan, getCurrentDay, getDayBlocks, getPlanProgress, isPlanDayComplete, type CoursePlan } from "@/lib/course-plan";
 import { buildDaySchedule } from "@/lib/course-schedule";
-import { getCourseProgress } from "@/lib/user-data";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export default function CoursePage() {
@@ -30,16 +30,16 @@ export default function CoursePage() {
 function CourseHeader({ course }: { course: Course }) {
   return (
     <>
-      <Breadcrumbs items={[{ label: "7-day course" }]} />
-      <p className="text-xs font-bold uppercase tracking-wide text-accent">7-day course · {course.level}</p>
+      <Breadcrumbs items={[{ label: "Course" }]} />
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Course · {course.level} · a new week every week</p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">{course.title}</h1>
       <p className="mt-2 max-w-2xl text-muted">{course.description}</p>
 
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-semibold text-ink">
         {[
-          ["headphones", "Listen first"],
+          ["headphones", "Understand first"],
+          ["repeat", "Hear each video three times"],
           ["mic", "Shadow the real voice"],
-          ["record", "Speak and listen back"],
         ].map(([icon, text]) => (
           <li key={text} className="flex items-center gap-1.5">
             <Icon name={icon as "mic"} className="size-4 text-brand" />
@@ -54,9 +54,10 @@ function CourseHeader({ course }: { course: Course }) {
 async function CourseWithProgress() {
   const collection = (await getSelectedCollection().catch(() => null)) ?? DEFAULT_COLLECTION;
   const mode = await getCourseMode();
-  const course = getCourse(collection, mode);
+  const plan = await getCoursePlan(collection, mode);
+  const { course } = plan;
   const counts = await getCollectionCounts();
-  const progress = await getCourseProgress(course.getId(collection)).catch(() => null);
+  const progress = await getPlanProgress(plan);
   return (
     <>
       <CourseHeader course={course} />
@@ -64,7 +65,7 @@ async function CourseWithProgress() {
         <CourseGuide
           planTitle={course.title}
           scheduleTitle="This is day 2 of your plan; day 1 has no review."
-          schedule={buildDaySchedule(course.getBlocks(course.days[1], collection))}
+          schedule={buildDaySchedule(getDayBlocks(plan, plan.days[1]))}
         />
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -82,88 +83,119 @@ async function CourseWithProgress() {
           to switch to the Gentle plan with slower videos.
         </p>
       )}
-      <DayList course={course} collection={collection} progress={progress} />
+      <WeekList plan={plan} progress={progress} />
     </>
   );
 }
 
-interface DayListProps {
-  course: Course;
-  collection: CollectionId;
+interface WeekListProps {
+  plan: CoursePlan;
   progress: Record<number, string[]> | null;
 }
 
-function DayList({ course, collection, progress }: DayListProps) {
-  const days = course.days;
+// Every week of the course; the one the learner is in starts open.
+function WeekList({ plan, progress }: WeekListProps) {
   const isComplete = (dayNumber: number) => {
-    const day = days.find((d) => d.day === dayNumber);
-    if (!day || !progress) return false;
-    return isCourseDayComplete(course.getBlocks(day, collection), new Set(progress[dayNumber] ?? []));
+    const day = plan.days.find((d) => d.day === dayNumber);
+    return day ? isPlanDayComplete(plan, day, progress) : false;
   };
-  const completedDays = days.filter((d) => isComplete(d.day)).length;
+  const currentWeek = weekOf(getCurrentDay(plan, progress).day);
+  const weeks = Array.from({ length: plan.weekCount }, (_, i) => plan.days.filter((d) => weekOf(d.day) === i + 1));
+  const completedDays = plan.days.filter((d) => isComplete(d.day)).length;
 
   return (
     <>
       {progress && (
-        <div className="mt-8 flex items-center gap-3">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-            <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${(completedDays / days.length) * 100}%` }} />
-          </div>
-          <span className="shrink-0 text-sm font-semibold text-muted">
-            {completedDays}/{days.length} days
-          </span>
-        </div>
+        <p className="mt-8 text-sm font-semibold text-muted">
+          {completedDays} {completedDays === 1 ? "day" : "days"} done · you are in week {currentWeek} of {plan.weekCount}
+        </p>
       )}
-      <ol className="stagger mt-6 space-y-3">
-        {days.map((day) => {
-          const done = isComplete(day.day);
-          // Signed-in learners unlock days in order; visitors can browse everything.
-          const isLocked = progress !== null && day.day > 1 && !isComplete(day.day - 1);
-          const blocks = course.getBlocks(day, collection);
-          const finished = progress?.[day.day]?.length ?? 0;
-          const content = (
-            <>
-              <span
-                className={`grid size-12 shrink-0 place-items-center rounded-2xl text-lg font-extrabold ${
-                  done ? "bg-accent text-white" : isLocked ? "bg-line text-muted" : "bg-brand text-on-brand"
-                }`}
-              >
-                {done ? "✓" : day.day}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-ink">
-                  Day {day.day} · {day.title}
-                </p>
-                <p className="truncate text-sm text-muted">{day.canDo}</p>
-                {progress && !done && finished > 0 && (
-                  <p className="mt-0.5 text-xs font-semibold text-accent">
-                    {Math.min(finished, blocks.length)}/{blocks.length} blocks done
-                  </p>
-                )}
-              </div>
-              {isLocked ? (
-                <span className="shrink-0 text-xs font-semibold text-muted">Finish day {day.day - 1} first</span>
-              ) : (
-                <Icon name="chevronRight" className="size-5 shrink-0 text-muted" />
-              )}
-            </>
-          );
+      <div className="mt-4 space-y-3">
+        {weeks.map((days, i) => {
+          const week = i + 1;
+          const doneInWeek = days.filter((d) => isComplete(d.day)).length;
           return (
-            <li key={day.day}>
-              {isLocked ? (
-                <div className="flex items-center gap-4 rounded-3xl border border-line bg-surface/60 p-4 opacity-70">{content}</div>
-              ) : (
-                <Link
-                  href={`/course/${day.day}`}
-                  className="flex items-center gap-4 rounded-3xl border border-line bg-surface p-4 shadow-[0_4px_0_0_var(--color-line)] transition-transform hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  {content}
-                </Link>
-              )}
-            </li>
+            <details key={week} open={week === currentWeek} className="group rounded-3xl border border-line bg-surface">
+              <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold text-ink">Week {week}</span>
+                  <span className="block truncate text-sm text-muted">{[...new Set(days.filter((d) => (d.kind ?? "study") === "study").map((d) => d.title))].join(" · ")}</span>
+                </span>
+                {progress && (
+                  <span className="shrink-0 text-xs font-semibold text-accent">
+                    {doneInWeek}/{days.length}
+                  </span>
+                )}
+                <Icon name="chevronDown" className="size-5 shrink-0 text-muted transition-transform group-open:rotate-180" />
+              </summary>
+              <ol className="space-y-3 px-4 pb-4">
+                {days.map((day) => (
+                  <DayRow key={day.day} plan={plan} day={day} progress={progress} isComplete={isComplete} />
+                ))}
+              </ol>
+            </details>
           );
         })}
-      </ol>
+      </div>
+      <p className="mt-4 text-sm text-muted">
+        New weeks appear as the collection gets new videos. Each week: five video days, a day to hear them again and a free day.
+      </p>
     </>
+  );
+}
+
+interface DayRowProps {
+  plan: CoursePlan;
+  day: CoursePlan["days"][number];
+  progress: Record<number, string[]> | null;
+  isComplete: (dayNumber: number) => boolean;
+}
+
+function DayRow({ plan, day, progress, isComplete }: DayRowProps) {
+  const done = isComplete(day.day);
+  // Signed-in learners unlock days in order; visitors can browse everything.
+  const isLocked = progress !== null && day.day > 1 && !isComplete(day.day - 1);
+  const blocks = getDayBlocks(plan, day);
+  const finished = progress?.[day.day]?.length ?? 0;
+  const content = (
+    <>
+      <span
+        className={`grid size-12 shrink-0 place-items-center rounded-2xl text-lg font-extrabold ${
+          done ? "bg-accent text-white" : isLocked ? "bg-line text-muted" : "bg-brand text-on-brand"
+        }`}
+      >
+        {done ? "✓" : dayInWeek(day.day)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-bold text-ink">
+          Day {dayInWeek(day.day)} · {day.title}
+        </p>
+        <p className="truncate text-sm text-muted">{day.canDo}</p>
+        {progress && !done && finished > 0 && (
+          <p className="mt-0.5 text-xs font-semibold text-accent">
+            {Math.min(finished, blocks.length)}/{blocks.length} blocks done
+          </p>
+        )}
+      </div>
+      {isLocked ? (
+        <span className="shrink-0 text-xs font-semibold text-muted">Finish the day before first</span>
+      ) : (
+        <Icon name="chevronRight" className="size-5 shrink-0 text-muted" />
+      )}
+    </>
+  );
+  return (
+    <li>
+      {isLocked ? (
+        <div className="flex items-center gap-4 rounded-3xl border border-line bg-surface/60 p-4 opacity-70">{content}</div>
+      ) : (
+        <Link
+          href={`/course/${day.day}`}
+          className="flex items-center gap-4 rounded-3xl border border-line bg-cream p-4 transition-transform hover:-translate-y-0.5 active:translate-y-0"
+        >
+          {content}
+        </Link>
+      )}
+    </li>
   );
 }

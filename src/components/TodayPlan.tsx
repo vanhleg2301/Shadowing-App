@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/Icon";
 import type { CollectionId } from "@/data/collections";
-import { getCourse } from "@/data/courses";
+import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { getStoryOfTheDay } from "@/data/stories";
 import type { CourseMode } from "@/lib/course-mode";
-import { getCourseProgress, getDueWords } from "@/lib/user-data";
+import { getCoursePlan, getCurrentDay, getDayBlocks, getPlanProgress } from "@/lib/course-plan";
+import { getDueWords } from "@/lib/user-data";
 
 interface Task {
   href: string;
@@ -14,32 +15,24 @@ interface Task {
   detail: string;
 }
 
-// "Today": the next step of the 7-day course, the words due for review and a fresh news story,
+// "Today": the next step of the course, the words due for review and a fresh news story,
 // so a signed-in learner can start without browsing. Renders nothing when signed out.
 export async function TodayPlan({ collection, mode }: { collection: CollectionId; mode: CourseMode }) {
-  const course = getCourse(collection, mode);
-  const [progress, due] = await Promise.all([
-    getCourseProgress(course.getId(collection)).catch(() => null),
-    getDueWords(1).catch(() => null),
-  ]);
+  const plan = await getCoursePlan(collection, mode);
+  const [progress, due] = await Promise.all([getPlanProgress(plan), getDueWords(1).catch(() => null)]);
   if (!progress) return null;
 
   const tasks: Task[] = [];
-  const nextDay = course.days.find((day) => {
-    const finished = new Set(progress[day.day] ?? []);
-    return course.getBlocks(day, collection).some((b) => !b.isOptional && !finished.has(b.id));
+  const nextDay = getCurrentDay(plan, progress);
+  const finished = new Set(progress[nextDay.day] ?? []);
+  const nextBlock = getDayBlocks(plan, nextDay).find((b) => !b.isOptional && !finished.has(b.id));
+  tasks.push({
+    href: `/course/${nextDay.day}`,
+    icon: "course",
+    label: `Course · week ${weekOf(nextDay.day)}, day ${dayInWeek(nextDay.day)}`,
+    title: nextDay.title,
+    detail: nextBlock ? `Next: ${nextBlock.title}` : "Keep going",
   });
-  if (nextDay) {
-    const finished = new Set(progress[nextDay.day] ?? []);
-    const nextBlock = course.getBlocks(nextDay, collection).find((b) => !b.isOptional && !finished.has(b.id));
-    tasks.push({
-      href: `/course/${nextDay.day}`,
-      icon: "course",
-      label: `Course · day ${nextDay.day} of ${course.days.length}`,
-      title: nextDay.title,
-      detail: nextBlock ? `Next: ${nextBlock.title}` : "Keep going",
-    });
-  }
   if (due && due.dueCount > 0) {
     tasks.push({
       href: "/review",

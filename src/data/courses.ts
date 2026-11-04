@@ -1,6 +1,7 @@
-// The 7-day course follows the collection's speed: slow and medium collections get "Speak A2 in 7 days",
-// natural-speed ones get "Natural speed in 7 days".
+// The course follows the collection's speed: slow and medium collections get "Understand A2 English", natural-speed
+// ones get "Natural speed". Both go on week after week (src/lib/course-plan.ts).
 import { getCollection, type CollectionId } from "./collections";
+import type { Level } from "./curated";
 import type { CourseMode } from "@/lib/course-mode";
 import {
   COURSE_DAYS,
@@ -9,11 +10,12 @@ import {
   GENTLE_PROMPT_COUNT,
   getBlocks,
   getCourseId,
+  getDayVideos,
   getGentleBlocks,
   type CourseBlock,
   type CourseDay,
 } from "./course-a2";
-import { COURSE_B1_DAYS, getB1Blocks, getCourseB1Id } from "./course-b1";
+import { COURSE_B1_DAYS, getB1Blocks, getB1DayVideos, getCourseB1Id } from "./course-b1";
 
 export interface Course {
   level: "A2" | "B1";
@@ -22,8 +24,14 @@ export interface Course {
   shortTitle: string;
   description: string;
   tagline: string;
+  // Week 1's five video days; the rest of the course is built from the collection.
   days: CourseDay[];
+  // Later weeks come from this collection when the chosen one has too few videos with transcripts.
+  fallbackCollection: CollectionId;
+  // Later weeks start with videos of this level.
+  startLevel: Level;
   getId: (collection: CollectionId) => string;
+  getVideos: (day: CourseDay, collection: CollectionId) => CourseDay["videos"];
   getBlocks: (day: CourseDay, collection: CollectionId) => CourseBlock[];
   // Only the A2 course has a Gentle plan; these trim each day and slow the videos down.
   isGentle?: boolean;
@@ -42,36 +50,43 @@ export function isCourseDayComplete(blocks: CourseBlock[], finished: ReadonlySet
 
 const SPEAK_A2: Course = {
   level: "A2",
-  title: "Speak A2 in 7 days",
-  shortTitle: "Speak A2",
+  title: "Understand A2 English",
+  shortTitle: "A2 English",
   description:
-    "For learners at about A2. Each day is built around one video: learn its words first, listen three times until you understand all of it, shadow its sentences, then hear a second video on the same topic. About 2 hours a day, plus optional speaking.",
-  tagline: "Understand real English first, then speak. One video a day, about 2 hours.",
+    "For learners at about A2. One video a day, about an hour: learn its words first, listen three times until you understand all of it, and shadow its sentences. Each week has five video days, a day to hear them again and a free day, and the next week is always ready.",
+  tagline: "One video a day, about an hour. A new week every week.",
   days: COURSE_DAYS,
+  fallbackCollection: "sponge",
+  startLevel: "A2",
   getId: getCourseId,
+  getVideos: getDayVideos,
   getBlocks,
 };
 
 const NATURAL_B1: Course = {
   level: "B1",
-  title: "Natural speed in 7 days",
+  title: "Natural speed",
   shortTitle: "Natural speed",
   description:
-    "For B1 learners who lose track when real people talk fast. Each day: hear a real conversation with no subtitles, learn the chunks it uses, listen again until it is all clear, shadow it, then a second video on the same topic. About 2 hours a day.",
-  tagline: "Keep up with fast, real English. About 2 hours a day.",
+    "For B1 learners who lose track when real people talk fast. One video a day, about an hour: hear it with no subtitles, learn the chunks it uses, listen again until it is all clear, and shadow it. Five video days, a review day and a free day each week, week after week.",
+  tagline: "Keep up with fast, real English. About an hour a day.",
   days: COURSE_B1_DAYS,
+  fallbackCollection: "bbc",
+  startLevel: "B1",
   getId: getCourseB1Id,
+  getVideos: getB1DayVideos,
   getBlocks: getB1Blocks,
 };
 
 const GENTLE_A2: Course = {
   ...SPEAK_A2,
-  title: "Speak A2 in 7 days · Gentle",
-  shortTitle: "Speak A2 · Gentle",
+  title: "Understand A2 English · Gentle",
+  shortTitle: "A2 · Gentle",
   description:
-    "For A1 learners on the way to A2. The same videos at 0.75x, with fewer and shorter steps: 8 words and 8 sentences from each video, heard until they are clear. About 70 minutes a day. Take two real days per course day if you need to.",
-  tagline: "From A1 to A2, about an hour a day.",
+    "For A1 learners on the way to A2. The same videos at 0.75x, with fewer and shorter steps: 8 words and 8 sentences from each video, heard until they are clear. Under an hour a day. Take two real days per course day if you need to.",
+  tagline: "From A1 to A2, under an hour a day.",
   getBlocks: getGentleBlocks,
+  startLevel: "A1",
   isGentle: true,
   phraseCount: GENTLE_PHRASE_COUNT,
   promptCount: GENTLE_PROMPT_COUNT,

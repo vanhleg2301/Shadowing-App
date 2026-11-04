@@ -1,6 +1,6 @@
-// "Speak A2 in 7 days": for learners who already understand A2 English but freeze when speaking.
-// Time goes mostly to output (shadowing, speaking prompts); input is short and targeted.
-// Content is written by hand, so the course costs nothing to run.
+// The A2 course ("Understand A2 English") and its Gentle plan. Week 1 is hand-picked here: five video days, then
+// a review day and a free day; later weeks are built from the collection (src/data/course-weeks.ts).
+// Each video day studies the words and sentences of its own video, so nothing here needs a paid service.
 
 import type { CollectionId } from "./collections";
 
@@ -11,7 +11,7 @@ export function getCourseId(collection: CollectionId): string {
   return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
 }
 
-export type BlockKind = "review" | "words" | "listen" | "readalong" | "phrases" | "shadow" | "speak" | "quiz" | "extra";
+export type BlockKind = "review" | "words" | "listen" | "readalong" | "phrases" | "shadow" | "speak" | "quiz" | "extra" | "free";
 
 export interface CourseBlock {
   id: string;
@@ -29,9 +29,14 @@ export interface CoursePhrase {
 }
 
 export interface CourseDay {
+  // Counted across weeks: day 8 is the first day of week 2.
   day: number;
+  // Five video days a week, then a day to hear the week's videos again and a free listening day.
+  kind?: "study" | "review" | "free";
   title: string;
   canDo: string;
+  // A video day's main video comes first, then one on the same topic and an optional bonus; a review day lists
+  // the week's main videos.
   videos: { id: string; title: string }[];
   phrases: CoursePhrase[];
   // Questions to answer out loud (recorded on the device, never uploaded).
@@ -209,74 +214,6 @@ export const COURSE_DAYS: CourseDay[] = [
       "How do you usually travel to work or school? Describe the journey.",
     ],
   },
-  {
-    day: 6,
-    title: "Health and appointments",
-    canDo: "I can explain how I feel, book a doctor's appointment and understand advice.",
-    videos: [
-      { id: "QwyqiTMtKr8", title: "Tom Goes To The Doctor!" },
-      { id: "0BLczS0yqXg", title: "Getting A Cold!" },
-      { id: "7tQMyLTcF_I", title: "Talking About Exercise" },
-    ],
-    phrases: [
-      { text: "I don't feel well", meaning: "you feel ill", example: "I don't feel well. I think I have a fever." },
-      { text: "I've got a headache", meaning: "your head hurts", example: "I've got a headache and a sore throat." },
-      { text: "It hurts when I", meaning: "say when you feel pain", example: "It hurts when I walk." },
-      { text: "Since yesterday", meaning: "from yesterday until now", example: "I've had a cough since yesterday." },
-      { text: "I'd like to make an appointment", meaning: "ask to see a doctor at a time", example: "I'd like to make an appointment with a doctor." },
-      { text: "Is it serious?", meaning: "ask if the problem is dangerous", example: "Is it serious, doctor?" },
-      { text: "How often should I take it?", meaning: "ask about medicine times", example: "How often should I take these tablets?" },
-      { text: "You should rest", meaning: "advice to stop and relax", example: "You should rest and drink lots of water." },
-      { text: "I'm feeling better", meaning: "you are less ill now", example: "Thanks, I'm feeling better today." },
-      { text: "I need to call in sick", meaning: "tell work you are ill and can't come", example: "I need to call in sick today." },
-      { text: "Take care", meaning: "a kind way to say goodbye", example: "Get well soon, and take care!" },
-      { text: "I try to stay active", meaning: "you try to move and exercise", example: "I try to stay active, so I walk every day." },
-      { text: "I'm out of breath", meaning: "you are breathing fast after exercise", example: "Wait, I'm out of breath!" },
-      { text: "Get well soon", meaning: "hope someone stops being ill", example: "Sorry to hear that. Get well soon!" },
-      { text: "Do you have anything for", meaning: "ask a pharmacist for medicine", example: "Do you have anything for a cold?" },
-    ],
-    speakingPrompts: [
-      "Call the doctor's office and make an appointment. Explain your problem.",
-      "Tell the doctor your symptoms: what hurts and since when.",
-      "Go to a pharmacy and ask for something for a cold.",
-      "Call your manager: you are ill and can't come to work.",
-      "How do you stay healthy? Talk about food, sleep and exercise.",
-    ],
-  },
-  {
-    day: 7,
-    title: "Review: a day of travel",
-    canDo: "I can handle a full day abroad: small talk, food, shopping, directions and problems.",
-    videos: [
-      { id: "k78JLH9lJMg", title: "My New Zealand Trip" },
-      { id: "4igRJivBVHw", title: "Talking About Weather" },
-      { id: "lX01A3gIgyo", title: "My South East Asia Trip" },
-    ],
-    phrases: [
-      { text: "Lovely weather today, isn't it?", meaning: "easy small talk with a stranger", example: "Lovely weather today, isn't it? — Yes, finally!" },
-      { text: "It's freezing", meaning: "very cold", example: "Put on a coat, it's freezing outside." },
-      { text: "Have you been here before?", meaning: "small talk when travelling", example: "Have you been here before? — No, it's my first time." },
-      { text: "I've never been to", meaning: "you have not visited a place", example: "I've never been to New Zealand." },
-      { text: "It was amazing", meaning: "it was very, very good", example: "The view from the top was amazing." },
-      { text: "The best part was", meaning: "talk about your favourite moment", example: "The best part was the boat trip." },
-      { text: "I checked in at", meaning: "you arrived and registered at a hotel", example: "I checked in at the hotel at three." },
-      { text: "There's a problem with my room", meaning: "complain politely at a hotel", example: "Sorry, there's a problem with my room. The shower doesn't work." },
-      { text: "Could you recommend somewhere to eat?", meaning: "ask locals for a restaurant", example: "Could you recommend somewhere to eat near here?" },
-      { text: "What time does it open?", meaning: "ask about opening hours", example: "What time does the museum open?" },
-      { text: "I'd rather", meaning: "say what you prefer", example: "I'd rather walk than take the bus." },
-      { text: "That sounds great", meaning: "you like an idea", example: "A picnic by the lake? That sounds great." },
-      { text: "I'm not sure, but", meaning: "give an answer you are not certain about", example: "I'm not sure, but I think it's on the left." },
-      { text: "Could you take a photo of us?", meaning: "ask a stranger to take a picture", example: "Excuse me, could you take a photo of us?" },
-      { text: "Thanks for your help", meaning: "thank someone who helped you", example: "That's perfect. Thanks for your help!" },
-    ],
-    speakingPrompts: [
-      "Make small talk about the weather with someone at a bus stop.",
-      "Tell a friend about your best trip: where, when, and the best part.",
-      "At the hotel, your room has a problem. Explain it and ask for help.",
-      "Ask a local to recommend a place to eat, then order there.",
-      "Final test: talk for 2 minutes about yourself, your day, and your next holiday plan.",
-    ],
-  },
 ];
 
 // Blocks are generated from the day's videos so every day has the same rhythm. The words, sentences and quiz come
@@ -309,16 +246,6 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "voa-3285228", title: "Come Over to My Place" },
       { id: "voa-3293986", title: "This Is My Neighborhood" },
     ],
-    6: [
-      { id: "voa-3457316", title: "I Can't Come In" },
-      { id: "voa-3688552", title: "Making Healthy Choices" },
-      { id: "voa-3261789", title: "Is It Cold?" },
-    ],
-    7: [
-      { id: "voa-4035571", title: "Greatest Vacation of All Time" },
-      { id: "voa-4079037", title: "Visit to Peru" },
-      { id: "voa-4064769", title: "Tip Your Tour Guide" },
-    ],
   },
   "super-easy": {
     1: [
@@ -345,16 +272,6 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "q9qbH6rw9lg", title: "Essential Car Words" },
       { id: "PiU-AJ0IaT0", title: "On the Streets of Cologne" },
       { id: "92ozftd0RzU", title: "At the Central Library" },
-    ],
-    6: [
-      { id: "LAYbOaKn8DY", title: "At the Doctor and the Hospital" },
-      { id: "SN6751ig2QI", title: "Worrying About the Future" },
-      { id: "PCm7lkzLFH4", title: "Nature Words" },
-    ],
-    7: [
-      { id: "-OknSRRyFJE", title: "Conversations at the Airport" },
-      { id: "2eXHcmbqFFg", title: "Conversations at a Hotel" },
-      { id: "nVf2XMwZwGk", title: "Movie Genres" },
     ],
   },
   "easy-street": {
@@ -383,16 +300,6 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "v8ecvyglvJ8", title: "Conversations for Tourists" },
       { id: "HU9wGpwUa4U", title: "Conversations and Words for Tourists" },
     ],
-    6: [
-      { id: "yb21A3vrsOM", title: "What Makes People Happy?" },
-      { id: "H3zJIP3BJ6Y", title: "Advice on Mental Health" },
-      { id: "ScO8_gSXqJQ", title: "What Are Your Phobias?" },
-    ],
-    7: [
-      { id: "mW2zRTStOMM", title: "10 Tips for Travelling to the UK" },
-      { id: "ogNynYq1IxE", title: "Where Do Brits Go on Summer Holiday?" },
-      { id: "09UdFZcPdqs", title: "Holiday Destinations" },
-    ],
   },
   bob: {
     1: [
@@ -419,16 +326,6 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "_UwT0tC5JTk", title: "Describing Location and Motion" },
       { id: "SmSRH7kpdYA", title: "How to Describe Places" },
       { id: "KLnH1HHzaho", title: "Talking About Towns and Cities" },
-    ],
-    6: [
-      { id: "tVhyq-PD8lk", title: "What to Do and Say When You Are Sick" },
-      { id: "cs5US0Tpi1A", title: "How to Describe Being Sick" },
-      { id: "oO4y4d-3Eus", title: "Injuries, Health Care and Medicine" },
-    ],
-    7: [
-      { id: "43xsHPFMMOU", title: "At the Airport" },
-      { id: "MYX7RVOf3Yc", title: "At a Hotel" },
-      { id: "9MkngoRI2Lk", title: "Travel and Tourism at Niagara Falls" },
     ],
   },
   bbc: {
@@ -457,39 +354,51 @@ const COLLECTION_DAY_VIDEOS: Partial<Record<Exclude<CollectionId, "sponge">, Rec
       { id: "Fxi4uYmCrPo", title: "Talking About Public Transport" },
       { id: "JgB6-RWnV9M", title: "Talking About Travel" },
     ],
-    6: [
-      { id: "yLu_M4yiCho", title: "Talking About Sleep" },
-      { id: "R3oVOu-sxHE", title: "Talking About Exercise" },
-      { id: "qfQ61oYIbxY", title: "Are You in a Good or Bad Mood?" },
-    ],
-    7: [
-      { id: "0W6PymVdXVw", title: "Flying and Airports" },
-      { id: "KHimUkNBDiQ", title: "Favourite Famous Sites" },
-      { id: "S7mfygW40Cs", title: "Talking About Days Out" },
-    ],
   },
 };
 
+// Week 1 has hand-picked videos for some collections; later weeks are built for one collection already.
 export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDay["videos"] {
-  return collection === "sponge" ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
+  return collection === "sponge" || day.day > 7 ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
 }
 
-// Comprehensible input: the day is one main video, made understandable first with its own words, heard three
-// times, then a second video on the same topic. Speaking comes last and is optional.
+// The last two days of every week: hear the week's videos again, then listen to anything for pleasure.
+export function getRestDayBlocks(day: CourseDay): CourseBlock[] {
+  if (day.kind === "review") {
+    return [
+      ...day.videos.map((video, i) => ({
+        id: `again-${i + 1}`,
+        kind: "listen" as const,
+        title: `Hear it again, text hidden: ${video.title}`,
+        minutes: 10,
+        videoId: video.id,
+      })),
+      { id: "review", kind: "review", title: "Review the words you saved", minutes: 10, isOptional: true },
+    ];
+  }
+  return [
+    { id: "free", kind: "free", title: "Listen to anything you enjoy for 20–30 minutes", minutes: 25 },
+    { id: "stories", kind: "free", title: "Or read today's story", minutes: 10, isOptional: true },
+  ];
+}
+
+// Comprehensible input: the day is one main video, made understandable first with its own words and heard three
+// times, about an hour in all. A second video on the same topic and speaking come after, if there is time.
 export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
+  if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
   const [main, second, extra] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 10 }] : []),
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
     { id: "words", kind: "words", title: "Before you listen: words from the video", minutes: 10 },
-    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 20 },
-    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 30, videoId: main.id },
-    { id: "listen-2", kind: "listen", title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id },
-    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 10 },
+    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 5 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 15, isOptional: true },
-    { id: "extra", kind: "extra", title: `Bonus listening: ${extra.title}`, minutes: 20, videoId: extra.id, isOptional: true },
+    ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
+    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 10, isOptional: true },
+    ...(extra ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${extra.title}`, minutes: 15, videoId: extra.id, isOptional: true }] : []),
   ];
 }
 
@@ -504,16 +413,18 @@ export const GENTLE_PROMPT_COUNT = 3;
 export const GENTLE_PLAYBACK_RATE = 0.75;
 
 export function getGentleBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
+  if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
   const [main, second] = getDayVideos(day, collection);
   return [
     ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
     { id: "words", kind: "words", title: `Before you listen: ${GENTLE_PHRASE_COUNT} words from the video`, minutes: 10 },
     { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 15 },
-    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 10 },
+    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps", minutes: 5 },
+    { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id, isOptional: true },
     { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} short answers, copy the video first`, minutes: 10, isOptional: true },
-    { id: "extra", kind: "extra", title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true },
+    ...(second ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
   ];
 }

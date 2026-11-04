@@ -74,7 +74,7 @@ async function HomeContent() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[11px] font-bold uppercase tracking-wide text-accent sm:text-xs">
-              7 days<span className="hidden sm:inline"> · course</span> · {course.level}
+              Course<span className="hidden sm:inline"> · one video a day</span> · {course.level}
             </span>
             <span className="block truncate text-sm font-bold text-ink sm:hidden">{course.shortTitle}</span>
             <span className="hidden truncate font-bold text-ink sm:block">{course.title}</span>
