@@ -189,7 +189,12 @@ test("a course day is built from its video's own words and sentences", async ({ 
   await page.getByRole("button", { name: /^Words from the video/ }).click();
   const words = page.locator("#words");
   await expect(words.locator("mark").first()).toBeVisible();
-  await expect(words.getByRole("link", { name: "Hear it in the video" }).first()).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=shadow&s=\d+&from=course-2/);
+  // A sentence plays in a sheet on the course page, with a way into the full lesson at that moment.
+  await words.getByRole("button", { name: "Hear it in the video" }).first().click();
+  const sheet = page.getByRole("dialog", { name: "From the video" });
+  await expect(sheet.locator('iframe[src*="youtube"]')).toBeAttached();
+  await expect(sheet.getByRole("link", { name: /Open the whole lesson/ })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=shadow&s=\d+&from=course-2/);
+  await sheet.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: /^Quiz/ }).click();
   await expect(page.getByText("Complete the sentence from the video.")).toBeVisible();

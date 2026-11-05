@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { PhraseQuiz } from "@/components/course/PhraseQuiz";
+import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
 import { VideoSentence } from "@/components/course/VideoSentence";
 import { StudyTimer } from "@/components/StudyTimer";
@@ -14,7 +15,7 @@ import { isCourseDayComplete } from "@/data/courses";
 import { useAuth } from "@/hooks/useAuth";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
-import type { DayStudy } from "@/lib/video-study";
+import type { DayStudy, StudySentence } from "@/lib/video-study";
 
 interface CourseDayViewProps {
   day: CourseDay;
@@ -155,6 +156,7 @@ export function CourseDayView({
     return (first?.kind as SectionId | undefined) ?? null;
   });
   const sentenceHref = (videoId: string, index: number) => `/watch/${videoId}?mode=shadow&s=${index}&${fromCourse(day.day, playbackRate)}`;
+  const [heard, setHeard] = useState<{ videoId: string; sentence: StudySentence } | null>(null);
 
   const toggleSection = (id: SectionId) => setOpenSection((current) => (current === id ? null : id));
   const goToSection = (id: SectionId) => {
@@ -322,7 +324,7 @@ export function CourseDayView({
               <VideoSentence
                 key={sentence.index}
                 sentence={sentence}
-                href={`/watch/${previousStudy.videoId}?mode=shadow&s=${sentence.index}&${fromCourse(day.day, playbackRate)}`}
+                onHear={() => setHeard({ videoId: previousStudy.videoId, sentence })}
                 isHiddenFirst
                 onWordClick={openWord}
               />
@@ -359,7 +361,7 @@ export function CourseDayView({
                   key={item.text}
                   sentence={item.sentence}
                   highlight={item.text}
-                  href={sentenceHref(study.videoId, item.sentence.index)}
+                  onHear={() => setHeard({ videoId: study.videoId, sentence: item.sentence })}
                   onWordClick={openWord}
                 />
               ))}
@@ -405,7 +407,12 @@ export function CourseDayView({
         >
           <ul className="space-y-3">
             {study.sentences.map((sentence) => (
-              <VideoSentence key={sentence.index} sentence={sentence} href={sentenceHref(study.videoId, sentence.index)} onWordClick={openWord} />
+              <VideoSentence
+                key={sentence.index}
+                sentence={sentence}
+                onHear={() => setHeard({ videoId: study.videoId, sentence })}
+                onWordClick={openWord}
+              />
             ))}
           </ul>
           <SectionDoneButton isDone={done.has("phrases")} onDone={() => toggleBlock("phrases", true)} label="Done" />
@@ -457,6 +464,16 @@ export function CourseDayView({
         />
       )}
       {lookup && sheetProps && <WordLookupSheet {...sheetProps} />}
+      {heard && (
+        <SentencePlayerSheet
+          key={`${heard.videoId}-${heard.sentence.index}`}
+          videoId={heard.videoId}
+          sentence={heard.sentence}
+          lessonHref={sentenceHref(heard.videoId, heard.sentence.index)}
+          playbackRate={playbackRate}
+          onClose={() => setHeard(null)}
+        />
+      )}
     </div>
   );
 }

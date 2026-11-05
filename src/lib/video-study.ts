@@ -179,6 +179,9 @@ export interface StudySentence {
   index: number;
   text: string;
   translation?: string;
+  // Where it is in the video, in seconds, so it can be played on its own.
+  start: number;
+  end: number;
 }
 
 // What a course day shows from its main video: plain data, so it can go to the browser.
@@ -192,8 +195,8 @@ export interface DayStudy {
 export function buildDayStudy(lesson: { videoId: string; title: string; sentences: Sentence[] }, size: number): DayStudy | null {
   const study = buildVideoStudy(lesson.sentences, { itemCount: size, sentenceCount: size });
   const toStudySentence = (index: number): StudySentence => {
-    const { text, translation } = lesson.sentences[index];
-    return translation ? { index, text, translation } : { index, text };
+    const { text, translation, start, end } = lesson.sentences[index];
+    return translation ? { index, text, translation, start, end } : { index, text, start, end };
   };
   // Items are shown as they are written in their sentence, so the quiz can blank them out exactly.
   const items = study.items.flatMap((item) => {

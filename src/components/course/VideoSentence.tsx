@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { Words } from "@/components/TranscriptRow";
@@ -8,8 +7,8 @@ import type { StudySentence } from "@/lib/video-study";
 
 interface VideoSentenceProps {
   sentence: StudySentence;
-  // Opens the video at this sentence.
-  href: string;
+  // Plays this sentence of the video.
+  onHear: () => void;
   // The word or chunk to show in bold.
   highlight?: string;
   // Text starts hidden: hear it first, then check.
@@ -17,8 +16,8 @@ interface VideoSentenceProps {
   onWordClick: (token: string, sentence: string) => void;
 }
 
-// One sentence as it is said in the video: tap a word for its meaning, or open the video right at this moment.
-export function VideoSentence({ sentence, href, highlight, isHiddenFirst = false, onWordClick }: VideoSentenceProps) {
+// One sentence as it is said in the video: tap a word for its meaning, or hear the speaker say it.
+export function VideoSentence({ sentence, onHear, highlight, isHiddenFirst = false, onWordClick }: VideoSentenceProps) {
   const [isShown, setIsShown] = useState(!isHiddenFirst);
   const [isTranslationShown, setIsTranslationShown] = useState(false);
   const at = highlight ? sentence.text.indexOf(highlight) : -1;
@@ -47,10 +46,10 @@ export function VideoSentence({ sentence, href, highlight, isHiddenFirst = false
             </p>
           )}
         </div>
-        <Link href={href} className="btn-3d shrink-0 px-3 py-1.5 text-sm" aria-label="Hear it in the video">
+        <button type="button" onClick={onHear} className="btn-3d shrink-0 px-3 py-1.5 text-sm" aria-label="Hear it in the video">
           <Icon name="play" className="size-4" />
           Hear it
-        </Link>
+        </button>
       </div>
       {isShown && sentence.translation && (
         <div className="mt-2">
