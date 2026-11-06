@@ -23,7 +23,8 @@ const LABELS: Record<BlockKind, string> = {
   phrases: "Hear and repeat the sentences from the video",
   shadow: "Shadow: listen and repeat each sentence",
   speak: "If you like: retell the video out loud",
-  quiz: "Fill the gaps in the video's sentences",
+  guide: "Read the video's parts and its model, and hear each line",
+  quiz: "Take the day test: it finishes the day",
   extra: "If you have energy: bonus video",
   free: "Listen to anything you enjoy",
 };

@@ -3,7 +3,7 @@
 // hand-picked here; later weeks are built from the collection (src/data/course-weeks.ts).
 
 import type { CollectionId } from "./collections";
-import { getRestDayBlocks, type CourseBlock, type CourseDay } from "./course-a2";
+import { DAY_TEST_TITLE, getRestDayBlocks, type CourseBlock, type CourseDay } from "./course-a2";
 
 export const COURSE_B1_ID = "natural-b1-7";
 
@@ -231,8 +231,8 @@ export function getB1Blocks(day: CourseDay, collection: CollectionId): CourseBlo
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
     { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 5 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
     ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, no subtitles: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
     { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 10, isOptional: true },
     ...(extra ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${extra.title}`, minutes: 15, videoId: extra.id, isOptional: true }] : []),

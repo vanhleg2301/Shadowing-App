@@ -11,6 +11,11 @@ const SEGMENT_END_EARLY_S = 0.04;
 
 let apiPromise: Promise<void> | null = null;
 
+// Not in the typed API, but supported by the IFrame player; captions stay on in browsers where it is missing.
+function unloadCaptions(player: YT.Player) {
+  (player as YT.Player & { unloadModule?: (name: string) => void }).unloadModule?.("captions");
+}
+
 function loadYouTubeApi(): Promise<void> {
   if (window.YT?.Player) return Promise.resolve();
   if (!apiPromise) {
@@ -32,7 +37,8 @@ function loadYouTubeApi(): Promise<void> {
 // A null videoId mounts nothing (hosted-audio lessons use useAudioPlayer instead).
 // The YouTube player (about 1 MB of scripts) only loads on the first play, seek or segment; until then
 // the page shows the thumbnail. Calls made before it is ready run once it is.
-export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
+// hideCaptions turns YouTube's own captions off where it can (a listening test would show the answer).
+export function useYouTubePlayer(videoId: string | null, startSeconds = 0, { hideCaptions = false } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
   const [isActivated, setIsActivated] = useState(false);
@@ -64,6 +70,7 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
         playerVars: { playsinline: 1, rel: 0, cc_load_policy: 0, iv_load_policy: 3, start: Math.floor(startRef.current) },
         events: {
           onReady: (event) => {
+            if (hideCaptions) unloadCaptions(event.target);
             isPlayerReadyRef.current = true;
             setIsPlayerReady(true);
             if (rateRef.current !== 1) event.target.setPlaybackRate(rateRef.current);
@@ -71,7 +78,11 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
             pendingRef.current = null;
             pending?.(event.target);
           },
-          onStateChange: (event) => setIsPlaying(event.data === STATE_PLAYING),
+          onStateChange: (event) => {
+            setIsPlaying(event.data === STATE_PLAYING);
+            // Captions a viewer turned on in YouTube come back when playback starts.
+            if (hideCaptions && event.data === STATE_PLAYING) unloadCaptions(event.target);
+          },
         },
       });
     };
@@ -85,7 +96,7 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0) {
       isPlayerReadyRef.current = false;
       container.innerHTML = "";
     };
-  }, [videoId, isActivated]);
+  }, [videoId, isActivated, hideCaptions]);
 
   useEffect(() => {
     if (!isPlaying) return;

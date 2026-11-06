@@ -196,8 +196,19 @@ test("a course day is built from its video's own words and sentences", async ({ 
   await expect(sheet.getByRole("link", { name: /Open the whole lesson/ })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=shadow&s=\d+&from=course-2/);
   await sheet.getByRole("button", { name: "Close" }).click();
 
-  await page.getByRole("button", { name: /^Quiz/ }).click();
-  await expect(page.getByText("Complete the sentence from the video.")).toBeVisible();
+  // The day test can't be ticked by hand: passing it is what finishes the day.
+  await expect(page.getByRole("checkbox", { name: /Day test/ })).toBeDisabled();
+  await page.getByRole("button", { name: /^Day test/ }).click();
+  await expect(page.getByText("Listen. Which sentence did you hear?")).toBeVisible();
+});
+
+test("a video with a guide shows its parts and a model to copy", async ({ page, context, baseURL }) => {
+  // Bob the Canadian, week 1 day 1: "How to Describe Yourself in English".
+  await context.addCookies([{ name: "collection", value: "bob", url: baseURL ?? "http://localhost:3000" }]);
+  await openPage(page, "/course/1");
+  await page.getByRole("button", { name: /^The video on one page/ }).click();
+  await expect(page.getByText("Model: Introduce yourself")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Hear “I'm afraid of heights\.” in the video$/ })).toBeVisible();
 });
 
 test("the course goes on week after week, with review and free days", async ({ page }) => {

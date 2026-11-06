@@ -1,9 +1,10 @@
 // The whole course for a collection: week 1 as hand-picked, then the weeks built from the collection. Progress is
 // stored per week (week 1 under the course's own id, so earlier progress still counts) with the day of that week.
 import type { CollectionId } from "@/data/collections";
-import type { CourseBlock, CourseDay } from "@/data/course-a2";
+import { withGuideBlock, type CourseBlock, type CourseDay } from "@/data/course-a2";
 import { buildLaterWeeks, completeWeekOne, dayInWeek, MIN_LATER_WEEK_VIDEOS, weekOf } from "@/data/course-weeks";
 import { getCourse, isCourseDayComplete, type Course } from "@/data/courses";
+import { VIDEO_GUIDES } from "@/data/video-guides";
 import { getCatalog, getVideoCollection } from "./catalog";
 import type { CourseMode } from "./course-mode";
 import { getCoursesProgress } from "./user-data";
@@ -42,7 +43,9 @@ export function getDay(plan: CoursePlan, day: number): CourseDay | undefined {
 }
 
 export function getDayBlocks(plan: CoursePlan, day: CourseDay): CourseBlock[] {
-  return plan.course.getBlocks(day, plan.collection);
+  const blocks = plan.course.getBlocks(day, plan.collection);
+  const mainId = blocks.find((b) => b.id === "listen-1")?.videoId;
+  return withGuideBlock(blocks, mainId !== undefined && mainId in VIDEO_GUIDES);
 }
 
 // Finished blocks per course day, counted across weeks. null when signed out.

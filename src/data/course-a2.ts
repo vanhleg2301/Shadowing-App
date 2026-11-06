@@ -11,7 +11,7 @@ export function getCourseId(collection: CollectionId): string {
   return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
 }
 
-export type BlockKind = "review" | "words" | "listen" | "readalong" | "phrases" | "shadow" | "speak" | "quiz" | "extra" | "free";
+export type BlockKind = "review" | "words" | "listen" | "readalong" | "guide" | "phrases" | "shadow" | "speak" | "quiz" | "extra" | "free";
 
 export interface CourseBlock {
   id: string;
@@ -362,6 +362,17 @@ export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDa
   return collection === "sponge" || day.day > 7 ? day.videos : (COLLECTION_DAY_VIDEOS[collection]?.[day.day] ?? day.videos);
 }
 
+// Passing it is what finishes a video day; it has the block id "quiz" so earlier progress still counts.
+export const DAY_TEST_TITLE = "Day test: hear, fill the gaps, and the video";
+
+// Days whose main video has a written guide (src/data/video-guides.ts) study it after the second listen.
+export function withGuideBlock(blocks: CourseBlock[], hasGuide: boolean): CourseBlock[] {
+  if (!hasGuide) return blocks;
+  const at = blocks.findIndex((b) => b.id === "readalong-1") + 1;
+  const guide: CourseBlock = { id: "guide", kind: "guide", title: "The video on one page: its parts and a model to copy", minutes: 10 };
+  return [...blocks.slice(0, at), guide, ...blocks.slice(at)];
+}
+
 // The last two days of every week: hear the week's videos again, then listen to anything for pleasure.
 export function getRestDayBlocks(day: CourseDay): CourseBlock[] {
   if (day.kind === "review") {
@@ -394,8 +405,8 @@ export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): 
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
     { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps in the video's sentences", minutes: 5 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
     ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
     { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 10, isOptional: true },
     ...(extra ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${extra.title}`, minutes: 15, videoId: extra.id, isOptional: true }] : []),
@@ -422,7 +433,7 @@ export function getGentleBlocks(day: CourseDay, collection: CollectionId = "spon
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 10 },
     { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "quiz", kind: "quiz", title: "Quiz: fill the gaps", minutes: 5 },
+    { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id, isOptional: true },
     { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} short answers, copy the video first`, minutes: 10, isOptional: true },
     ...(second ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),

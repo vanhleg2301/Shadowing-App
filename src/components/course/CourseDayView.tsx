@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
-import { PhraseQuiz } from "@/components/course/PhraseQuiz";
+import { DayTest } from "@/components/course/DayTest";
+import { VideoGuideSection } from "@/components/course/VideoGuideSection";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { SpeakingPrompt } from "@/components/course/SpeakingPrompt";
 import { VideoSentence } from "@/components/course/VideoSentence";
@@ -15,7 +16,8 @@ import { isCourseDayComplete } from "@/data/courses";
 import { useAuth } from "@/hooks/useAuth";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
-import type { DayStudy, StudySentence } from "@/lib/video-study";
+import { buildDayTest, getPassScore } from "@/lib/day-test";
+import type { DayGuide, DayStudy, StudySentence } from "@/lib/video-study";
 
 interface CourseDayViewProps {
   day: CourseDay;
@@ -25,6 +27,8 @@ interface CourseDayViewProps {
   blocks: CourseBlock[];
   // Words and sentences from the day's main video; null when its transcript isn't stored yet.
   study: DayStudy | null;
+  // The main video's written guide, when there is one.
+  guide: DayGuide | null;
   // Yesterday's main video, for the warm-up.
   previousStudy: DayStudy | null;
   initialDone: string[];
@@ -41,6 +45,7 @@ const KIND_ICON: Record<BlockKind, IconName> = {
   words: "book",
   listen: "headphones",
   readalong: "volume",
+  guide: "news",
   phrases: "chat",
   shadow: "mic",
   speak: "record",
@@ -65,8 +70,8 @@ function blockHref(block: CourseBlock, day: number, playbackRate: number | undef
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-type SectionId = "review" | "words" | "phrases" | "speak" | "quiz";
-const SECTION_KINDS: readonly string[] = ["review", "words", "phrases", "speak", "quiz"];
+type SectionId = "review" | "words" | "guide" | "phrases" | "speak" | "quiz";
+const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "speak", "quiz"];
 
 interface DaySectionProps {
   id: SectionId;
@@ -102,12 +107,14 @@ interface Prompt {
   sampleAnswer?: string;
 }
 
-// Speaking starts from the video: retell it, then say something true about yourself with its own chunks,
-// copying the line from the video first.
-function getPrompts(study: DayStudy | null, day: CourseDay, count: number): Prompt[] {
+// Speaking starts from the video: say the guide's model with your own details (or retell the video), then say
+// something true about yourself with its own chunks, copying the line from the video first.
+function getPrompts(study: DayStudy | null, guide: DayGuide | null, day: CourseDay, count: number): Prompt[] {
   if (!study) return day.speakingPrompts.slice(0, count).map((text) => ({ text }));
   return [
-    { text: `Retell “${study.title}” in your own words. What is it about? Say three things you remember.` },
+    guide
+      ? { text: `${guide.model.title}: say the model with your own details.`, sampleAnswer: guide.model.text }
+      : { text: `Retell “${study.title}” in your own words. What is it about? Say three things you remember.` },
     ...study.items.slice(0, count - 1).map((item) => ({ text: `Say something about your own life with “${item.text}”.`, sampleAnswer: item.sentence.text })),
   ];
 }
@@ -118,6 +125,7 @@ export function CourseDayView({
   progressDay,
   blocks,
   study,
+  guide,
   previousStudy,
   initialDone,
   isSignedIn,
@@ -131,13 +139,15 @@ export function CourseDayView({
   const phrases: CoursePhrase[] = study
     ? study.items.map((item) => ({ text: item.text, meaning: "", example: item.sentence.text }))
     : day.phrases;
-  const prompts = getPrompts(study, day, promptCount);
+  const prompts = getPrompts(study, guide, day, promptCount);
+  const testQuestions = buildDayTest(study, phrases, guide?.questions ?? [], day.day * 7);
   const hasReviewSection = previousStudy !== null;
   // Only the activities this day has: review and free days are all videos, and words need something to show.
   const sections = SECTION_KINDS.filter((kind) => {
     if (!blocks.some((b) => b.kind === kind)) return false;
     if (kind === "review") return hasReviewSection;
-    return kind === "words" || kind === "quiz" ? phrases.length > 0 : true;
+    if (kind === "guide") return guide !== null;
+    return kind === "words" ? phrases.length > 0 : kind === "quiz" ? testQuestions.length > 0 : true;
   });
   const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
   const { signInWithGoogle } = useAuth();
@@ -250,7 +260,9 @@ export function CourseDayView({
                   role="checkbox"
                   aria-checked={isDone}
                   aria-label={`Mark "${block.title}" as done`}
-                  disabled={isPending}
+                  // The day test can only be ticked by passing it.
+                  disabled={isPending || (block.kind === "quiz" && sections.includes("quiz"))}
+                  title={block.kind === "quiz" ? "Pass the day test to tick this" : undefined}
                   onClick={() => toggleBlock(block.id, !isDone)}
                   className={`relative grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors after:absolute after:-inset-2 ${
                     isDone ? "border-brand bg-brand text-on-brand" : "border-line bg-surface"
@@ -396,6 +408,20 @@ export function CourseDayView({
         </DaySection>
       )}
 
+      {guide && sections.includes("guide") && (
+        <DaySection
+          id="guide"
+          title="The video on one page"
+          hint="After the second listen: see how the video is built, hear its key lines, and get a model to copy."
+          isDone={done.has("guide")}
+          isOpen={openSection === "guide"}
+          onToggle={() => toggleSection("guide")}
+        >
+          <VideoGuideSection guide={guide} onHear={(sentence) => study && setHeard({ videoId: study.videoId, sentence })} />
+          <SectionDoneButton isDone={done.has("guide")} onDone={() => toggleBlock("guide", true)} label="Done" />
+        </DaySection>
+      )}
+
       {study && sections.includes("phrases") && (
         <DaySection
           id="phrases"
@@ -422,13 +448,13 @@ export function CourseDayView({
       {sections.includes("quiz") && (
         <DaySection
           id="quiz"
-          title="Quiz"
-          hint={`${Math.min(phrases.length, 10)} quick questions${study ? " on the video's sentences" : " on today's phrases"}. Get all but two right to pass.`}
+          title="Day test"
+          hint={`${testQuestions.length} questions from today's video. Get ${getPassScore(testQuestions.length)} right to finish the day.`}
           isDone={done.has("quiz")}
           isOpen={openSection === "quiz"}
           onToggle={() => toggleSection("quiz")}
         >
-          <PhraseQuiz phrases={phrases} seed={day.day * 7} onPass={() => markDone("quiz")} />
+          <DayTest questions={testQuestions} videoId={study?.videoId ?? null} onPass={() => markDone("quiz")} />
         </DaySection>
       )}
 

@@ -207,3 +207,41 @@ export function buildDayStudy(lesson: { videoId: string; title: string; sentence
   if (items.length < 3) return null;
   return { videoId: lesson.videoId, title: lesson.title, items, sentences: study.sentences.map(toStudySentence) };
 }
+
+// A written guide with its lines found in the transcript, so each can be played.
+export interface DayGuide {
+  overview: string;
+  sections: { title: string; lines: StudySentence[] }[];
+  model: { title: string; text: string };
+  questions: { question: string; options: string[] }[];
+}
+
+const normalize = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+export function findGuideLine(sentences: Sentence[], line: string): StudySentence | null {
+  const target = normalize(line);
+  const index = sentences.findIndex((s) => {
+    const text = normalize(s.text);
+    return text === target || text.includes(target) || (text.length > 20 && target.includes(text));
+  });
+  if (index < 0) return null;
+  const { start, end, translation } = sentences[index];
+  // The guide's own wording is shown, as a sentence; the timing comes from the transcript line that says it.
+  const text = line.charAt(0).toUpperCase() + line.slice(1);
+  return translation ? { index, text, translation, start, end } : { index, text, start, end };
+}
+
+export function resolveGuide(
+  guide: { overview: string; sections: { title: string; lines: string[] }[]; model: DayGuide["model"]; questions: DayGuide["questions"] },
+  sentences: Sentence[],
+): DayGuide {
+  return {
+    overview: guide.overview,
+    sections: guide.sections.map((section) => ({
+      title: section.title,
+      lines: section.lines.flatMap((line) => findGuideLine(sentences, line) ?? []),
+    })),
+    model: guide.model,
+    questions: guide.questions,
+  };
+}

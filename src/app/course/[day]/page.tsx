@@ -15,17 +15,20 @@ import { getCoursePlan, getDay, getDayBlocks, getProgressDay, getProgressId } fr
 import { buildDaySchedule } from "@/lib/course-schedule";
 import { getStoredLesson } from "@/lib/lessons";
 import { getCourseProgress } from "@/lib/user-data";
-import { buildDayStudy, type DayStudy } from "@/lib/video-study";
+import { VIDEO_GUIDES } from "@/data/video-guides";
+import { buildDayStudy, resolveGuide, type DayGuide, type DayStudy } from "@/lib/video-study";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const FULL_STUDY_SIZE = 10;
 
-// The day's words and sentences come from its main video, the one heard first.
-async function getMainVideoStudy(blocks: CourseBlock[], size: number): Promise<DayStudy | null> {
+// The day's words and sentences come from its main video, the one heard first, and so does its guide.
+async function getMainVideoStudy(blocks: CourseBlock[], size: number): Promise<{ study: DayStudy | null; guide: DayGuide | null }> {
   const videoId = blocks.find((b) => b.id === "listen-1")?.videoId;
-  if (!videoId) return null;
+  if (!videoId) return { study: null, guide: null };
   const lesson = await getStoredLesson(videoId).catch(() => null);
-  return lesson ? buildDayStudy(lesson, size) : null;
+  if (!lesson) return { study: null, guide: null };
+  const guide = VIDEO_GUIDES[videoId];
+  return { study: buildDayStudy(lesson, size), guide: guide ? resolveGuide(guide, lesson.sentences) : null };
 }
 
 // Week 1 is built ahead; later days render on first visit.
@@ -62,10 +65,12 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
   // The warm-up replays the last video day, even across a review or free day.
   const previousDay = plan.days.filter((d) => d.day < day.day && (d.kind ?? "study") === "study").at(-1);
   const isStudyDay = (day.kind ?? "study") === "study";
-  const [study, previousStudy] = await Promise.all([
+  const [today, previous] = await Promise.all([
     isStudyDay ? getMainVideoStudy(blocks, studySize) : null,
     isStudyDay && previousDay ? getMainVideoStudy(getDayBlocks(plan, previousDay), studySize) : null,
   ]);
+  const study = today?.study ?? null;
+  const previousStudy = previous?.study ?? null;
   const week = weekOf(day.day);
 
   return (
@@ -90,6 +95,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           courseId={courseId}
           blocks={blocks}
           study={study}
+          guide={today?.guide ?? null}
           previousStudy={previousStudy}
           progressDay={getProgressDay(day.day)}
           initialDone={progress?.[getProgressDay(day.day)] ?? []}
