@@ -139,4 +139,109 @@ export const VIDEO_GUIDES: Record<string, VideoGuide> = {
       { question: "What is true about 'toward' and 'towards'?", options: ["They mean the same thing", "They are opposites", "Only one is correct", "'Towards' means far from"] },
     ],
   },
+  // English Sponge, week 1
+  "4SLlF4clbYI": {
+    overview:
+      "A slow, clear talk about family: brothers and sisters older or younger than you, parents and children, growing up from child to teenager to adult, living close to or far from your family, and questions you can ask about someone's family.",
+    sections: [
+      { title: "Brothers and sisters", lines: ["Lots of people have brothers and sisters.", "Some people have a sister who is older than them.", "We call this an older sister.", "And we call this a younger sister."] },
+      { title: "Parents and children", lines: ["Everybody has a mother and a father.", "And if somebody is a parent, they might have a son or a daughter.", "But when children grow up, they can take care of themselves."] },
+      { title: "Growing up", lines: ["When a child becomes 13 years old, they now become a teenager.", "In some countries, a teenager becomes an adult when they are 18 years old."] },
+      { title: "Close to or far from your family", lines: ["Some people live close to their family, but some people live far away from their family.", "Christmas is a good chance for grandparents to see their grandchildren."] },
+      { title: "Questions about family", lines: ["How many people are in your family?", "Do you have a son or a daughter?", "When do you spend time with your family?"] },
+    ],
+    model: {
+      title: "Talk about your family",
+      text: "There are [four] people in my family: my mother, my father, my [older brother] and me. My brother is [two years] older than me. My parents live [close to me]. Lots of people have busy lives, but I spend time with my family at [the weekend].",
+    },
+    questions: [
+      { question: "What do we call a sister who is older than you?", options: ["An older sister", "A younger sister", "A grandmother", "A daughter"] },
+      { question: "At what age does a child become a teenager?", options: ["13", "10", "18", "21"] },
+      { question: "Why is Christmas good for many families?", options: ["They can stop, relax and spend time together", "They start new jobs", "They move to another country", "Children go back to school"] },
+      { question: "Where does the family of many people live?", options: ["In another country", "In the same house", "Next door", "At school"] },
+    ],
+  },
+  BTo8wSy_QCI: {
+    overview:
+      "He tells you everything he did yesterday, from morning to night, in the past simple: waking up, breakfast, driving to work, cooking dinner, making a video, a shower, the gym and going to bed.",
+    sections: [
+      { title: "The morning", lines: ["Yesterday, I woke up at around 8:00 a.m.", "After I woke up, I went to the bathroom.", "For breakfast, I ate some cereal and some toast."] },
+      { title: "Going to work", lines: ["I drove to work.", "It took me around 25 minutes to drive to work.", "At 5:00 p.m., I left work."] },
+      { title: "The evening", lines: ["after I got home, I cooked dinner.", "I cooked a steak pie.", "It was delicious."] },
+      { title: "The night", lines: ["I was in the shower for around 10 minutes.", "I went to the gym to exercise", "I went to bed at around 11:00 p.m."] },
+    ],
+    model: {
+      title: "Talk about yesterday",
+      text: "Yesterday, I woke up at around [7:00 a.m.]. After I woke up, I [had a shower]. For breakfast, I ate [some bread]. Then, I [took the bus] to [work]. It took me around [30 minutes]. At [5:00 p.m.], I left work. After I got home, I cooked [dinner]. It was delicious. I went to bed at around [11:00 p.m.].",
+    },
+    questions: [
+      { question: "What time did he wake up?", options: ["At around 8:00 a.m.", "At around 6:00 a.m.", "At midnight", "At 10:00 a.m."] },
+      { question: "How did he get to work?", options: ["He drove his car", "He took the bus", "He walked", "He rode a bike"] },
+      { question: "What did he cook for dinner?", options: ["A steak pie", "Pasta", "Chicken soup", "Pizza"] },
+      { question: "Where did he go after his shower?", options: ["To the gym", "To bed", "To work", "To the shop"] },
+    ],
+  },
+  oiNjevJGadM: {
+    overview:
+      "A story told with pictures: a man and his daughter go to a coffee shop. They order, the waiter brings the drinks, they drink them, the man pays the bill and they go home.",
+    sections: [
+      { title: "Going to the coffee shop", lines: ["he is holding her hand", "they're going to the coffee shop to get a drink"] },
+      { title: "Ordering", lines: ["the man orders a cup of coffee", "the waiter writes his order down", "She wants a bubble tea"] },
+      { title: "The drinks arrive", lines: ["the waiter carries the drinks to the table", "he is carrying the two drinks on the tray", "She is drinking her bubble tea with the straw"] },
+      { title: "Coffee and the bill", lines: ["he is putting some sugar into his coffee", "the man uses the spoon to stir the coffee", "he asks the waiter for the bill", "they leave the coffee shop"] },
+    ],
+    model: {
+      title: "Tell the story of a cafe visit",
+      text: "[The man] and [his daughter] go to the coffee shop to get a drink. [He] orders a cup of [coffee], and [she] wants a [bubble tea]. The waiter writes the order down and carries the drinks to the table. [He] puts some sugar into [his coffee] and stirs it. Then [he] asks the waiter for the bill, and they leave the coffee shop.",
+    },
+    questions: [
+      { question: "What does the man order?", options: ["A cup of coffee", "A bubble tea", "A glass of water", "Orange juice"] },
+      { question: "What does the daughter drink?", options: ["Bubble tea", "Coffee", "Milk", "Hot chocolate"] },
+      { question: "How does the waiter carry the drinks?", options: ["On a tray", "In his hands", "In a bag", "On a cart"] },
+      { question: "What does the man put into his coffee?", options: ["Sugar", "Milk", "Ice", "Honey"] },
+    ],
+  },
+  yfoMWzJjGGg: {
+    overview:
+      "Justine goes grocery shopping with a list for tacos. She finds each thing in the produce section and the rest of the store, compares prices, checks her list, pays at the till and reads her receipt.",
+    sections: [
+      { title: "The shopping list", lines: ["I have a list of the things I need to buy.", "I need to buy limes.", "Can you guess what I'm making?", "I'm making tacos."] },
+      { title: "In the produce section", lines: ["The produce section is where all of the fruits and vegetables are.", "So, I'm going to buy a bunch of cilantro.", "I want a small cabbage.", "I want a big red onion."] },
+      { title: "Comparing prices", lines: ["But they cost $1.49 each.", "So, this bag is cheaper than buying limes by themselves.", "In Canada, it's really expensive to buy oranges."] },
+      { title: "Checking the list and paying", lines: ["Now, I need to check my list.", "Did I get everything?", "Now we're ready to go to the till and we'll buy our groceries.", "So, in total, my groceries to make my tacos cost $36.93."] },
+    ],
+    model: {
+      title: "Talk about your shopping trip",
+      text: "Today I'm going grocery shopping. I have a list of the things I need to buy. I need to buy [eggs], [rice] and [some apples]. Can you guess what I'm making? I'm making [fried rice]. In the produce section, I want a [big onion]. The [loose apples] cost [$1] each, so the bag is cheaper. Now, I need to check my list. Did I get everything? Now I'm ready to go to the till.",
+    },
+    questions: [
+      { question: "What is Justine making?", options: ["Tacos", "Pizza", "Soup", "A salad"] },
+      { question: "What is the produce section?", options: ["Where the fruits and vegetables are", "Where you pay", "Where the bread is", "Where the drinks are"] },
+      { question: "Why does she buy the bag of limes?", options: ["It's cheaper than buying limes one by one", "The loose limes are bad", "She needs twenty limes", "There are no loose limes"] },
+      { question: "Why does she buy orange juice instead of oranges?", options: ["Oranges are expensive in Canada", "She drinks it every morning", "Her friend asked for it", "The store has no oranges"] },
+      { question: "Which food is hard to find in Canada?", options: ["Jicama", "Cabbage", "Onions", "Cilantro"] },
+    ],
+  },
+  SefOJ2iEcUM: {
+    overview:
+      "Courtney plays a directions game on a map of a town: from the stadium to the library, the fast food restaurant, the pharmacy, the shop and the police station, going straight, turning left and right at corners and intersections.",
+    sections: [
+      { title: "Where are we going?", lines: ["We are at the stadium.", "We need to go to the library.", "Where is the library?"] },
+      { title: "Going straight", lines: ["We go straight.", "We follow this road."] },
+      { title: "Turning at a corner", lines: ["At this corner, we need to turn right.", "Do we need to turn left or do we need to turn right?", "We need to keep going straight to get to the fast food restaurant."] },
+      { title: "Next to", lines: ["The pharmacy is next to the fast food restaurant.", "So, we just need to go next door."] },
+      { title: "Roads and intersections", lines: ["When there's roads that cross, it's called an intersection.", "We're going to turn right on Park Avenue and we will continue along Park Avenue."] },
+    ],
+    model: {
+      title: "Give directions",
+      text: "We are at the [stadium] and we need to go to the [library]. We go straight and follow this road. At this corner, we need to turn [right]. At the next intersection, turn [left] on [Main Street]. Keep going straight. The [library] is next to the [bank].",
+    },
+    questions: [
+      { question: "Where do they start?", options: ["At the stadium", "At the library", "At the zoo", "At the bank"] },
+      { question: "How do they get from the stadium to the library?", options: ["They go straight", "They turn left twice", "They take a bus", "They turn right"] },
+      { question: "Where is the pharmacy?", options: ["Next to the fast food restaurant", "Next to the library", "Behind the zoo", "On Station Road"] },
+      { question: "What is an intersection?", options: ["A place where roads cross", "A big shop", "A bus stop", "The end of a road"] },
+      { question: "Which building has an envelope on the front?", options: ["The post office", "The library", "The police station", "The shop"] },
+    ],
+  },
 };
