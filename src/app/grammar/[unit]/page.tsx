@@ -4,8 +4,10 @@ import { AppShell } from "@/components/AppShell";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { GrammarUnitView } from "@/components/grammar/GrammarUnitView";
 import { ListSkeleton } from "@/components/Skeleton";
-import { GRAMMAR_COURSE_ID, GRAMMAR_UNITS, getGrammarUnit } from "@/data/grammar";
+import { GRAMMAR_COURSE_ID, GRAMMAR_UNITS, getGrammarNarration, getGrammarNarrationId, getGrammarUnit } from "@/data/grammar";
+import { splitSentences } from "@/data/stories";
 import { getGrammarExamples } from "@/lib/grammar-examples";
+import { getNarration } from "@/lib/story-audio";
 import { getCourseProgress } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -29,10 +31,22 @@ export default function GrammarUnitPage({ params }: PageProps<"/grammar/[unit]">
 async function UnitContent({ slug }: { slug: string }) {
   const unit = getGrammarUnit(slug);
   if (!unit) notFound();
-  const [examples, progress] = await Promise.all([
+  const narration = getGrammarNarration(unit);
+  const [examples, progress, audio] = await Promise.all([
     getGrammarExamples(unit.videoPhrases).catch(() => []),
     getCourseProgress(GRAMMAR_COURSE_ID).catch(() => null),
+    getNarration(getGrammarNarrationId(unit), narration.map((line) => line.text)).catch(() => null),
   ]);
+  // Where each narrated line (the story, then the lines to shadow) starts and ends in the recording.
+  let sentence = 0;
+  const lineTimes = audio
+    ? narration.map((line) => {
+        const count = splitSentences(line.text).length;
+        const times = { start: audio.sentences[sentence].start, end: audio.sentences[sentence + count - 1].end };
+        sentence += count;
+        return times;
+      })
+    : null;
   const next = GRAMMAR_UNITS.find((u) => u.id === unit.id + 1);
 
   return (
@@ -49,6 +63,7 @@ async function UnitContent({ slug }: { slug: string }) {
         <GrammarUnitView
           unit={unit}
           examples={examples}
+          narration={audio && lineTimes ? { url: audio.url, lineTimes } : null}
           isSignedIn={progress !== null}
           isPassed={progress?.[unit.id]?.includes("check") ?? false}
           nextHref={next ? `/grammar/${next.slug}` : null}

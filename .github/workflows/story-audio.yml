@@ -1,4 +1,4 @@
-# Narrates the daily stories with Kokoro (scripts/story-audio/generate_audio.py), by hand from the Actions tab.
+# Narrates the daily stories and grammar units with Kokoro (scripts/story-audio/generate_audio.py), by hand from the Actions tab.
 # Needs migration 024 and repository secrets NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
 name: Generate story audio
 
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: "Story ids (comma-separated), e.g. story-00017,story-00049. Empty = all"
+        description: "Story ids (comma-separated), e.g. story-00017,grammar-past-simple. Empty = all"
         required: false
         default: ""
       limit:

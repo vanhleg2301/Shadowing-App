@@ -290,6 +290,24 @@ export const GRAMMAR_UNITS: GrammarUnit[] = [
   },
 ];
 
+// What the narration reads, line by line: the story (a dialogue's "Name:" becomes its speaker, so each person
+// gets a voice), then the lines to shadow. scripts/story-audio narrates it with the daily stories.
+export interface NarrationLine {
+  speaker: string | null;
+  text: string;
+}
+
+export const getGrammarNarrationId = (unit: GrammarUnit) => `grammar-${unit.slug}`;
+
+export function splitSpeaker(line: string): NarrationLine {
+  const match = line.match(/^([A-Z][A-Za-z]+): (.+)$/);
+  return match ? { speaker: match[1], text: match[2] } : { speaker: null, text: line };
+}
+
+export function getGrammarNarration(unit: GrammarUnit): NarrationLine[] {
+  return [...unit.story.lines.map(splitSpeaker), ...unit.speak.shadow.map((text) => ({ speaker: null, text }))];
+}
+
 export function getGrammarUnit(slug: string): GrammarUnit | undefined {
   return GRAMMAR_UNITS.find((unit) => unit.slug === slug);
 }

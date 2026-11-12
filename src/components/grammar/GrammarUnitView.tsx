@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
@@ -16,6 +16,8 @@ import type { StudySentence } from "@/lib/video-study";
 interface GrammarUnitViewProps {
   unit: GrammarUnit;
   examples: GrammarExample[];
+  // The recorded voice for the story and then the lines to shadow; null reads them in the browser's voice.
+  narration: { url: string; lineTimes: { start: number; end: number }[] } | null;
   isSignedIn: boolean;
   isPassed: boolean;
   nextHref: string | null;
@@ -57,9 +59,42 @@ function Step({ number, title, hint, children }: { number: number; title: string
 
 // A grammar unit, in the order comprehensible input asks for: understand a story, notice the pattern, hear it in
 // real videos, check it is understood, then say it.
-export function GrammarUnitView({ unit, examples, isSignedIn, isPassed, nextHref }: GrammarUnitViewProps) {
+export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPassed, nextHref }: GrammarUnitViewProps) {
   const [isPatternShown, setIsPatternShown] = useState(false);
   const [isReading, setIsReading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const stopAtRef = useRef<number | null>(null);
+  const [time, setTime] = useState(-1);
+  const storyCount = unit.story.lines.length;
+
+  // Stops exactly where a line (or the story) ends, more precisely than the timeupdate event can.
+  useEffect(() => {
+    if (!isReading || !narration) return;
+    const id = setInterval(() => {
+      const el = audioRef.current;
+      if (!el) return;
+      setTime(el.currentTime);
+      if (stopAtRef.current !== null && el.currentTime >= stopAtRef.current) {
+        el.pause();
+        stopAtRef.current = null;
+      }
+    }, 50);
+    return () => clearInterval(id);
+  }, [isReading, narration]);
+
+  const playLines = (first: number, last: number) => {
+    const el = audioRef.current;
+    if (!narration || !el) return false;
+    el.currentTime = narration.lineTimes[first].start;
+    stopAtRef.current = narration.lineTimes[last].end;
+    void el.play();
+    return true;
+  };
+
+  const playLine = (index: number, text: string) => {
+    if (!playLines(index, index)) speak(text, "us", STORY_RATE);
+  };
+  const activeLine = narration && isReading ? narration.lineTimes.findIndex((t) => time >= t.start && time <= t.end + 0.3) : -1;
   const [heard, setHeard] = useState<{ videoId: string; sentence: StudySentence } | null>(null);
   const [hasPassed, setHasPassed] = useState(isPassed);
 
@@ -71,10 +106,12 @@ export function GrammarUnitView({ unit, examples, isSignedIn, isPassed, nextHref
 
   const readStory = () => {
     if (isReading) {
+      audioRef.current?.pause();
       window.speechSynthesis?.cancel();
       setIsReading(false);
       return;
     }
+    if (playLines(0, storyCount - 1)) return;
     setIsReading(true);
     speak(unit.story.lines.join(" "), "us", STORY_RATE, () => setIsReading(false));
   };
@@ -86,6 +123,16 @@ export function GrammarUnitView({ unit, examples, isSignedIn, isPassed, nextHref
 
   return (
     <div className="space-y-4 pb-20 md:pb-0">
+      {narration && (
+        <audio
+          ref={audioRef}
+          src={narration.url}
+          preload="metadata"
+          onPlay={() => setIsReading(true)}
+          onPause={() => setIsReading(false)}
+          onEnded={() => setIsReading(false)}
+        />
+      )}
       <Step number={1} title={unit.story.title} hint="Listen and read first. Just follow the story; don't think about grammar yet.">
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={readStory} className="btn-3d btn-brand px-4 py-2 text-sm">
@@ -97,11 +144,11 @@ export function GrammarUnitView({ unit, examples, isSignedIn, isPassed, nextHref
           </button>
         </div>
         <ol lang="en" className="mt-4 space-y-1.5">
-          {unit.story.lines.map((line) => (
-            <li key={line} className="flex items-start gap-2">
+          {unit.story.lines.map((line, i) => (
+            <li key={line} className={`flex items-start gap-2 rounded-xl transition-colors ${activeLine === i ? "bg-brand-soft" : ""}`}>
               <button
                 type="button"
-                onClick={() => speak(line, "us", STORY_RATE)}
+                onClick={() => playLine(i, line)}
                 aria-label={`Listen: ${line}`}
                 className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
               >
@@ -161,13 +208,13 @@ export function GrammarUnitView({ unit, examples, isSignedIn, isPassed, nextHref
 
       <Step number={examples.length > 0 ? 5 : 4} title="Say it" hint="Shadow the lines, then answer about yourself. Recordings stay on your device.">
         <ul lang="en" className="space-y-3">
-          {unit.speak.shadow.map((line) => (
+          {unit.speak.shadow.map((line, i) => (
             <li key={line} className="rounded-2xl border border-line bg-cream p-3">
               <div className="flex items-start gap-2">
                 <p className="flex-1 font-semibold leading-snug text-ink">{line}</p>
                 <button
                   type="button"
-                  onClick={() => speak(line, "us", STORY_RATE)}
+                  onClick={() => playLine(storyCount + i, line)}
                   aria-label={`Listen: ${line}`}
                   className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
                 >
