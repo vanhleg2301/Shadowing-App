@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Daily stories", shortLabel: "Stories", icon: "chat", href: "/stories" },
   { label: "News", shortLabel: "News", icon: "news", href: "/news" },
   { label: "Course", shortLabel: "Course", icon: "course", href: "/course" },
+  { label: "Grammar & Words", shortLabel: "Grammar", icon: "book", href: "/grammar", isInMoreMenu: true },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review", isInMoreMenu: true },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary", isInMoreMenu: true },
   { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isInMoreMenu: true },
@@ -35,12 +36,16 @@ const toSidebarItems = (hrefs: string[]) =>
   hrefs.flatMap((href) => NAV_ITEMS.filter((item) => item.href === href).map(({ label, icon }) => ({ label, icon, href })));
 
 const SIDEBAR_GROUPS: SidebarGroup[] = [
-  { label: "Learn", items: toSidebarItems(["/", "/stories", "/news", "/course"]) },
+  { label: "Learn", items: toSidebarItems(["/", "/stories", "/news", "/course", "/grammar"]) },
   { label: "Practice", items: toSidebarItems(["/review", "/vocabulary", "/search"]) },
   { label: "My library", items: toSidebarItems(["/favorites", "/offline"]) },
 ];
 
-const MORE_GROUPS = SIDEBAR_GROUPS.filter((group) => group.label !== "Learn");
+// The More sheet on phones holds what the tab bar has no room for, in the sidebar's groups.
+const isInMoreMenu = (href: string) => NAV_ITEMS.some((item) => item.href === href && item.isInMoreMenu);
+const MORE_GROUPS = SIDEBAR_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => isInMoreMenu(item.href)) })).filter(
+  (group) => group.items.length > 0,
+);
 
 interface AppShellProps {
   active: string;

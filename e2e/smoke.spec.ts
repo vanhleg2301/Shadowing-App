@@ -56,7 +56,7 @@ test("the phone's More tab reaches every sidebar page", async ({ page, isMobile 
   for (const name of ["Home", "Stories", "News", "Course"]) await expect(tabs.getByRole("link", { name, exact: true })).toBeVisible();
   await tabs.getByRole("button", { name: "More" }).click();
   const sheet = page.getByRole("dialog", { name: "More" });
-  for (const name of ["Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "About", "Privacy"]) {
+  for (const name of ["Grammar & Words", "Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "About", "Privacy"]) {
     await expect(sheet.getByRole("link", { name })).toBeVisible();
   }
   await sheet.getByRole("link", { name: "Favorites" }).click();
@@ -224,6 +224,24 @@ test("the course goes on week after week, with review and free days", async ({ p
   await expect(page.getByText("Week 2 · Day 1 of 7")).toBeVisible();
   await page.getByRole("button", { name: /^Words from the video/ }).click();
   await expect(page.locator("#words mark").first()).toBeVisible();
+});
+
+test("a grammar unit tells a story, shows the pattern in real videos and checks it", async ({ page }) => {
+  await openPage(page, "/grammar");
+  await page.getByRole("link", { name: /Telling a story: the past simple/ }).click();
+  await expect(page).toHaveURL(/\/grammar\/past-simple$/);
+  await page.getByRole("button", { name: "Show the pattern" }).click();
+  await expect(page.locator("mark", { hasText: "woke up" }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Hear it in real videos/ })).toBeVisible();
+  await page.getByRole("button", { name: "Hear it in the video" }).first().click();
+  await expect(page.getByRole("dialog", { name: "From the video" })).toBeVisible();
+  await page.getByRole("dialog", { name: "From the video" }).getByRole("button", { name: "Close" }).click();
+  await expect(page.getByText("Why was the writer late?")).toBeVisible();
+});
+
+test("a course day can be marked done to move on", async ({ page }) => {
+  await openPage(page, "/course/1");
+  await expect(page.getByRole("button", { name: "Mark day as done" })).toBeVisible();
 });
 
 test("sidebar modules collapse and stay collapsed", async ({ page, isMobile }) => {

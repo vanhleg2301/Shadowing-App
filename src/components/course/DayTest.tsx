@@ -14,6 +14,9 @@ interface DayTestProps {
   // The day's main video, for the listening questions.
   videoId: string | null;
   onPass: () => void;
+  passMessage?: string;
+  // The label above questions about the content.
+  meaningLabel?: string;
 }
 
 const HINTS: Record<TestQuestion["kind"], string> = {
@@ -22,7 +25,7 @@ const HINTS: Record<TestQuestion["kind"], string> = {
   meaning: "About the video",
 };
 
-export function DayTest({ questions, videoId, onPass }: DayTestProps) {
+export function DayTest({ questions, videoId, onPass, passMessage = "Passed! This day is done.", meaningLabel = "About the video" }: DayTestProps) {
   const media = videoId ? getHostedMedia(videoId) : null;
   // Both hooks are always called; only the one matching the video's media mounts a player.
   const youTube = useYouTubePlayer(media || !videoId ? null : videoId, 0, { hideCaptions: true });
@@ -86,7 +89,7 @@ export function DayTest({ questions, videoId, onPass }: DayTestProps) {
             {score}/{questions.length}
           </p>
           <p className={`mt-1 font-semibold ${score >= passScore ? "text-brand" : "text-muted"}`}>
-            {score >= passScore ? "Passed! This day is done." : `You need ${passScore} to pass. Hear the video and its sentences again, then retry.`}
+            {score >= passScore ? passMessage : `You need ${passScore} to pass. Go back over it once more, then retry.`}
           </p>
           <button type="button" onClick={handleRestart} className="btn-3d mt-4 px-4 py-2 text-sm">
             <Icon name="repeat" className="size-4" />
@@ -104,7 +107,7 @@ export function DayTest({ questions, videoId, onPass }: DayTestProps) {
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
             <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${(index / questions.length) * 100}%` }} />
           </div>
-          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">{question.kind === "gap" ? question.hint : HINTS[question.kind]}</p>
+          <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">{question.kind === "gap" ? question.hint : question.kind === "meaning" ? meaningLabel : HINTS[question.kind]}</p>
           {question.kind === "listen" ? (
             <button type="button" onClick={() => playQuestion(question)} className="btn-3d btn-brand mt-2 px-4 py-2 text-sm">
               <Icon name={player.isPlaying ? "pause" : "play"} className="size-4" />
