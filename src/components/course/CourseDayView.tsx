@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
-import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
+import { savePhrasesToReview, setCourseBlockDone, setCourseBlocksDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { VideoGuideSection } from "@/components/course/VideoGuideSection";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
@@ -12,7 +12,7 @@ import { StudyTimer } from "@/components/StudyTimer";
 import { Icon, type IconName } from "@/components/Icon";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { type BlockKind, type CourseBlock, type CourseDay, type CoursePhrase } from "@/data/course-a2";
-import { isCourseDayComplete } from "@/data/courses";
+import { isCourseDayComplete, TEST_SKIPPED_BLOCK } from "@/data/courses";
 import { useAuth } from "@/hooks/useAuth";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
@@ -199,6 +199,23 @@ export function CourseDayView({
     });
   };
 
+  // Moves on without finishing every step; a day whose test wasn't passed is remembered as such.
+  const handleMarkDayDone = () => {
+    if (!isSignedIn) {
+      signInWithGoogle();
+      return;
+    }
+    const missing = required.filter((b) => !done.has(b.id)).map((b) => b.id);
+    if (missing.includes("quiz")) missing.push(TEST_SKIPPED_BLOCK);
+    if (missing.length === 0) return;
+    const before = done;
+    setDone(new Set([...done, ...missing]));
+    startTransition(async () => {
+      const result = await setCourseBlocksDone({ courseId, day: progressDay, blockIds: missing });
+      if (!result.ok) setDone(before);
+    });
+  };
+
   const handleSavePhrases = () => {
     if (!isSignedIn) {
       signInWithGoogle();
@@ -296,6 +313,14 @@ export function CourseDayView({
             );
           })}
         </ol>
+        {!isDayComplete && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="min-w-0 flex-1 basis-48 text-xs text-muted">Short on time? You can move on now and come back to the steps later.</p>
+            <button type="button" onClick={handleMarkDayDone} disabled={isPending} className="btn-3d shrink-0 px-3 py-1.5 text-sm">
+              Mark day as done
+            </button>
+          </div>
+        )}
         {!isSignedIn && (
           <p className="mt-3 text-sm text-muted">
             <button type="button" onClick={signInWithGoogle} className="font-semibold text-brand">

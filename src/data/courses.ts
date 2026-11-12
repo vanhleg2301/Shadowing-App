@@ -44,6 +44,9 @@ export interface Course {
 // then still count as finished, so nobody is locked out of the next day.
 const EARLIER_CORE_BLOCKS = ["listen-1", "phrases", "shadow-1", "speak", "quiz"];
 
+// Stored with a day finished by "Mark day as done" before its test was passed, so the course can show it.
+export const TEST_SKIPPED_BLOCK = "test-skipped";
+
 export function isCourseDayComplete(blocks: CourseBlock[], finished: ReadonlySet<string>): boolean {
   return blocks.every((b) => b.isOptional || finished.has(b.id)) || EARLIER_CORE_BLOCKS.every((id) => finished.has(id));
 }

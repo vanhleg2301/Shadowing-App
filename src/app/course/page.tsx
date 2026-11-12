@@ -6,7 +6,7 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import { CourseGuide } from "@/components/course/CourseGuide";
 import { CoursePlanSwitch } from "@/components/course/CoursePlanSwitch";
-import { getCourse, hasGentlePlan, type Course } from "@/data/courses";
+import { getCourse, hasGentlePlan, TEST_SKIPPED_BLOCK, type Course } from "@/data/courses";
 import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { getCollectionCounts } from "@/lib/catalog";
 import { getSelectedCollection } from "@/lib/collection";
@@ -157,6 +157,7 @@ function DayRow({ plan, day, progress, isComplete }: DayRowProps) {
   const isLocked = progress !== null && day.day > 1 && !isComplete(day.day - 1);
   const blocks = getDayBlocks(plan, day);
   const finished = progress?.[day.day]?.length ?? 0;
+  const isTestSkipped = progress?.[day.day]?.includes(TEST_SKIPPED_BLOCK) ?? false;
   const content = (
     <>
       <span
@@ -171,6 +172,7 @@ function DayRow({ plan, day, progress, isComplete }: DayRowProps) {
           Day {dayInWeek(day.day)} · {day.title}
         </p>
         <p className="truncate text-sm text-muted">{day.canDo}</p>
+        {done && isTestSkipped && <p className="mt-0.5 text-xs font-semibold text-muted">Done · test skipped</p>}
         {progress && !done && finished > 0 && (
           <p className="mt-0.5 text-xs font-semibold text-accent">
             {Math.min(finished, blocks.length)}/{blocks.length} blocks done

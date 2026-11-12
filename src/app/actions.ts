@@ -181,6 +181,29 @@ export async function setCourseBlockDone(input: z.input<typeof CourseBlockSchema
   return { ok: true };
 }
 
+const CourseBlocksSchema = z.object({
+  courseId: z.string().min(1).max(40),
+  day: z.number().int().min(1).max(60),
+  blockIds: z.array(z.string().min(1).max(40)).min(1).max(30),
+});
+
+// Ticks several blocks of one course day at once ("Mark day as done").
+export async function setCourseBlocksDone(input: z.input<typeof CourseBlocksSchema>): Promise<ActionResult> {
+  const parsed = CourseBlocksSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+
+  const { courseId, day, blockIds } = parsed.data;
+  const rows = blockIds.map((blockId) => ({ user_id: ctx.user.id, course_id: courseId, day, block_id: blockId }));
+  const { error } = await ctx.supabase.from("course_progress").upsert(rows);
+  if (error) return { ok: false, error: "failed" };
+
+  await recordStudyDay(ctx);
+  revalidatePath("/course");
+  return { ok: true };
+}
+
 const VideoNoteSchema = z.object({ videoId, atSec: z.number().min(0).max(86400), text: z.string().trim().min(1).max(500) });
 
 export async function addVideoNote(
