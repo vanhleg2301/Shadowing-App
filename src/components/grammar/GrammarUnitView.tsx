@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { setCourseBlockDone } from "@/app/actions";
@@ -7,7 +8,7 @@ import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { Icon } from "@/components/Icon";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
-import { GRAMMAR_COURSE_ID, type GrammarUnit } from "@/data/grammar";
+import { GRAMMAR_COURSE_ID, getStoryPicture, getWordPicture, type GrammarUnit } from "@/data/grammar";
 import { shuffle, type TestQuestion } from "@/lib/day-test";
 import type { GrammarExample } from "@/lib/grammar-examples";
 import { speak } from "@/lib/speech";
@@ -16,7 +17,8 @@ import type { StudySentence } from "@/lib/video-study";
 interface GrammarUnitViewProps {
   unit: GrammarUnit;
   examples: GrammarExample[];
-  // The recorded voice for the story and then the lines to shadow; null reads them in the browser's voice.
+  // The recorded voice for the story, the lines to shadow and the words' examples; null reads them in the
+  // browser's voice.
   narration: { url: string; lineTimes: { start: number; end: number }[] } | null;
   isSignedIn: boolean;
   isPassed: boolean;
@@ -57,8 +59,8 @@ function Step({ number, title, hint, children }: { number: number; title: string
   );
 }
 
-// A grammar unit, in the order comprehensible input asks for: understand a story, notice the pattern, hear it in
-// real videos, check it is understood, then say it.
+// A grammar unit, in the order comprehensible input asks for: meet the words through pictures, understand a picture
+// story, notice the pattern, hear it in real videos, check it is understood, then say it.
 export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPassed, nextHref }: GrammarUnitViewProps) {
   const [isPatternShown, setIsPatternShown] = useState(false);
   const [isReading, setIsReading] = useState(false);
@@ -66,6 +68,7 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
   const stopAtRef = useRef<number | null>(null);
   const [time, setTime] = useState(-1);
   const storyCount = unit.story.lines.length;
+  const wordsStart = storyCount + unit.speak.shadow.length;
 
   // Stops exactly where a line (or the story) ends, more precisely than the timeupdate event can.
   useEffect(() => {
@@ -100,7 +103,13 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
 
   const questions = useMemo<TestQuestion[]>(
     () =>
-      unit.check.map((q, i) => ({ kind: "meaning", prompt: q.question, answer: q.options[0], options: shuffle(q.options, unit.id * 31 + i) })),
+      unit.check.map((q, i) => ({
+        kind: "meaning",
+        prompt: q.question,
+        answer: q.options[0],
+        options: shuffle(q.options, unit.id * 31 + i),
+        image: q.picture === undefined ? undefined : getStoryPicture(unit, q.picture),
+      })),
     [unit],
   );
 
@@ -113,7 +122,7 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
     }
     if (playLines(0, storyCount - 1)) return;
     setIsReading(true);
-    speak(unit.story.lines.join(" "), "us", STORY_RATE, () => setIsReading(false));
+    speak(unit.story.lines.map((line) => line.text).join(" "), "us", STORY_RATE, () => setIsReading(false));
   };
 
   const handlePass = () => {
@@ -133,7 +142,28 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
           onEnded={() => setIsReading(false)}
         />
       )}
-      <Step number={1} title={unit.story.title} hint="Listen and read first. Just follow the story; don't think about grammar yet.">
+      <Step number={1} title="Words in pictures" hint="Look at each picture and tap it to hear the word in a sentence.">
+        <ul lang="en" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {unit.words.map((word, i) => (
+            <li key={word.word}>
+              <button
+                type="button"
+                onClick={() => playLine(wordsStart + i, word.example)}
+                aria-label={`Listen: ${word.example}`}
+                className={`w-full overflow-hidden rounded-2xl border bg-cream text-left transition-colors hover:border-brand ${activeLine === wordsStart + i ? "border-brand" : "border-line"}`}
+              >
+                <Image src={getWordPicture(unit, word)} alt={word.word} width={320} height={320} sizes="(min-width: 640px) 220px, 45vw" className="aspect-square w-full" />
+                <span className="block p-2.5">
+                  <span className="block font-bold text-ink">{word.word}</span>
+                  <span className="block text-sm leading-snug text-muted">{word.meaning}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Step>
+
+      <Step number={2} title={unit.story.title} hint="Listen and look at the pictures. Just follow the story; don't think about grammar yet.">
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={readStory} className="btn-3d btn-brand px-4 py-2 text-sm">
             <Icon name={isReading ? "stop" : "volume"} className="size-4" />
@@ -143,24 +173,32 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
             {isPatternShown ? "Hide the pattern" : "Show the pattern"}
           </button>
         </div>
-        <ol lang="en" className="mt-4 space-y-1.5">
+        <ol lang="en" className="mt-4 space-y-3">
           {unit.story.lines.map((line, i) => (
-            <li key={line} className={`flex items-start gap-2 rounded-xl transition-colors ${activeLine === i ? "bg-brand-soft" : ""}`}>
+            <li key={line.text} className={`flex items-center gap-3 rounded-2xl p-1.5 transition-colors ${activeLine === i ? "bg-brand-soft" : ""}`}>
+              <Image
+                src={getStoryPicture(unit, i)}
+                alt=""
+                width={320}
+                height={320}
+                sizes="(min-width: 640px) 144px, 96px"
+                className="size-24 shrink-0 rounded-xl border border-line sm:size-36"
+              />
+              <p className="flex-1 text-lg leading-relaxed text-ink">{isPatternShown ? highlight(line.text, unit.pattern) : line.text}</p>
               <button
                 type="button"
-                onClick={() => playLine(i, line)}
-                aria-label={`Listen: ${line}`}
-                className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
+                onClick={() => playLine(i, line.text)}
+                aria-label={`Listen: ${line.text}`}
+                className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
               >
-                <Icon name="play" className="size-3.5" />
+                <Icon name="play" className="size-4" />
               </button>
-              <p className="text-lg leading-relaxed text-ink">{isPatternShown ? highlight(line, unit.pattern) : line}</p>
             </li>
           ))}
         </ol>
       </Step>
 
-      <Step number={2} title="Notice the pattern" hint="Now look at how the story says it. Turn on “Show the pattern” above to see every one.">
+      <Step number={3} title="Notice the pattern" hint="Now look at how the story says it. Turn on “Show the pattern” above to see every one.">
         <ul className="list-disc space-y-2 pl-5 leading-relaxed text-ink">
           {unit.explanation.map((point) => (
             <li key={point}>{point}</li>
@@ -169,7 +207,7 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
       </Step>
 
       {examples.length > 0 && (
-        <Step number={3} title="Hear it in real videos" hint="The same pattern, said by Bob the Canadian and English Sponge. Tap to hear each one.">
+        <Step number={4} title="Hear it in real videos" hint="The same pattern, said by Bob the Canadian and English Sponge. Tap to hear each one.">
           <ul className="space-y-2">
             {examples.map((example) => (
               <li key={`${example.videoId}-${example.sentence.index}`} className="flex items-start gap-3 rounded-2xl border border-line bg-cream p-3">
@@ -201,12 +239,12 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
         </Step>
       )}
 
-      <Step number={examples.length > 0 ? 4 : 3} title="Check" hint="Questions about the story and what the pattern means. Get 80% right to finish the unit.">
+      <Step number={examples.length > 0 ? 5 : 4} title="Check" hint="Questions about the story and what the pattern means. Get 80% right to finish the unit.">
         <DayTest questions={questions} videoId={null} onPass={handlePass} passMessage="Passed! This unit is done." meaningLabel="The story and the pattern" />
         {hasPassed && <p className="mt-2 text-sm font-semibold text-brand">Unit done.</p>}
       </Step>
 
-      <Step number={examples.length > 0 ? 5 : 4} title="Say it" hint="Shadow the lines, then answer about yourself. Recordings stay on your device.">
+      <Step number={examples.length > 0 ? 6 : 5} title="Say it" hint="Shadow the lines, then answer about yourself. Recordings stay on your device.">
         <ul lang="en" className="space-y-3">
           {unit.speak.shadow.map((line, i) => (
             <li key={line} className="rounded-2xl border border-line bg-cream p-3">

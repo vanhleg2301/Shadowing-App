@@ -8,7 +8,7 @@ import type { DayStudy, StudySentence } from "./video-study";
 export type TestQuestion =
   | { kind: "listen"; sentence: StudySentence; options: string[]; answer: string }
   | { kind: "gap"; prompt: string; hint: string; options: string[]; answer: string }
-  | { kind: "meaning"; prompt: string; options: string[]; answer: string };
+  | { kind: "meaning"; prompt: string; options: string[]; answer: string; image?: string };
 
 export const BLANK = "_____";
 const LISTEN_COUNT = 4;

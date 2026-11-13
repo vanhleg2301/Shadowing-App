@@ -114,9 +114,14 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
               {player.isPlaying ? "Playing…" : "Play the sentence"}
             </button>
           ) : (
-            <p lang="en" className="mt-1 text-lg font-bold leading-snug text-ink">
-              {question.prompt}
-            </p>
+            <>
+              {question.kind === "meaning" && question.image && (
+                <Image src={question.image} alt="" width={240} height={240} className="mt-2 size-40 rounded-2xl border border-line sm:size-48" />
+              )}
+              <p lang="en" className="mt-1 text-lg font-bold leading-snug text-ink">
+                {question.prompt}
+              </p>
+            </>
           )}
           <ul lang="en" className={`mt-4 grid grid-cols-1 gap-2 ${question.kind === "listen" ? "" : "sm:grid-cols-2"}`}>
             {question.options.map((option) => {

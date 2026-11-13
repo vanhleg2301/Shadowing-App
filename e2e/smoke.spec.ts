@@ -230,13 +230,14 @@ test("a grammar unit tells a story, shows the pattern in real videos and checks 
   await openPage(page, "/grammar");
   await page.getByRole("link", { name: /Telling a story: the past simple/ }).click();
   await expect(page).toHaveURL(/\/grammar\/past-simple$/);
+  await expect(page.getByRole("img", { name: "bus stop" })).toBeVisible();
   await page.getByRole("button", { name: "Show the pattern" }).click();
   await expect(page.locator("mark", { hasText: "woke up" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /Hear it in real videos/ })).toBeVisible();
   await page.getByRole("button", { name: "Hear it in the video" }).first().click();
   await expect(page.getByRole("dialog", { name: "From the video" })).toBeVisible();
   await page.getByRole("dialog", { name: "From the video" }).getByRole("button", { name: "Close" }).click();
-  await expect(page.getByText("Why was the writer late?")).toBeVisible();
+  await expect(page.getByText("Why was Nam late?")).toBeVisible();
 });
 
 test("a course day can be marked done to move on", async ({ page }) => {

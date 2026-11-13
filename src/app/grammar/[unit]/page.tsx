@@ -53,7 +53,7 @@ async function UnitContent({ slug }: { slug: string }) {
     <>
       <Breadcrumbs items={[{ label: "Grammar & Words", href: "/grammar" }, { label: `Unit ${unit.id}` }]} />
       <p className="mt-1 text-xs font-bold uppercase tracking-wide text-accent">
-        Unit {unit.id} · {unit.level}
+        Unit {unit.id} · A2 · {unit.topic}
       </p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">{unit.title}</h1>
       <p className="mt-2 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3 text-ink">
