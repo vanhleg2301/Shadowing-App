@@ -17,15 +17,18 @@ interface DayTestProps {
   passMessage?: string;
   // The label above questions about the content.
   meaningLabel?: string;
+  // Plays the sentence of a picture question.
+  onListen?: (text: string) => void;
 }
 
 const HINTS: Record<TestQuestion["kind"], string> = {
   listen: "Listen. Which sentence did you hear?",
   gap: "",
   meaning: "About the video",
+  picture: "Listen. Which picture is it?",
 };
 
-export function DayTest({ questions, videoId, onPass, passMessage = "Passed! This day is done.", meaningLabel = "About the video" }: DayTestProps) {
+export function DayTest({ questions, videoId, onPass, passMessage = "Passed! This day is done.", meaningLabel = "About the video", onListen }: DayTestProps) {
   const media = videoId ? getHostedMedia(videoId) : null;
   // Both hooks are always called; only the one matching the video's media mounts a player.
   const youTube = useYouTubePlayer(media || !videoId ? null : videoId, 0, { hideCaptions: true });
@@ -43,6 +46,7 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
 
   const playQuestion = (q: TestQuestion) => {
     if (q.kind === "listen") void player.playSegment(q.sentence.start, q.sentence.end);
+    if (q.kind === "picture") onListen?.(q.text);
   };
 
   const handlePick = (option: string) => {
@@ -113,6 +117,11 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
               <Icon name={player.isPlaying ? "pause" : "play"} className="size-4" />
               {player.isPlaying ? "Playing…" : "Play the sentence"}
             </button>
+          ) : question.kind === "picture" ? (
+            <button type="button" onClick={() => playQuestion(question)} className="btn-3d btn-brand mt-2 px-4 py-2 text-sm">
+              <Icon name="volume" className="size-4" />
+              Play the sentence
+            </button>
           ) : (
             <>
               {question.kind === "meaning" && question.image && (
@@ -123,8 +132,11 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
               </p>
             </>
           )}
-          <ul lang="en" className={`mt-4 grid grid-cols-1 gap-2 ${question.kind === "listen" ? "" : "sm:grid-cols-2"}`}>
-            {question.options.map((option) => {
+          <ul
+            lang="en"
+            className={`mt-4 grid gap-2 ${question.kind === "picture" ? "grid-cols-2 sm:grid-cols-4" : question.kind === "listen" ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}
+          >
+            {question.options.map((option, optionIndex) => {
               const isAnswer = option === question.answer;
               const state = !picked
                 ? "border-line bg-surface hover:border-brand"
@@ -135,14 +147,26 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
                     : "border-line bg-surface opacity-60";
               return (
                 <li key={option}>
-                  <button
-                    type="button"
-                    onClick={() => handlePick(option)}
-                    disabled={picked !== null}
-                    className={`min-h-12 w-full rounded-xl border-2 px-3 py-2 text-left font-semibold text-ink transition-colors ${state}`}
-                  >
-                    {option}
-                  </button>
+                  {question.kind === "picture" ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePick(option)}
+                      disabled={picked !== null}
+                      aria-label={`Picture ${optionIndex + 1}`}
+                      className={`w-full overflow-hidden rounded-xl border-2 transition-colors ${state}`}
+                    >
+                      <Image src={option} alt="" width={240} height={240} sizes="(min-width: 640px) 160px, 45vw" className="aspect-square w-full" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handlePick(option)}
+                      disabled={picked !== null}
+                      className={`min-h-12 w-full rounded-xl border-2 px-3 py-2 text-left font-semibold text-ink transition-colors ${state}`}
+                    >
+                      {option}
+                    </button>
+                  )}
                 </li>
               );
             })}
@@ -150,7 +174,16 @@ export function DayTest({ questions, videoId, onPass, passMessage = "Passed! Thi
           {picked && (
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className={`font-semibold ${picked === question.answer ? "text-brand" : "text-red-600"}`}>
-                {picked === question.answer ? "Correct!" : question.kind === "listen" ? "Not quite. The right one is marked." : `Answer: ${question.answer}`}
+                {picked === question.answer
+                  ? "Correct!"
+                  : question.kind === "listen" || question.kind === "picture"
+                    ? "Not quite. The right one is marked."
+                    : `Answer: ${question.answer}`}
+                {question.kind === "picture" && (
+                  <span lang="en" className="mt-1 block font-normal text-ink">
+                    “{question.text}”
+                  </span>
+                )}
               </p>
               <button type="button" onClick={handleNext} className="btn-3d btn-brand shrink-0 px-4 py-2 text-sm">
                 {index + 1 === questions.length ? "See score" : "Next"}

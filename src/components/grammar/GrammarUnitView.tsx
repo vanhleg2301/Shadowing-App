@@ -26,6 +26,7 @@ interface GrammarUnitViewProps {
 }
 
 const STORY_RATE = 0.85;
+const PICTURE_QUESTIONS = 3;
 
 // Every place the pattern is used in a line, longest phrases first so "doesn't like" wins over "doesn't".
 function highlight(text: string, pattern: string[]): ReactNode[] {
@@ -63,6 +64,8 @@ function Step({ number, title, hint, children }: { number: number; title: string
 // story, notice the pattern, hear it in real videos, check it is understood, then say it.
 export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPassed, nextHref }: GrammarUnitViewProps) {
   const [isPatternShown, setIsPatternShown] = useState(false);
+  // Listen first: the story's words stay hidden until the learner chooses to read them.
+  const [isTextShown, setIsTextShown] = useState(false);
   const [isReading, setIsReading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAtRef = useRef<number | null>(null);
@@ -101,17 +104,38 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
   const [heard, setHeard] = useState<{ videoId: string; sentence: StudySentence } | null>(null);
   const [hasPassed, setHasPassed] = useState(isPassed);
 
-  const questions = useMemo<TestQuestion[]>(
-    () =>
-      unit.check.map((q, i) => ({
+  const questions = useMemo<TestQuestion[]>(() => {
+    const pictures = unit.story.lines.map((_, i) => getStoryPicture(unit, i));
+    const pictureQuestions = shuffle(
+      unit.story.lines.map((line, i) => ({ line, i })),
+      unit.id * 17,
+    )
+      .slice(0, PICTURE_QUESTIONS)
+      .map(({ line, i }, n): TestQuestion => {
+        const others = shuffle(
+          pictures.filter((_, j) => j !== i),
+          unit.id * 13 + n,
+        ).slice(0, 3);
+        return { kind: "picture", text: line.text, answer: pictures[i], options: shuffle([pictures[i], ...others], unit.id * 7 + n) };
+      });
+    const meaningQuestions = unit.check.map(
+      (q, i): TestQuestion => ({
         kind: "meaning",
         prompt: q.question,
         answer: q.options[0],
         options: shuffle(q.options, unit.id * 31 + i),
         image: q.picture === undefined ? undefined : getStoryPicture(unit, q.picture),
-      })),
-    [unit],
-  );
+      }),
+    );
+    return [...pictureQuestions, ...meaningQuestions];
+  }, [unit]);
+
+  const listenToStoryLine = (text: string) => {
+    playLine(
+      unit.story.lines.findIndex((line) => line.text === text),
+      text,
+    );
+  };
 
   const readStory = () => {
     if (isReading) {
@@ -163,13 +187,24 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
         </ul>
       </Step>
 
-      <Step number={2} title={unit.story.title} hint="Listen and look at the pictures. Just follow the story; don't think about grammar yet.">
+      <Step number={2} title={unit.story.title} hint="Listen and look at the pictures first. Can you follow it? Then show the words and read along.">
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={readStory} className="btn-3d btn-brand px-4 py-2 text-sm">
             <Icon name={isReading ? "stop" : "volume"} className="size-4" />
             {isReading ? "Stop" : "Listen to the story"}
           </button>
-          <button type="button" onClick={() => setIsPatternShown(!isPatternShown)} aria-pressed={isPatternShown} className="btn-3d px-4 py-2 text-sm">
+          <button type="button" onClick={() => setIsTextShown(!isTextShown)} aria-pressed={isTextShown} className="btn-3d px-4 py-2 text-sm">
+            {isTextShown ? "Hide the words" : "Show the words"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsPatternShown(!isPatternShown);
+              setIsTextShown(true);
+            }}
+            aria-pressed={isPatternShown}
+            className="btn-3d px-4 py-2 text-sm"
+          >
             {isPatternShown ? "Hide the pattern" : "Show the pattern"}
           </button>
         </div>
@@ -184,11 +219,17 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
                 sizes="(min-width: 640px) 144px, 96px"
                 className="size-24 shrink-0 rounded-xl border border-line sm:size-36"
               />
-              <p className="flex-1 text-lg leading-relaxed text-ink">{isPatternShown ? highlight(line.text, unit.pattern) : line.text}</p>
+              {isTextShown ? (
+                <p className="flex-1 text-lg leading-relaxed text-ink">{isPatternShown ? highlight(line.text, unit.pattern) : line.text}</p>
+              ) : (
+                <p aria-hidden className="flex-1 select-none text-lg leading-relaxed text-ink blur-sm">
+                  {line.text}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => playLine(i, line.text)}
-                aria-label={`Listen: ${line.text}`}
+                aria-label={isTextShown ? `Listen: ${line.text}` : `Listen to line ${i + 1}`}
                 className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
               >
                 <Icon name="play" className="size-4" />
@@ -239,8 +280,15 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
         </Step>
       )}
 
-      <Step number={examples.length > 0 ? 5 : 4} title="Check" hint="Questions about the story and what the pattern means. Get 80% right to finish the unit.">
-        <DayTest questions={questions} videoId={null} onPass={handlePass} passMessage="Passed! This unit is done." meaningLabel="The story and the pattern" />
+      <Step number={examples.length > 0 ? 5 : 4} title="Check" hint="Match what you hear to the pictures, then answer about the story and the pattern. Get 80% right to finish the unit.">
+        <DayTest
+          questions={questions}
+          videoId={null}
+          onPass={handlePass}
+          onListen={listenToStoryLine}
+          passMessage="Passed! This unit is done."
+          meaningLabel="The story and the pattern"
+        />
         {hasPassed && <p className="mt-2 text-sm font-semibold text-brand">Unit done.</p>}
       </Step>
 
