@@ -521,10 +521,11 @@ export function LessonPlayer({
                 role="tab"
                 aria-selected={panel === p}
                 onClick={() => setPanel(p)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition-colors ${
+                className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition-colors ${
                   panel === p ? "bg-brand text-on-brand" : "text-muted hover:text-ink"
                 }`}
               >
+                {p === "notes" && <Icon name="note" className="size-3.5" />}
                 {p}
               </button>
             ))}

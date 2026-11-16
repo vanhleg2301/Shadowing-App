@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { NoteMarkdown } from "@/components/NoteMarkdown";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { ListSkeleton } from "@/components/Skeleton";
 import { getLessonNotes, type LessonNote } from "@/lib/user-data";
@@ -43,7 +42,7 @@ async function NoteList() {
   }
   if (!notes) return <SignInPrompt message="Sign in to keep notes for every lesson." />;
   if (notes.length === 0) {
-    return <p className="mt-8 text-muted">No notes yet. Open any lesson and press “Start a note” at the end of it.</p>;
+    return <p className="mt-8 text-muted">No notes yet. Open any lesson and write in the “My notes” box.</p>;
   }
   return (
     <ul className="mt-6 space-y-4">
@@ -57,9 +56,9 @@ async function NoteList() {
               {KIND_LABELS[note.lessonKey.split(":")[0]] ?? "Lesson"} · {new Date(note.updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </p>
           </div>
-          <div className="mt-3 max-h-80 overflow-y-auto rounded-2xl bg-cream p-4">
-            <NoteMarkdown content={note.content} />
-          </div>
+          <p lang="en" className="mt-3 max-h-80 overflow-y-auto whitespace-pre-wrap break-words rounded-2xl bg-cream p-4 leading-relaxed text-ink">
+            {note.content}
+          </p>
           <Link href={note.href} className="mt-3 inline-block text-sm font-semibold text-brand hover:text-brand-dark">
             Open the lesson to edit →
           </Link>
