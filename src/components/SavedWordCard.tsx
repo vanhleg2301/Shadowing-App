@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { setSavedWord } from "@/app/actions";
@@ -34,7 +35,8 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
   return (
     <li lang="en" className="rounded-3xl border border-line bg-surface p-4 shadow-[0_4px_0_0_var(--color-line)]">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        {entry?.image && <Image src={entry.image} alt="" width={160} height={160} className="size-16 shrink-0 rounded-xl border border-line" />}
+        <div className="min-w-0 flex-1">
           <p className="text-xl font-extrabold text-ink">{item.word}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {ACCENTS.map((accent) => {

@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { setCourseBlockDone } from "@/app/actions";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { Icon } from "@/components/Icon";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { useAuth } from "@/hooks/useAuth";
 import { GRAMMAR_COURSE_ID, getStoryPicture, getWordPicture, type GrammarUnit } from "@/data/grammar";
 import { shuffle, type TestQuestion } from "@/lib/day-test";
 import type { GrammarExample } from "@/lib/grammar-examples";
@@ -103,6 +104,23 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
   const activeLine = narration && isReading ? narration.lineTimes.findIndex((t) => time >= t.start && time <= t.end + 0.3) : -1;
   const [heard, setHeard] = useState<{ videoId: string; sentence: StudySentence } | null>(null);
   const [hasPassed, setHasPassed] = useState(isPassed);
+  const { signInWithGoogle } = useAuth();
+  const [isSaving, startSaving] = useTransition();
+  const [wordsMessage, setWordsMessage] = useState<string | null>(null);
+
+  const handleSaveWords = () => {
+    if (!isSignedIn) {
+      signInWithGoogle();
+      return;
+    }
+    setWordsMessage(null);
+    startSaving(async () => {
+      const result = await savePhrasesToReview({
+        phrases: unit.words.map((w) => ({ text: w.word, meaning: w.meaning, example: w.example, image: getWordPicture(unit, w) })),
+      });
+      setWordsMessage(result.ok ? "Added to Review. You'll see them as picture flashcards." : "Couldn't save the words. Please try again.");
+    });
+  };
 
   const questions = useMemo<TestQuestion[]>(() => {
     const pictures = unit.story.lines.map((_, i) => getStoryPicture(unit, i));
@@ -167,6 +185,13 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
         />
       )}
       <Step number={1} title="Words in pictures" hint="Look at each picture and tap it to hear the word in a sentence.">
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={handleSaveWords} disabled={isSaving} className="btn-3d btn-brand px-4 py-2 text-sm">
+            <Icon name="plus" className="size-4" />
+            Add all to Review
+          </button>
+        </div>
+        {wordsMessage && <p className="mb-3 text-sm font-semibold text-brand">{wordsMessage}</p>}
         <ul lang="en" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {unit.words.map((word, i) => (
             <li key={word.word}>

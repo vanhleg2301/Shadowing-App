@@ -235,10 +235,22 @@ export async function deleteVideoNote(input: { id: string }): Promise<ActionResu
 }
 
 const PhraseListSchema = z.object({
-  phrases: z.array(z.object({ text: z.string().min(1).max(60), meaning: z.string().max(200), example: z.string().max(300) })).max(30),
+  phrases: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(60),
+        meaning: z.string().max(200),
+        example: z.string().max(300),
+        image: z
+          .string()
+          .regex(/^\/grammar\/[a-z0-9-]+\/[a-z0-9-]+\.webp$/)
+          .optional(),
+      }),
+    )
+    .max(30),
 });
 
-// Adds a course day's phrases to the learner's word list so they show up in Review.
+// Adds a course day's phrases, or a grammar unit's words, to the learner's word list so they show up in Review.
 export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema>): Promise<ActionResult> {
   const parsed = PhraseListSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
@@ -256,6 +268,7 @@ export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema
       meanings: [{ partOfSpeech: "phrase", definition: p.meaning, example: p.example }],
       phrases: [],
       source: "free",
+      ...(p.image ? { image: p.image } : {}),
     },
   }));
   // ignoreDuplicates keeps the review schedule of phrases the learner already saved.

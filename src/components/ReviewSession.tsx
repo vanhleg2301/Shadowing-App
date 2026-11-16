@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { gradeWord } from "@/app/actions";
@@ -92,6 +93,10 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
             );
           })}
         </div>
+
+        {card.entry?.image && (
+          <Image src={card.entry.image} alt="" width={240} height={240} className="mt-4 size-40 rounded-2xl border border-line" />
+        )}
 
         {card.sentence && (
           <p className="mt-4 rounded-2xl bg-cream p-3 italic text-muted">
