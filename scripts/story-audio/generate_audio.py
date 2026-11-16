@@ -1,7 +1,8 @@
 """Narrates the daily stories with Kokoro (open-weight, Apache 2.0) and stores the audio for the app.
 
 Each sentence is generated separately, so its exact time in the final MP3 is known. Stories with an unchanged
-text are skipped. Runs in GitHub Actions (.github/workflows/story-audio.yml); needs migration 024.
+text are skipped. Runs in GitHub Actions (.github/workflows/story-audio.yml) or on your computer (run_local.py);
+needs migration 024.
 Settings come from environment variables:
   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY   required
   STORIES_JSON   output of export-stories.ts
@@ -16,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -139,9 +141,12 @@ def narrate(story: dict, pipelines: dict[str, KPipeline], voices: Voices = DEFAU
 
 
 def encode_mp3(audio: np.ndarray, path: Path) -> None:
+    # Constant bitrate, so seeking to a sentence lands on the right moment in every browser.
+    if not shutil.which("ffmpeg"):
+        soundfile.write(path, audio, SAMPLE_RATE, format="MP3", bitrate_mode="CONSTANT", compression_level=0.6)
+        return
     wav_path = path.with_suffix(".wav")
     soundfile.write(wav_path, audio, SAMPLE_RATE)
-    # Constant bitrate, so seeking to a sentence lands on the right moment in every browser.
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_path), "-ac", "1", "-codec:a", "libmp3lame", "-b:a", "56k", str(path)], check=True)
     wav_path.unlink()
 
