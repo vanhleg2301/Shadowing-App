@@ -15,6 +15,7 @@ import { READER_SIZES, READER_SPACINGS, useReaderPrefs, type ReaderSpacing } fro
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { findActiveIndex, type Lesson } from "@/lib/lesson";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { LessonNotes } from "@/components/LessonNotes";
 
 interface NewsReaderProps {
   lesson: Lesson & { media: NonNullable<Lesson["media"]> };
@@ -154,6 +155,8 @@ export function NewsReader({ lesson, category, dateLabel, initialSavedWords, ini
       </div>
 
       <p className="mt-8 text-xs text-muted">Story and audio: VOA Learning English (public domain).</p>
+
+      <LessonNotes lessonKey={`news:${lesson.videoId}`} title={lesson.title} href={`/news/${lesson.videoId}`} className="mt-10" />
 
       <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 rounded-3xl border border-line bg-surface/95 p-3 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.3)] backdrop-blur-xl md:inset-x-auto md:bottom-6 md:left-[calc(50%+8rem)] md:w-[36rem] md:-translate-x-1/2">
         <input

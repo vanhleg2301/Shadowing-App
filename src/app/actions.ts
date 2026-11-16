@@ -390,3 +390,41 @@ export async function recordSignOut(): Promise<void> {
   if (!ctx) return;
   await recordSignInEvent({ event: "sign_out", userId: ctx.user.id, email: ctx.user.email, headers: await headers() });
 }
+
+const LessonKeySchema = z.string().regex(/^(watch|news|course|grammar|story|tech):[A-Za-z0-9_:.-]{1,70}$/);
+
+export async function getLessonNote(input: { lessonKey: string }): Promise<{ ok: true; content: string } | { ok: false; error: "signed-out" | "invalid" | "failed" }> {
+  const parsed = LessonKeySchema.safeParse(input.lessonKey);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  const { data, error } = await ctx.supabase.from("lesson_notes").select("content").eq("lesson_key", parsed.data).maybeSingle();
+  if (error) return { ok: false, error: "failed" };
+  return { ok: true, content: (data as { content: string } | null)?.content ?? "" };
+}
+
+const LessonNoteSchema = z.object({
+  lessonKey: LessonKeySchema,
+  title: z.string().trim().min(1).max(200),
+  href: z.string().regex(/^\/[A-Za-z0-9_/?=&.:-]{0,199}$/),
+  content: z.string().max(20000),
+});
+
+// Saves the learner's note on a lesson; an empty note is deleted.
+export async function saveLessonNote(input: z.input<typeof LessonNoteSchema>): Promise<ActionResult> {
+  const parsed = LessonNoteSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ctx = await getUserContext();
+  if (!ctx) return { ok: false, error: "signed-out" };
+  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
+
+  const { lessonKey, title, href, content } = parsed.data;
+  const { error } = content.trim()
+    ? await ctx.supabase
+        .from("lesson_notes")
+        .upsert({ user_id: ctx.user.id, lesson_key: lessonKey, title, href, content, updated_at: new Date().toISOString() })
+    : await ctx.supabase.from("lesson_notes").delete().eq("lesson_key", lessonKey);
+  if (error) return { ok: false, error: "failed" };
+  revalidatePath("/notes");
+  return { ok: true };
+}

@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Grammar & Words", shortLabel: "Grammar", icon: "book", href: "/grammar", isInMoreMenu: true },
   { label: "Review", shortLabel: "Review", icon: "repeat", href: "/review", isInMoreMenu: true },
   { label: "My words", shortLabel: "Words", icon: "book", href: "/vocabulary", isInMoreMenu: true },
+  { label: "My notes", shortLabel: "Notes", icon: "note", href: "/notes", isInMoreMenu: true },
   { label: "Search phrases", shortLabel: "Search", icon: "search", href: "/search", isInMoreMenu: true },
   { label: "Favorites", shortLabel: "Favorites", icon: "heart", href: "/favorites", isInMoreMenu: true },
   { label: "Offline lessons", shortLabel: "Offline", icon: "news", href: "/offline", isInMoreMenu: true },
@@ -37,7 +38,7 @@ const toSidebarItems = (hrefs: string[]) =>
 
 const SIDEBAR_GROUPS: SidebarGroup[] = [
   { label: "Learn", items: toSidebarItems(["/", "/stories", "/news", "/course", "/grammar"]) },
-  { label: "Practice", items: toSidebarItems(["/review", "/vocabulary", "/search"]) },
+  { label: "Practice", items: toSidebarItems(["/review", "/vocabulary", "/notes", "/search"]) },
   { label: "My library", items: toSidebarItems(["/favorites", "/offline"]) },
 ];
 

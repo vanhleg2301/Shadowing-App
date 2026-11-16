@@ -18,6 +18,7 @@ import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
 import { buildDayTest, getPassScore } from "@/lib/day-test";
 import type { DayGuide, DayStudy, StudySentence } from "@/lib/video-study";
+import { LessonNotes } from "@/components/LessonNotes";
 
 interface CourseDayViewProps {
   day: CourseDay;
@@ -503,6 +504,8 @@ export function CourseDayView({
           </p>
         </DaySection>
       )}
+
+      <LessonNotes lessonKey={`course:${courseId}:${progressDay}`} title={`Day ${day.day}: ${day.title}`} href={`/course/${day.day}`} />
 
       {nextBlock && (
         <NextStepButton

@@ -11,6 +11,7 @@ import { READER_SIZES, READER_SPACINGS, useReaderPrefs } from "@/hooks/useReader
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak } from "@/lib/speech";
 import type { TechArticle } from "@/lib/tech-news";
+import { LessonNotes } from "@/components/LessonNotes";
 
 interface TechArticleReaderProps {
   article: TechArticle;
@@ -130,6 +131,8 @@ export function TechArticleReader({ article, dateLabel, initialSavedWords, initi
       </div>
 
       {article.disclosure && <p className="mt-8 text-xs italic text-muted">{article.disclosure}</p>}
+      <LessonNotes lessonKey={`tech:${article.id}`} title={article.title} href={`/news/ai-tech/${article.id}`} className="mt-10" />
+
       {/* The page counter The Conversation requires for republished articles. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- a 1x1 counter must load as they serve it */}
       <img src={article.counter_url} alt="" width={1} height={1} className="absolute size-px" />

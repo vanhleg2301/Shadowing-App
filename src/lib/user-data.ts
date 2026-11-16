@@ -351,3 +351,30 @@ export async function getStudyStats(): Promise<StudyStats | null> {
     calendar,
   };
 }
+
+export interface LessonNote {
+  lessonKey: string;
+  title: string;
+  href: string;
+  content: string;
+  updatedAt: string;
+}
+
+// The learner's lesson notes, most recently edited first. null when signed out.
+export async function getLessonNotes(): Promise<LessonNote[] | null> {
+  const ctx = await getUserContext();
+  if (!ctx) return null;
+  const { data, error } = await ctx.supabase
+    .from("lesson_notes")
+    .select("lesson_key, title, href, content, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return ((data ?? []) as { lesson_key: string; title: string; href: string; content: string; updated_at: string }[]).map((n) => ({
+    lessonKey: n.lesson_key,
+    title: n.title,
+    href: n.href,
+    content: n.content,
+    updatedAt: n.updated_at,
+  }));
+}

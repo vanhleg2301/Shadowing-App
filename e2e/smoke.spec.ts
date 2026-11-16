@@ -244,6 +244,13 @@ test("a grammar unit tells a story, shows the pattern in real videos and checks 
   await expect(page.getByText(/Correct!|Not quite/)).toBeVisible();
 });
 
+test("lessons have a notes section and My notes asks to sign in", async ({ page }) => {
+  await openPage(page, "/grammar/past-simple");
+  await expect(page.getByRole("region", { name: "My notes" }).getByRole("button", { name: "Sign in" })).toBeVisible();
+  await openPage(page, "/notes");
+  await expect(page.getByRole("heading", { name: "My notes" })).toBeVisible();
+});
+
 test("a course day can be marked done to move on", async ({ page }) => {
   await openPage(page, "/course/1");
   await expect(page.getByRole("button", { name: "Mark day as done" })).toBeVisible();

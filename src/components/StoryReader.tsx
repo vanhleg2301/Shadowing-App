@@ -15,6 +15,7 @@ import { findActiveIndex } from "@/lib/lesson";
 import { speak, type Accent } from "@/lib/speech";
 import type { StoryAudio } from "@/lib/story-audio";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { LessonNotes } from "@/components/LessonNotes";
 
 interface StoryReaderProps {
   story: Story;
@@ -223,6 +224,8 @@ export function StoryReader({ story, initialSavedWords, initialIsFavorite, allSt
         </section>
       )}
       <div ref={endRef} aria-hidden="true" className="h-px" />
+
+      <LessonNotes lessonKey={`story:${story.id}`} title={story.title} href={`/stories/${story.id}`} className="mt-10" />
 
       <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-30 px-4 md:bottom-6">
         <div className="mx-auto flex max-w-md items-center gap-2 rounded-3xl border border-line bg-surface p-2 shadow-lg">

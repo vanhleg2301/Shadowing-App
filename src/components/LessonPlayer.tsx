@@ -27,6 +27,7 @@ import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
 import type { LessonPart } from "@/lib/lesson-parts";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { getLessonTrail } from "@/lib/lesson-trail";
+import { LessonNotes } from "@/components/LessonNotes";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
 // Progress is saved at most this often while the learner moves through sentences.
@@ -105,7 +106,7 @@ export function LessonPlayer({
   const [isSessionListenFirst, setIsSessionListenFirst] = useState(isListenFirst);
   const isHideText = prefs.hideText || isSessionListenFirst;
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [panel, setPanel] = useState<"transcript" | "summary">("transcript");
+  const [panel, setPanel] = useState<"transcript" | "summary" | "notes">("transcript");
   const [isFollowPaused, setIsFollowPaused] = useState(false);
   const [autoNextIn, setAutoNextIn] = useState<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
@@ -513,7 +514,7 @@ export function LessonPlayer({
       >
         <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-2">
           <div role="tablist" aria-label="Lesson panel" className="flex rounded-xl border border-line bg-surface p-0.5">
-            {(["transcript", "summary"] as const).map((p) => (
+            {(["transcript", "summary", "notes"] as const).map((p) => (
               <button
                 key={p}
                 type="button"
@@ -557,7 +558,9 @@ export function LessonPlayer({
             className="sticky -top-3 z-10 mb-3"
           />
         )}
-        {panel === "summary" ? (
+        {panel === "notes" ? (
+          <LessonNotes lessonKey={`watch:${lesson.videoId}`} title={lesson.title} href={`/watch/${lesson.videoId}`} />
+        ) : panel === "summary" ? (
           <SummaryPanel lesson={lesson} onPlaySentence={replaySentence} />
         ) : (
           <>

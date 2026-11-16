@@ -7,6 +7,7 @@ import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { Icon } from "@/components/Icon";
+import { LessonNotes } from "@/components/LessonNotes";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { useAuth } from "@/hooks/useAuth";
 import { GRAMMAR_COURSE_ID, getStoryPicture, getWordPicture, type GrammarUnit } from "@/data/grammar";
@@ -347,6 +348,8 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
           ))}
         </ul>
       </Step>
+
+      <LessonNotes lessonKey={`grammar:${unit.slug}`} title={`Grammar: ${unit.title}`} href={`/grammar/${unit.slug}`} />
 
       {nextHref && (
         <div className="flex justify-end">
