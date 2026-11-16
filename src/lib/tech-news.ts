@@ -1,4 +1,4 @@
-// News > AI & Tech: articles republished from The Conversation (scripts/tech-news/import_tech_news.py).
+// News > AI & Tech: articles republished from The Conversation (src/lib/tech-news-import.ts, daily Vercel cron).
 import { cacheLife } from "next/cache";
 import { createPublicClient } from "./supabase/admin";
 
