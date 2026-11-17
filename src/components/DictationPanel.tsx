@@ -9,14 +9,13 @@ interface DictationPanelProps {
   sentence: Sentence;
   index: number;
   total: number;
-  hasNextPart?: boolean;
   onListen: () => void;
   onPrev: () => void;
   onNext: () => void;
   onReveal: () => void;
 }
 
-export function DictationPanel({ sentence, index, total, hasNextPart, onListen, onPrev, onNext, onReveal }: DictationPanelProps) {
+export function DictationPanel({ sentence, index, total, onListen, onPrev, onNext, onReveal }: DictationPanelProps) {
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ words: WordResult[]; score: number } | null>(null);
 
@@ -67,7 +66,7 @@ export function DictationPanel({ sentence, index, total, hasNextPart, onListen, 
         </div>
       )}
 
-      <PracticeNav index={index} total={total} hasNextPart={hasNextPart} onPrev={onPrev} onNext={onNext} onListen={onListen}>
+      <PracticeNav index={index} total={total} onPrev={onPrev} onNext={onNext} onListen={onListen}>
         <button type="button" className="btn-3d btn-brand py-3 text-sm" onClick={handleCheck}>
           Check
         </button>

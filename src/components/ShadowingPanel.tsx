@@ -8,7 +8,6 @@ interface ShadowingPanelProps {
   sentence: Sentence;
   index: number;
   total: number;
-  hasNextPart?: boolean;
   showTranslation: boolean;
   onPlaySentence: () => Promise<void> | void;
   onPrev: () => void;
@@ -24,7 +23,6 @@ export function ShadowingPanel({
   sentence,
   index,
   total,
-  hasNextPart = false,
   showTranslation,
   onPlaySentence,
   onPrev,
@@ -92,7 +90,7 @@ export function ShadowingPanel({
             Listen to the original
           </button>
         )}
-        <button type="button" className="btn-3d py-3" onClick={onNext} disabled={index >= total - 1 && !hasNextPart} aria-label="Next sentence">
+        <button type="button" className="btn-3d py-3" onClick={onNext} disabled={index >= total - 1} aria-label="Next sentence">
           <Icon name="next" />
         </button>
       </div>

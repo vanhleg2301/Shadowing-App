@@ -6,7 +6,6 @@ import { ListenNotesPlayer } from "@/components/ListenNotesPlayer";
 import { LessonSkeleton } from "@/components/Skeleton";
 import { getCatalogVideo } from "@/lib/catalog";
 import { NO_SUBTITLES_ERROR } from "@/lib/captions";
-import { getLessonPart, getPartForSentence, getTimePart, type TimePart } from "@/lib/lesson-parts";
 import { getLesson, type LessonResult } from "@/lib/lessons";
 import { getLessonUserState, getVideoNotes } from "@/lib/user-data";
 import { isValidVideoId } from "@/lib/youtube-url";
@@ -19,13 +18,8 @@ interface LessonOptions {
   isListenFirst: boolean;
   backHref: string;
   playbackRate: number;
-  // Set when the previous part ran to its end and opened this one.
-  isAutoplay: boolean;
-  part: number | null;
   // Opens at this sentence (from phrase search) instead of where the learner left off.
   sentence: number | null;
-  // The query to keep when moving between parts (mode, course day, speed).
-  query: string;
 }
 
 const RATES = [0.5, 0.75, 1, 1.25];
@@ -40,12 +34,7 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
     isListenFirst: first(sp.listen) === "1",
     backHref: courseDay ? `/course/${courseDay}` : "/",
     playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
-    isAutoplay: first(sp.autoplay) === "1",
-    part: Number(first(sp.part)) || null,
     sentence: /^\d{1,5}$/.test(first(sp.s) ?? "") ? Number(first(sp.s)) : null,
-    query: new URLSearchParams(
-      Object.entries(sp).flatMap(([key, value]) => (key === "part" || key === "s" || value === undefined ? [] : [[key, first(value) ?? ""]])),
-    ).toString(),
   };
 }
 
@@ -67,14 +56,7 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
   const catalogVideo = await getCatalogVideo(videoId).catch(() => undefined);
   if (catalogVideo?.hasTranscript === false) {
     return (
-      <NotesLoader
-        key={options.part ?? 1}
-        videoId={videoId}
-        title={catalogVideo.title}
-        backHref={options.backHref}
-        part={getTimePart(catalogVideo.duration, options.part)}
-        partQuery={options.query}
-      />
+      <NotesLoader videoId={videoId} title={catalogVideo.title} backHref={options.backHref} />
     );
   }
 
@@ -104,27 +86,16 @@ async function LessonLoader({ videoId, options }: { videoId: string; options: Le
 
   const userState = await userStatePromise;
   const lastSentence = Math.min(options.sentence ?? userState.lastSentence, result.lesson.sentences.length - 1);
-  // Long videos open in parts of about 5 minutes; without ?part= the learner resumes in the part they were in.
-  const cut = getLessonPart(result.lesson, options.part ?? getPartForSentence(result.lesson, lastSentence));
-  const lesson = cut?.lesson ?? result.lesson;
-  // Saved progress only applies inside its own part; any other part starts at its first sentence.
-  const sentenceInPart = cut ? lastSentence - cut.part.offset : lastSentence;
-  const initialSentence = sentenceInPart >= 0 && sentenceInPart < lesson.sentences.length ? sentenceInPart : 0;
   return (
     <LessonPlayer
-      // Each part starts fresh: its first sentence, with the video cued at the part's start.
-      key={cut?.part.index ?? 0}
-      lesson={lesson}
-      part={cut?.part}
-      partQuery={options.query}
+      lesson={result.lesson}
       initialIsFavorite={userState.isFavorite}
       initialSavedWords={userState.savedWords}
-      initialSentence={initialSentence}
+      initialSentence={Math.max(lastSentence, 0)}
       initialMode={options.mode}
       isListenFirst={options.isListenFirst}
       backHref={options.backHref}
       initialRate={options.playbackRate}
-      isAutoplay={options.isAutoplay}
     />
   );
 }
@@ -133,11 +104,9 @@ interface NotesLoaderProps {
   videoId: string;
   title: string;
   backHref: string;
-  part?: TimePart | null;
-  partQuery?: string;
 }
 
-async function NotesLoader({ videoId, title, backHref, part, partQuery }: NotesLoaderProps) {
+async function NotesLoader({ videoId, title, backHref }: NotesLoaderProps) {
   const notes = await getVideoNotes(videoId).catch(() => null);
-  return <ListenNotesPlayer videoId={videoId} title={title} initialNotes={notes} backHref={backHref} part={part ?? undefined} partQuery={partQuery} />;
+  return <ListenNotesPlayer videoId={videoId} title={title} initialNotes={notes} backHref={backHref} />;
 }

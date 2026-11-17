@@ -100,25 +100,6 @@ test("the transcript scrolls freely until Current brings it back", async ({ page
   await expect(current).toBeInViewport();
 });
 
-test("a part that plays to its end opens the next part and keeps playing", async ({ page }) => {
-  await openPage(page, "/watch/ovl9kM46r10?part=1");
-  const rows = page.getByTestId("transcript").getByRole("button", { name: /^Play from sentence/ });
-  await rows.last().click();
-  await expect(page.getByText(/Next part in \d/)).toBeVisible({ timeout: 30_000 });
-  await expect(page).toHaveURL(/part=2/, { timeout: 10_000 });
-  // The flag is dropped so a reload doesn't start the part by itself.
-  await expect(page).not.toHaveURL(/autoplay/);
-  await expect(page.locator('iframe[src*="youtube"]')).toBeAttached();
-});
-
-test("Cancel keeps the learner on the part", async ({ page }) => {
-  await openPage(page, "/watch/ovl9kM46r10?part=1");
-  await page.getByTestId("transcript").getByRole("button", { name: /^Play from sentence/ }).last().click();
-  await page.getByRole("button", { name: "Cancel" }).click({ timeout: 30_000 });
-  await page.waitForTimeout(4000);
-  await expect(page).toHaveURL(/part=1/);
-});
-
 test("listen first keeps the hidden-text note small on phones", async ({ page, isMobile }) => {
   test.skip(!isMobile, "the note is only on phones");
   await openPage(page, "/watch/ovl9kM46r10?listen=1");
@@ -148,21 +129,8 @@ test("a story is remembered as read and suggests the next one", async ({ page })
   await expect(page.locator("main ul a").last()).toHaveAttribute("href", "/stories/story-00049");
 });
 
-test("the last sentence of a part leads to the next part, in the same mode", async ({ page, isMobile }) => {
-  // A two-part Bob the Canadian lesson from day 1 of the course.
-  await openPage(page, "/watch/ovl9kM46r10?mode=shadow&from=course-1");
-  if (isMobile) await page.locator("select").first().selectOption("dictation");
-  const rows = page.getByRole("button", { name: /^Play from sentence/ });
-  await rows.last().click();
-  await expect(page.getByText(/^Part 1 done/)).toBeVisible();
-  await expectInViewport(page, page.getByRole("link", { name: "Next part" }), "next part link");
-  await page.getByRole("button", { name: "Next sentence" }).click();
-  await expect(page).toHaveURL(new RegExp(`mode=${isMobile ? "dictation" : "shadow"}.*part=2`));
-  await expect(page.getByText(/^Sentence 1\/\d+/).first()).toBeVisible();
-});
-
 test("shadowing can play straight through and pause when the learner wants", async ({ page }) => {
-  await openPage(page, "/watch/ovl9kM46r10?mode=shadow&part=1");
+  await openPage(page, "/watch/ovl9kM46r10?mode=shadow");
   await page.getByText("Play through").click();
   // Sentence 1 is under two seconds; without play through the video would stop at its end.
   await expect(page.getByText(/^Sentence [3-9]\/\d+/).first()).toBeVisible({ timeout: 30_000 });
