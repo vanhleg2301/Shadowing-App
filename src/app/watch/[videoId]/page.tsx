@@ -32,7 +32,7 @@ function parseOptions(sp: Record<string, string | string[] | undefined>): Lesson
   return {
     mode: (MODES as readonly string[]).includes(mode ?? "") ? (mode as StartMode) : "watch",
     isListenFirst: first(sp.listen) === "1",
-    backHref: courseDay ? `/course/${courseDay}` : "/",
+    backHref: courseDay ? `/course/${courseDay}` : first(sp.from) === "plan" ? "/plan" : "/",
     playbackRate: RATES.includes(Number(first(sp.rate))) ? Number(first(sp.rate)) : 1,
     sentence: /^\d{1,5}$/.test(first(sp.s) ?? "") ? Number(first(sp.s)) : null,
   };

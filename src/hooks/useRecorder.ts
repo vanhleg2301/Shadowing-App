@@ -4,16 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { acquireMic, releaseMic } from "@/lib/mic";
 import { startTranscriber, type Transcriber } from "@/lib/speech-recognition";
 
-const MAX_SECONDS = 90;
+const DEFAULT_MAX_SECONDS = 90;
 // Safari/iOS records AAC in MP4; Chrome, Edge and Firefox record Opus in WebM.
 const MIME_TYPES = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
 
 interface RecorderOptions {
   // Also transcribe with the browser's free speech recognition, when available.
   transcribe?: boolean;
+  // Recording stops by itself after this long.
+  maxSeconds?: number;
 }
 
-export function useRecorder({ transcribe = false }: RecorderOptions = {}) {
+export function useRecorder({ transcribe = false, maxSeconds = DEFAULT_MAX_SECONDS }: RecorderOptions = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function useRecorder({ transcribe = false }: RecorderOptions = {}) {
         shownSeconds = elapsed;
         setSeconds(elapsed);
       }
-      if (elapsed >= MAX_SECONDS) stop();
+      if (elapsed >= maxSeconds) stop();
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);

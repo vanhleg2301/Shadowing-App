@@ -5,7 +5,9 @@ import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { getStoryOfTheDay } from "@/data/stories";
 import type { CourseMode } from "@/lib/course-mode";
 import { getCoursePlan, getCurrentDay, getDayBlocks, getPlanProgress } from "@/lib/course-plan";
-import { getDueWords } from "@/lib/user-data";
+import { getLocalToday } from "@/lib/study-day";
+import { WEEKDAY_NAMES, getDayTasks, getWeekStart, getWeekday } from "@/lib/study-plan";
+import { getDueWords, getStudyWeeks } from "@/lib/user-data";
 
 interface Task {
   href: string;
@@ -15,14 +17,29 @@ interface Task {
   detail: string;
 }
 
-// "Today": the next step of the course, the words due for review and a fresh news story,
+// "Today": the next step of My plan and of the course, the words due for review and a fresh story,
 // so a signed-in learner can start without browsing. Renders nothing when signed out.
 export async function TodayPlan({ collection, mode }: { collection: CollectionId; mode: CourseMode }) {
   const plan = await getCoursePlan(collection, mode);
-  const [progress, due] = await Promise.all([getPlanProgress(plan), getDueWords(1).catch(() => null)]);
+  const [progress, due, weeks, today] = await Promise.all([
+    getPlanProgress(plan),
+    getDueWords(1).catch(() => null),
+    getStudyWeeks().catch(() => null),
+    getLocalToday(),
+  ]);
   if (!progress) return null;
 
   const tasks: Task[] = [];
+  const week = weeks?.find((w) => w.weekStart === getWeekStart(today));
+  const weekday = getWeekday(today);
+  const nextStep = getDayTasks(weekday).core.find((task) => !week?.done[today]?.includes(task.key));
+  tasks.push({
+    href: "/plan",
+    icon: "plan",
+    label: `My plan · ${WEEKDAY_NAMES[weekday - 1]}`,
+    title: week ? week.title : "Choose this week's video",
+    detail: !week ? "One video, studied in depth all week" : nextStep ? `Next: ${nextStep.title}` : "Today's plan is done",
+  });
   const nextDay = getCurrentDay(plan, progress);
   const finished = new Set(progress[nextDay.day] ?? []);
   const nextBlock = getDayBlocks(plan, nextDay).find((b) => !b.isOptional && !finished.has(b.id));
@@ -55,7 +72,7 @@ export async function TodayPlan({ collection, mode }: { collection: CollectionId
   return (
     <section className="mt-4 animate-fade-up rounded-3xl border border-line bg-surface p-4 sm:p-5">
       <h2 className="text-lg font-extrabold text-ink">Today</h2>
-      <ul className="stagger mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+      <ul className={`stagger mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 ${tasks.length === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         {tasks.map((task) => (
           <li key={task.href} className="min-w-0">
             <Link href={task.href} className="pressable group flex h-full items-center gap-3 rounded-2xl border border-line bg-cream p-3 hover:border-brand">

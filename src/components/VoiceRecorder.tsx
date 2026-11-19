@@ -19,6 +19,7 @@ interface VoiceRecorderProps {
   recordLabel?: string;
   // Shows "Listen & repeat": original, then a timed recording, then your take, hands-free.
   hasAutoCycle?: boolean;
+  maxSeconds?: number;
 }
 
 type AutoPhase = "idle" | "listening" | "recording";
@@ -31,9 +32,10 @@ export function VoiceRecorder({
   onRecorded,
   recordLabel = "Record",
   hasAutoCycle = false,
+  maxSeconds,
 }: VoiceRecorderProps) {
   const [canTranscribe, setCanTranscribe] = useState(false);
-  const { isRecording, audioBlob, error, level, seconds, transcript, start, stop } = useRecorder({ transcribe: canTranscribe });
+  const { isRecording, audioBlob, error, level, seconds, transcript, start, stop } = useRecorder({ transcribe: canTranscribe, maxSeconds });
 
   const [autoPhase, setAutoPhase] = useState<AutoPhase>("idle");
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

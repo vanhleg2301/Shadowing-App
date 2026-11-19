@@ -23,7 +23,7 @@ import { useWordLookup } from "@/hooks/useWordLookup";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { findActiveIndex, findActiveWord, type Lesson } from "@/lib/lesson";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { getLessonTrail } from "@/lib/lesson-trail";
+import { getBackLabel, getLessonTrail } from "@/lib/lesson-trail";
 import { LessonNotes } from "@/components/LessonNotes";
 
 const SPEEDS = [0.5, 0.75, 1, 1.25];
@@ -328,7 +328,7 @@ export function LessonPlayer({
     <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_1fr]">
       <StudyTimer isBusy={isPlaying} />
       <header className="relative flex items-center gap-2 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4 lg:col-span-2 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-3">
-        <Link href={backHref} aria-label={backHref === "/" ? "Back to home" : "Back to the course"} className="btn-3d size-10 shrink-0 rounded-full">
+        <Link href={backHref} aria-label={getBackLabel(backHref)} className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" />
         </Link>
         <div className="min-w-0 flex-1">
