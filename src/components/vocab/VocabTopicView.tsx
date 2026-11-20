@@ -2,15 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { savePhrasesToReview, setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { Icon } from "@/components/Icon";
 import { LessonNotes } from "@/components/LessonNotes";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { ConversationBuilder } from "./ConversationBuilder";
 import { useAuth } from "@/hooks/useAuth";
-import { VOCAB_COURSE_ID, getPhraseCore, getPhrasePicture, getTopicChecks, type VocabTopic } from "@/data/vocabulary";
-import { BLANK, shuffle, type TestQuestion } from "@/lib/day-test";
+import { VOCAB_COURSE_ID, getPhraseCore, getPhrasePicture, getTopicChecks, type VocabPhrase, type VocabTopic } from "@/data/vocabulary";
+import { shuffle, type TestQuestion } from "@/lib/day-test";
 import { speak } from "@/lib/speech";
 
 interface VocabTopicViewProps {
@@ -20,7 +21,7 @@ interface VocabTopicViewProps {
   nextHref: string | null;
 }
 
-const QUIZ_LENGTH = 6;
+const QUIZ_LENGTH = 8;
 const RATE = 0.85;
 
 function Step({ number, title, hint, children }: { number: number; title: string; hint: string; children: ReactNode }) {
@@ -45,25 +46,16 @@ function getOptions(answer: string, all: string[], seed: number): string[] {
   return shuffle([answer, ...others], seed + 50);
 }
 
-// A vocabulary topic: learn the phrases with pictures, say what a picture shows, choose what to say in a
-// situation, fill them into a conversation, then say them yourself.
+// A vocabulary topic: learn what you say and what you hear, match the pictures, choose what is said in a
+// situation, build a conversation by predicting your lines, then say them yourself.
 export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTopicViewProps) {
   const { signInWithGoogle } = useAuth();
   const [passedChecks, setPassedChecks] = useState(passed);
   const [isSaving, startSaving] = useTransition();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [playingLine, setPlayingLine] = useState(-1);
-  const dialogueRunRef = useRef(0);
   const checks = getTopicChecks(topic);
+  const hasHear = topic.phrases.some((p) => p.role === "hear");
   const isDone = checks.every((check) => passedChecks.includes(check));
-
-  useEffect(
-    () => () => {
-      dialogueRunRef.current++;
-      window.speechSynthesis?.cancel();
-    },
-    [],
-  );
 
   const pictureQuestions = useMemo<TestQuestion[]>(
     () =>
@@ -93,27 +85,15 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
           kind: "meaning",
           prompt: p.situation ?? "",
           answer: p.phrase,
+          // The other options are said by the same side, so the situation decides, not who speaks.
           options: getOptions(
             p.phrase,
-            topic.phrases.map((o) => o.phrase),
+            topic.phrases.filter((o) => o.role === p.role).map((o) => o.phrase),
             topic.id * 19 + i,
           ),
         })),
     [topic],
   );
-  const dialogueQuestions = useMemo<TestQuestion[]>(() => {
-    const cores = topic.phrases.map((p) => getPhraseCore(p.phrase));
-    return (topic.dialogue?.lines ?? []).flatMap((line, i): TestQuestion[] => {
-      if (!line.gap) return [];
-      const start = line.text.toLowerCase().indexOf(line.gap.toLowerCase());
-      if (start < 0) return [];
-      const shown = line.text.slice(start, start + line.gap.length);
-      const prompt = `${line.text.slice(0, start)}${BLANK}${line.text.slice(start + line.gap.length)}`;
-      const options = getOptions(line.gap, cores, topic.id * 23 + i).map((o) => (o === line.gap ? shown : o));
-      return [{ kind: "gap", prompt, hint: `Complete what ${line.speaker} says.`, answer: shown, options }];
-    });
-  }, [topic]);
-
   const pass = (check: "picture" | "situation" | "dialogue") => {
     setPassedChecks((list) => (list.includes(check) ? list : [...list, check]));
     if (isSignedIn) void setCourseBlockDone({ courseId: VOCAB_COURSE_ID, day: topic.id, blockId: check, isDone: true });
@@ -133,27 +113,6 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
     });
   };
 
-  // Reads the conversation line by line, a different voice for each person.
-  const playDialogue = () => {
-    const lines = topic.dialogue?.lines ?? [];
-    const run = ++dialogueRunRef.current;
-    if (playingLine >= 0) {
-      window.speechSynthesis?.cancel();
-      setPlayingLine(-1);
-      return;
-    }
-    const speakers = [...new Set(lines.map((line) => line.speaker))];
-    const next = (index: number) => {
-      if (run !== dialogueRunRef.current || index >= lines.length) {
-        if (run === dialogueRunRef.current) setPlayingLine(-1);
-        return;
-      }
-      setPlayingLine(index);
-      speak(lines[index].text, speakers.indexOf(lines[index].speaker) % 2 === 0 ? "us" : "uk", RATE, () => next(index + 1));
-    };
-    next(0);
-  };
-
   let step = 0;
   return (
     <div className="space-y-4 pb-20 md:pb-0">
@@ -165,25 +124,8 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
           </button>
         </div>
         {saveMessage && <p className="mb-3 text-sm font-semibold text-brand">{saveMessage}</p>}
-        <ul lang="en" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {topic.phrases.map((p) => (
-            <li key={p.phrase}>
-              <button
-                type="button"
-                onClick={() => speak(p.example, "us", RATE)}
-                aria-label={`Listen: ${p.example}`}
-                className="w-full overflow-hidden rounded-2xl border border-line bg-cream text-left transition-colors hover:border-brand"
-              >
-                <Image src={getPhrasePicture(topic, p)} alt="" width={320} height={320} sizes="(min-width: 640px) 220px, 45vw" className="aspect-square w-full" />
-                <span className="block p-2.5">
-                  <span className="block font-bold leading-snug text-ink">{p.phrase}</span>
-                  <span className="mt-0.5 block text-sm leading-snug text-muted">{p.meaning}</span>
-                  <span className="mt-1 block text-sm italic leading-snug text-ink">“{p.example}”</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <PhraseCards topic={topic} phrases={topic.phrases.filter((p) => !p.role)} title={hasHear ? "You say" : null} />
+        {hasHear && <PhraseCards topic={topic} phrases={topic.phrases.filter((p) => p.role === "hear")} title="You'll hear" />}
       </Step>
 
       <Step number={++step} title="Match the picture" hint="Look at the picture and choose the phrase that goes with it.">
@@ -191,32 +133,14 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
       </Step>
 
       {situationQuestions.length > 0 && (
-        <Step number={++step} title="What would you say?" hint="Read the situation and choose what you would say.">
-          <DayTest questions={situationQuestions} videoId={null} onPass={() => pass("situation")} passMessage="Passed!" meaningLabel="What would you say?" />
+        <Step number={++step} title="What would you say?" hint="Read the situation and choose what you would say, or what the other person will say.">
+          <DayTest questions={situationQuestions} videoId={null} onPass={() => pass("situation")} passMessage="Passed!" meaningLabel="The situation" />
         </Step>
       )}
 
       {topic.dialogue && (
-        <Step number={++step} title={topic.dialogue.title} hint="Listen to the conversation, then fill in the missing phrases.">
-          <button type="button" onClick={playDialogue} className="btn-3d btn-brand px-4 py-2 text-sm">
-            <Icon name={playingLine >= 0 ? "stop" : "volume"} className="size-4" />
-            {playingLine >= 0 ? "Stop" : "Listen to the conversation"}
-          </button>
-          <ol lang="en" className="mt-3 space-y-1.5">
-            {topic.dialogue.lines.map((line, i) => {
-              const start = line.gap ? line.text.toLowerCase().indexOf(line.gap.toLowerCase()) : -1;
-              const text = start >= 0 && line.gap ? `${line.text.slice(0, start)}${BLANK}${line.text.slice(start + line.gap.length)}` : line.text;
-              return (
-                <li key={i} className={`rounded-xl px-3 py-1.5 leading-relaxed transition-colors ${playingLine === i ? "bg-brand-soft" : ""}`}>
-                  <span className="font-bold text-ink">{line.speaker}: </span>
-                  <span className="text-ink">{passedChecks.includes("dialogue") ? line.text : text}</span>
-                </li>
-              );
-            })}
-          </ol>
-          <div className="mt-4">
-            <DayTest questions={dialogueQuestions} videoId={null} onPass={() => pass("dialogue")} passMessage="Passed!" />
-          </div>
+        <Step number={++step} title={topic.dialogue.title} hint={`Build the conversation: you are ${topic.dialogue.you}. Guess each of your lines from what was said before, then listen.`}>
+          <ConversationBuilder you={topic.dialogue.you} lines={topic.dialogue.lines} seed={topic.id * 29} onPass={() => pass("dialogue")} />
         </Step>
       )}
 
@@ -270,5 +194,32 @@ function SpeakCard({ situation, answer }: { situation: string; answer: string })
         </button>
       )}
     </li>
+  );
+}
+
+function PhraseCards({ topic, phrases, title }: { topic: VocabTopic; phrases: VocabPhrase[]; title: string | null }) {
+  return (
+    <div className="mt-4 first:mt-0">
+      {title && <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-accent">{title}</h3>}
+      <ul lang="en" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {phrases.map((p) => (
+          <li key={p.phrase}>
+            <button
+              type="button"
+              onClick={() => speak(p.example, "us", RATE)}
+              aria-label={`Listen: ${p.example}`}
+              className="w-full overflow-hidden rounded-2xl border border-line bg-cream text-left transition-colors hover:border-brand"
+            >
+              <Image src={getPhrasePicture(topic, p)} alt="" width={320} height={320} sizes="(min-width: 640px) 220px, 45vw" className="aspect-square w-full" />
+              <span className="block p-2.5">
+                <span className="block font-bold leading-snug text-ink">{p.phrase}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted">{p.meaning}</span>
+                <span className="mt-1 block text-sm italic leading-snug text-ink">“{p.example}”</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

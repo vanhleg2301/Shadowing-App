@@ -222,7 +222,8 @@ test("a vocabulary topic teaches phrases with pictures, situations and a convers
   await page.getByRole("button", { name: "A table for two", exact: true }).first().click();
   await expect(page.getByText(/Correct!|Answer:/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mai has a coffee" })).toBeVisible();
-  await expect(page.getByText("Complete what Mai says.").first()).toBeVisible();
+  await expect(page.getByText("What does Mai say next?")).toBeVisible();
+  await expect(page.getByText("You'll hear", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Asking and rules/ })).toHaveAttribute("href", "/grammar/can-could-have-to");
 });
 

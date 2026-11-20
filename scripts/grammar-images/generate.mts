@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
 import { GRAMMAR_CAST, GRAMMAR_UNITS, getStoryPicture, getWordPicture } from "../../src/data/grammar";
-import { VOCAB_TOPICS, getPhrasePicture } from "../../src/data/vocabulary";
+import { ALL_SITUATION_TOPICS, getPhrasePicture } from "../../src/data/vocabulary";
 
 const STYLE =
   "Flat vector illustration in a warm children's picture-book style, soft pastel colours, simple clean shapes, " +
@@ -44,8 +44,8 @@ const jobs = GRAMMAR_UNITS.filter((unit) => only.length === 0 || only.includes(u
   ...unit.words.map((word) => ({ path: getWordPicture(unit, word), picture: word.picture })),
 ]);
 // The grammar units' word topics reuse those pictures; situation topics have their own.
-for (const topic of VOCAB_TOPICS) {
-  if (topic.kind !== "situation" || (only.length > 0 && !only.includes(topic.slug))) continue;
+for (const topic of ALL_SITUATION_TOPICS) {
+  if (only.length > 0 && !only.includes(topic.slug)) continue;
   jobs.push(...topic.phrases.map((phrase) => ({ path: getPhrasePicture(topic, phrase), picture: phrase.picture })));
 }
 const todo = jobs.filter((job) => !existsSync(join("public", job.path)));
