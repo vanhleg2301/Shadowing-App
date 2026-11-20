@@ -9,7 +9,7 @@ import { VideoFacade } from "@/components/VideoFacade";
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import type { VideoNote } from "@/lib/user-data";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { getBackLabel, getLessonTrail } from "@/lib/lesson-trail";
+import { getLessonTrail } from "@/lib/lesson-trail";
 
 interface ListenNotesPlayerProps {
   videoId: string;
@@ -131,7 +131,7 @@ export function ListenNotesPlayer({ videoId, title, initialNotes, backHref }: Li
   return (
     <div className="mx-auto flex h-dvh w-full max-w-3xl flex-col">
       <header className="flex items-center gap-2.5 border-b border-line bg-cream px-3 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.625rem)] sm:px-4">
-        <Link href={backHref} aria-label={getBackLabel(backHref)} className="btn-3d size-10 shrink-0 rounded-full">
+        <Link href={backHref} aria-label={backHref === "/" ? "Back to home" : "Back to the course"} className="btn-3d size-10 shrink-0 rounded-full">
           <Icon name="back" className="size-5" />
         </Link>
         <div className="min-w-0 flex-1">

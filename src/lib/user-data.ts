@@ -378,29 +378,3 @@ export async function getLessonNotes(): Promise<LessonNote[] | null> {
     updatedAt: n.updated_at,
   }));
 }
-
-export interface StudyWeek {
-  weekStart: string;
-  videoId: string;
-  title: string;
-  // Steps finished per day (YYYY-MM-DD).
-  done: Record<string, string[]>;
-}
-
-// The learner's plan weeks, newest first. null when signed out.
-export async function getStudyWeeks(): Promise<StudyWeek[] | null> {
-  const ctx = await getUserContext();
-  if (!ctx) return null;
-  const { data, error } = await ctx.supabase
-    .from("study_weeks")
-    .select("week_start, video_id, title, done")
-    .order("week_start", { ascending: false })
-    .limit(104);
-  if (error) throw error;
-  return ((data ?? []) as { week_start: string; video_id: string; title: string; done: Record<string, string[]> | null }[]).map((w) => ({
-    weekStart: w.week_start,
-    videoId: w.video_id,
-    title: w.title,
-    done: w.done ?? {},
-  }));
-}

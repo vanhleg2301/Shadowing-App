@@ -4,14 +4,12 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { COLLECTION_IDS } from "@/data/collections";
-import { getCatalogVideo } from "@/lib/catalog";
 import { COLLECTION_COOKIE } from "@/lib/collection";
 import { COURSE_MODE_COOKIE } from "@/lib/course-mode";
 import { schedule } from "@/lib/srs";
 import { WRITES_PER_MINUTE, checkRateLimits } from "@/lib/rate-limit";
 import { recordSignInEvent } from "@/lib/sign-in-log";
 import { getLocalToday, getTimeZone } from "@/lib/study-day";
-import { PLAN_TASK_KEYS, addDays, getWeekStart } from "@/lib/study-plan";
 import { getUserContext } from "@/lib/user-data";
 
 type UserContext = NonNullable<Awaited<ReturnType<typeof getUserContext>>>;
@@ -428,72 +426,5 @@ export async function saveLessonNote(input: z.input<typeof LessonNoteSchema>): P
     : await ctx.supabase.from("lesson_notes").delete().eq("lesson_key", lessonKey);
   if (error) return { ok: false, error: "failed" };
   revalidatePath("/notes");
-  return { ok: true };
-}
-
-const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const WeekVideoSchema = z.object({ weekStart: DaySchema, videoId });
-
-// This week or the one either side of it, so a wrong clock can't write far into the past or future.
-async function isPlanWeek(weekStart: string): Promise<boolean> {
-  const current = getWeekStart(await getLocalToday());
-  return weekStart === current || weekStart === addDays(current, 7) || weekStart === addDays(current, -7);
-}
-
-// Picks (or changes) the video for a week of My plan. Steps already ticked off are kept.
-export async function chooseWeekVideo(input: z.input<typeof WeekVideoSchema>): Promise<ActionResult> {
-  const parsed = WeekVideoSchema.safeParse(input);
-  if (!parsed.success || !(await isPlanWeek(parsed.data.weekStart))) return { ok: false, error: "invalid" };
-  const ctx = await getUserContext();
-  if (!ctx) return { ok: false, error: "signed-out" };
-  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
-
-  const video = await getCatalogVideo(parsed.data.videoId).catch(() => undefined);
-  if (!video || video.hasTranscript === false || video.category) return { ok: false, error: "invalid" };
-  const { error } = await ctx.supabase.from("study_weeks").upsert({
-    user_id: ctx.user.id,
-    week_start: parsed.data.weekStart,
-    video_id: video.videoId,
-    title: video.title.slice(0, 300),
-    updated_at: new Date().toISOString(),
-  });
-  if (error) return { ok: false, error: "failed" };
-  revalidatePath("/plan");
-  revalidatePath("/");
-  return { ok: true };
-}
-
-const PlanTaskSchema = z.object({
-  weekStart: DaySchema,
-  day: DaySchema,
-  task: z.enum(PLAN_TASK_KEYS as [string, ...string[]]),
-  isDone: z.boolean(),
-});
-
-// Ticks a step of My plan on or off for one day of the week.
-export async function setPlanTask(input: z.input<typeof PlanTaskSchema>): Promise<ActionResult> {
-  const parsed = PlanTaskSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "invalid" };
-  const { weekStart, day, task, isDone } = parsed.data;
-  if (getWeekStart(day) !== weekStart || !(await isPlanWeek(weekStart))) return { ok: false, error: "invalid" };
-  const ctx = await getUserContext();
-  if (!ctx) return { ok: false, error: "signed-out" };
-  if (!(await isWriteAllowed(ctx.user.id))) return { ok: false, error: "rate-limited" };
-
-  const { data, error: readError } = await ctx.supabase.from("study_weeks").select("done").eq("week_start", weekStart).maybeSingle();
-  if (readError) return { ok: false, error: "failed" };
-  if (!data) return { ok: false, error: "invalid" };
-  const done = { ...((data as { done: Record<string, string[]> | null }).done ?? {}) };
-  const tasks = new Set(done[day] ?? []);
-  if (isDone) tasks.add(task);
-  else tasks.delete(task);
-  done[day] = [...tasks];
-  const { error } = await ctx.supabase
-    .from("study_weeks")
-    .update({ done, updated_at: new Date().toISOString() })
-    .eq("week_start", weekStart);
-  if (error) return { ok: false, error: "failed" };
-  if (isDone) await recordStudyDay(ctx);
-  revalidatePath("/");
   return { ok: true };
 }

@@ -244,9 +244,3 @@ test("tapping a word opens the lookup sheet on screen", async ({ page }) => {
   await page.getByRole("button", { name: "fever", exact: true }).first().click();
   await expectInViewport(page, page.getByRole("dialog"), "word lookup sheet");
 });
-
-test("My plan asks to sign in and is in the menu", async ({ page }) => {
-  await openPage(page, "/plan");
-  await expect(page.getByRole("heading", { name: "My plan", level: 1 })).toBeVisible();
-  await expect(page.getByText("Sign in to start your plan.", { exact: false })).toBeVisible();
-});
