@@ -14,6 +14,7 @@ const KIND_LABELS: Record<string, string> = {
   news: "News",
   course: "Course",
   grammar: "Grammar",
+  vocab: "Vocabulary",
   story: "Story",
   tech: "AI & Tech",
 };

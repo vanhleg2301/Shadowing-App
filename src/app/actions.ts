@@ -243,14 +243,14 @@ const PhraseListSchema = z.object({
         example: z.string().max(300),
         image: z
           .string()
-          .regex(/^\/grammar\/[a-z0-9-]+\/[a-z0-9-]+\.webp$/)
+          .regex(/^\/(grammar|words)\/[a-z0-9-]+\/[a-z0-9-]+\.webp$/)
           .optional(),
       }),
     )
     .max(30),
 });
 
-// Adds a course day's phrases, or a grammar unit's words, to the learner's word list so they show up in Review.
+// Adds a course day's phrases, or a vocabulary topic's phrases, to the learner's word list so they show up in Review.
 export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema>): Promise<ActionResult> {
   const parsed = PhraseListSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
@@ -391,7 +391,7 @@ export async function recordSignOut(): Promise<void> {
   await recordSignInEvent({ event: "sign_out", userId: ctx.user.id, email: ctx.user.email, headers: await headers() });
 }
 
-const LessonKeySchema = z.string().regex(/^(watch|news|course|grammar|story|tech):[A-Za-z0-9_:.-]{1,70}$/);
+const LessonKeySchema = z.string().regex(/^(watch|news|course|grammar|vocab|story|tech):[A-Za-z0-9_:.-]{1,70}$/);
 
 export async function getLessonNote(input: { lessonKey: string }): Promise<{ ok: true; content: string } | { ok: false; error: "signed-out" | "invalid" | "failed" }> {
   const parsed = LessonKeySchema.safeParse(input.lessonKey);

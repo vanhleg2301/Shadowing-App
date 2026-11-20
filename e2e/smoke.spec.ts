@@ -56,7 +56,7 @@ test("the phone's More tab reaches every sidebar page", async ({ page, isMobile 
   for (const name of ["Home", "Stories", "News", "Course"]) await expect(tabs.getByRole("link", { name, exact: true })).toBeVisible();
   await tabs.getByRole("button", { name: "More" }).click();
   const sheet = page.getByRole("dialog", { name: "More" });
-  for (const name of ["Grammar & Words", "Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "About", "Privacy"]) {
+  for (const name of ["Grammar", "Vocabulary", "Review", "My words", "Search phrases", "Favorites", "Offline lessons", "Account", "About", "Privacy"]) {
     await expect(sheet.getByRole("link", { name })).toBeVisible();
   }
   await sheet.getByRole("link", { name: "Favorites" }).click();
@@ -198,7 +198,7 @@ test("a grammar unit tells a story, shows the pattern in real videos and checks 
   await openPage(page, "/grammar");
   await page.getByRole("link", { name: /Telling a story: the past simple/ }).click();
   await expect(page).toHaveURL(/\/grammar\/past-simple$/);
-  await expect(page.getByRole("img", { name: "bus stop" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Getting around in pictures" })).toHaveAttribute("href", "/words/getting-around");
   await expect(page.locator("main p.blur-sm").first()).toBeVisible();
   await page.getByRole("button", { name: "Show the pattern" }).click();
   await expect(page.locator("main p.blur-sm")).toHaveCount(0);
@@ -210,6 +210,20 @@ test("a grammar unit tells a story, shows the pattern in real videos and checks 
   await expect(page.getByText("Listen. Which picture is it?")).toBeVisible();
   await page.getByRole("button", { name: "Picture 1" }).click();
   await expect(page.getByText(/Correct!|Not quite/)).toBeVisible();
+});
+
+test("a vocabulary topic teaches phrases with pictures, situations and a conversation", async ({ page }) => {
+  await openPage(page, "/words");
+  await page.getByRole("link", { name: /At a café/ }).click();
+  await expect(page).toHaveURL(/\/words\/at-a-cafe$/);
+  await expect(page.getByRole("button", { name: "Listen: Excuse me, can I have the bill, please?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /What would you say\?/ })).toBeVisible();
+  await expect(page.getByText("Look at the picture", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "A table for two", exact: true }).first().click();
+  await expect(page.getByText(/Correct!|Answer:/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mai has a coffee" })).toBeVisible();
+  await expect(page.getByText("Complete what Mai says.").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Asking and rules/ })).toHaveAttribute("href", "/grammar/can-could-have-to");
 });
 
 test("lessons have a notes section and My notes asks to sign in", async ({ page }) => {

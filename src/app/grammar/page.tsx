@@ -8,18 +8,18 @@ import { Icon } from "@/components/Icon";
 import { GRAMMAR_COURSE_ID, GRAMMAR_UNITS, getStoryPicture } from "@/data/grammar";
 import { getCourseProgress } from "@/lib/user-data";
 
-export const metadata: Metadata = { title: "Grammar & Words · Shadowing English" };
+export const metadata: Metadata = { title: "Grammar · Shadowing English" };
 
 export default function GrammarPage() {
   return (
     <AppShell active="/grammar">
       <main className="w-full max-w-4xl px-4 pb-8 pt-[calc(env(safe-area-inset-top)+1.5rem)] md:px-10">
-        <Breadcrumbs items={[{ label: "Grammar & Words" }]} />
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Grammar & Words</h1>
+        <Breadcrumbs items={[{ label: "Grammar" }]} />
+        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink md:text-[36px]">Grammar</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          The grammar and everyday words of level A2, as a break from long videos. Each unit teaches a few words with pictures, then tells a
-          picture story that uses one pattern again and again. You understand the story first, then notice the pattern, hear it in real
-          videos and say it yourself. About 15 minutes a unit.
+          The grammar of level A2, as a break from long videos. Each unit tells a picture story that uses one pattern again and again. You
+          understand the story first, then notice the pattern, hear it in real videos and say it yourself. About 15 minutes a unit. The
+          words are in Vocabulary.
         </p>
         <Suspense fallback={<UnitList passed={new Set()} />}>
           <UnitListWithProgress />

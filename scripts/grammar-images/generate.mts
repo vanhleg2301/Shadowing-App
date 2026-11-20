@@ -1,12 +1,13 @@
-// Draws the grammar units' pictures with FLUX.1 [schnell] (Apache 2.0) on Cloudflare Workers AI, whose free
-// allowance (10,000 neurons a day, about 170 pictures) covers them, and saves them to public/grammar/.
+// Draws the grammar units' and the vocabulary topics' pictures with FLUX.1 [schnell] (Apache 2.0) on Cloudflare Workers AI, whose free
+// allowance (10,000 neurons a day, about 170 pictures) covers them, and saves them to public/grammar/ and public/words/.
 // Pictures already there are skipped, so a run stopped by the daily limit carries on the next day; delete a
 // picture to draw it again. Needs CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN (Workers AI) in .env.local.
-//   npx tsx scripts/grammar-images/generate.mts [unit-slug ...]
+//   npx tsx scripts/grammar-images/generate.mts [unit-or-topic-slug ...]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import sharp from "sharp";
 import { GRAMMAR_CAST, GRAMMAR_UNITS, getStoryPicture, getWordPicture } from "../../src/data/grammar";
+import { VOCAB_TOPICS, getPhrasePicture } from "../../src/data/vocabulary";
 
 const STYLE =
   "Flat vector illustration in a warm children's picture-book style, soft pastel colours, simple clean shapes, " +
@@ -42,6 +43,11 @@ const jobs = GRAMMAR_UNITS.filter((unit) => only.length === 0 || only.includes(u
   ...unit.story.lines.map((line, i) => ({ path: getStoryPicture(unit, i), picture: line.picture })),
   ...unit.words.map((word) => ({ path: getWordPicture(unit, word), picture: word.picture })),
 ]);
+// The grammar units' word topics reuse those pictures; situation topics have their own.
+for (const topic of VOCAB_TOPICS) {
+  if (topic.kind !== "situation" || (only.length > 0 && !only.includes(topic.slug))) continue;
+  jobs.push(...topic.phrases.map((phrase) => ({ path: getPhrasePicture(topic, phrase), picture: phrase.picture })));
+}
 const todo = jobs.filter((job) => !existsSync(join("public", job.path)));
 console.log(`${todo.length} of ${jobs.length} pictures to draw`);
 

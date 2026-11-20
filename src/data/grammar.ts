@@ -1,5 +1,4 @@
-// "Grammar & Words": the A2 grammar and everyday words, learned the comprehensible-input way. Each unit first
-// shows its words as pictures, then tells a picture story that uses one pattern again and again, shows the
+// Grammar: the A2 grammar, learned the comprehensible-input way. Each unit tells a picture story that uses one pattern again and again, shows the
 // pattern, plays it in real course videos, checks that it is understood (not drilled) and ends with saying it.
 // The stories are written for this app and share one cast, so the pictures stay familiar from unit to unit.
 
@@ -30,7 +29,7 @@ export interface GrammarUnit {
   id: number;
   slug: string;
   title: string;
-  // The everyday words the unit teaches alongside the grammar.
+  // The everyday words that go with the unit, taught as a Vocabulary topic (src/data/vocabulary.ts).
   topic: string;
   // What the learner can do after the unit, in plain words.
   canDo: string;

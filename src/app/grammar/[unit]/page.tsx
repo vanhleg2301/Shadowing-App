@@ -4,7 +4,9 @@ import { AppShell } from "@/components/AppShell";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { GrammarUnitView } from "@/components/grammar/GrammarUnitView";
 import { ListSkeleton } from "@/components/Skeleton";
+import Link from "next/link";
 import { GRAMMAR_COURSE_ID, GRAMMAR_UNITS, getGrammarNarration, getGrammarNarrationId, getGrammarUnit } from "@/data/grammar";
+import { getTopicForGrammar } from "@/data/vocabulary";
 import { splitSentences } from "@/data/stories";
 import { getGrammarExamples } from "@/lib/grammar-examples";
 import { getNarration } from "@/lib/story-audio";
@@ -48,10 +50,11 @@ async function UnitContent({ slug }: { slug: string }) {
       })
     : null;
   const next = GRAMMAR_UNITS.find((u) => u.id === unit.id + 1);
+  const wordTopic = getTopicForGrammar(unit.slug);
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Grammar & Words", href: "/grammar" }, { label: `Unit ${unit.id}` }]} />
+      <Breadcrumbs items={[{ label: "Grammar", href: "/grammar" }, { label: `Unit ${unit.id}` }]} />
       <p className="mt-1 text-xs font-bold uppercase tracking-wide text-accent">
         Unit {unit.id} · A2 · {unit.topic}
       </p>
@@ -59,6 +62,14 @@ async function UnitContent({ slug }: { slug: string }) {
       <p className="mt-2 rounded-2xl border border-brand/20 bg-brand-soft px-4 py-3 text-ink">
         <b>Goal:</b> {unit.canDo}
       </p>
+      {wordTopic && (
+        <p className="mt-2 text-sm text-muted">
+          Words for this unit:{" "}
+          <Link href={`/words/${wordTopic.slug}`} className="font-semibold text-brand hover:text-brand-dark">
+            {wordTopic.title} in pictures
+          </Link>
+        </p>
+      )}
       <div className="mt-6">
         <GrammarUnitView
           unit={unit}
