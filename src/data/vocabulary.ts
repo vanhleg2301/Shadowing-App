@@ -24,16 +24,10 @@ const WORD_TOPICS: VocabTopic[] = GRAMMAR_UNITS.map((unit) => ({
   phrases: unit.words.map((word) => ({ phrase: word.word, meaning: word.meaning, example: word.example, picture: getWordPicture(unit, word) })),
 }));
 
-// Topics whose pictures are not all drawn yet (Workers AI's free allowance is about 170 a day). They stay hidden
-// until scripts/grammar-images/generate.mts has drawn them; then the slug is removed from this list.
-const PICTURES_PENDING = new Set(["staying-at-a-hotel", "talking-about-your-day", "taxis-and-buses", "feelings-and-weather"]);
-
-// Every situation topic, drawn or not: what the picture script works through.
+// Every situation topic: what the picture script works through.
 export const ALL_SITUATION_TOPICS: VocabTopic[] = [...SITUATION_TOPICS_1, ...SITUATION_TOPICS_2];
 
-export const VOCAB_TOPICS: VocabTopic[] = [...ALL_SITUATION_TOPICS, ...WORD_TOPICS].filter(
-  (topic) => !PICTURES_PENDING.has(topic.slug),
-);
+export const VOCAB_TOPICS: VocabTopic[] = [...ALL_SITUATION_TOPICS, ...WORD_TOPICS];
 
 export function getVocabTopic(slug: string): VocabTopic | undefined {
   return VOCAB_TOPICS.find((topic) => topic.slug === slug);
