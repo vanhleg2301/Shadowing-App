@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
 import type { DialogueLine } from "@/data/vocabulary";
 import { getPassScore, shuffle } from "@/lib/day-test";
 import { speak } from "@/lib/speech";
 
 interface ConversationBuilderProps {
+  title: string;
   you: string;
   lines: DialogueLine[];
   seed: number;
+  onClose: () => void;
   onPass: () => void;
 }
 
@@ -17,7 +20,7 @@ const RATE = 0.85;
 
 // The conversation plays line by line. At each of the learner's turns they choose what comes next from
 // the context, then hear it said, so the whole conversation is built one guess at a time.
-export function ConversationBuilder({ you, lines, seed, onPass }: ConversationBuilderProps) {
+export function ConversationBuilder({ title, you, lines, seed, onClose, onPass }: ConversationBuilderProps) {
   const turns = useMemo(() => lines.flatMap((line, i) => (line.speaker === you ? [i] : [])), [lines, you]);
   const options = useMemo(
     () =>
@@ -36,12 +39,14 @@ export function ConversationBuilder({ you, lines, seed, onPass }: ConversationBu
   const [score, setScore] = useState(0);
   const [playing, setPlaying] = useState(-1);
   const runRef = useRef(0);
+  const endRef = useRef<HTMLDivElement>(null);
 
   const isFinished = answered >= turns.length;
   const turn = turns[answered];
   // Everything before the current turn is on screen; once picked, the turn's line is too.
   const shownCount = isFinished ? lines.length : picked ? turn + 1 : turn;
   const passScore = getPassScore(turns.length);
+  const isRight = picked === lines[turn]?.text;
 
   useEffect(
     () => () => {
@@ -50,6 +55,11 @@ export function ConversationBuilder({ you, lines, seed, onPass }: ConversationBu
     },
     [],
   );
+
+  // The newest line and the choices stay in view as the conversation grows.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [shownCount, picked]);
 
   const play = (from: number, to: number) => {
     const run = ++runRef.current;
@@ -88,40 +98,46 @@ export function ConversationBuilder({ you, lines, seed, onPass }: ConversationBu
     if (nextAnswered >= turns.length && score >= passScore) onPass();
   };
 
-  const start = () => {
-    if (turns[0] > 0) play(0, turns[0]);
-  };
-
   const restart = () => {
     stop();
     setAnswered(0);
     setPicked(null);
     setScore(0);
-    start();
   };
 
+  const footer = isFinished ? null : picked ? (
+    <div className="flex items-center gap-3">
+      <p className={`min-w-0 flex-1 font-extrabold ${isRight ? "text-brand" : "text-red-600"}`}>{isRight ? "Correct!" : "Not quite. The right line is marked."}</p>
+      <button type="button" onClick={handleNext} className={`btn-3d shrink-0 px-6 py-3 ${isRight ? "btn-brand" : ""}`}>
+        Continue
+      </button>
+    </div>
+  ) : (
+    <p className="py-2 text-center text-sm font-semibold text-muted">Choose what {you} says next.</p>
+  );
+
   return (
-    <div className="rounded-2xl border border-line bg-cream p-4">
+    <FocusScreen title={title} progress={(answered + (picked ? 1 : 0)) / turns.length} onClose={onClose} footer={footer}>
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-muted">
         <span>
-          You are <b className="text-ink">{you}</b>
+          {title} · you are <b className="text-ink">{you}</b>
         </span>
         <span>
-          Score {score}/{turns.length}
+          {score}/{turns.length}
         </span>
       </div>
 
-      <ol lang="en" className="mt-3 space-y-2">
+      <ol lang="en" className="mt-4 space-y-2">
         {lines.slice(0, shownCount).map((line, i) => {
           const isYou = line.speaker === you;
           return (
-            <li key={i} className={`flex ${isYou ? "justify-end" : "justify-start"}`}>
+            <li key={i} className={`flex animate-fade-in ${isYou ? "justify-end" : "justify-start"}`}>
               <button
                 type="button"
                 onClick={() => play(i, i + 1)}
                 aria-label={`Listen: ${line.text}`}
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-left leading-snug transition-colors ${
-                  isYou ? "bg-brand text-on-brand" : "border border-line bg-surface text-ink"
+                className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-left leading-snug transition-colors ${
+                  isYou ? "rounded-br-md bg-brand text-on-brand" : "rounded-bl-md border border-line bg-surface text-ink"
                 } ${playing === i ? "ring-2 ring-accent" : ""}`}
               >
                 <span className={`block text-[11px] font-bold uppercase tracking-wide ${isYou ? "text-on-brand/80" : "text-accent"}`}>{line.speaker}</span>
@@ -133,70 +149,58 @@ export function ConversationBuilder({ you, lines, seed, onPass }: ConversationBu
       </ol>
 
       {answered === 0 && !picked && turns[0] > 0 && (
-        <button type="button" onClick={start} className="btn-3d mt-3 px-4 py-2 text-sm">
+        <button type="button" onClick={() => play(0, turns[0])} className="btn-3d mt-3 px-4 py-2 text-sm">
           <Icon name="volume" className="size-4" />
-          Listen to the start
+          Listen
         </button>
       )}
 
-      {!isFinished ? (
-        <div className="mt-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-accent">What does {you} say next?</p>
-          <ul lang="en" className="mt-2 grid grid-cols-1 gap-2">
-            {options[answered].map((option) => {
-              const isAnswer = option === lines[turn].text;
-              const state = !picked
-                ? "border-line bg-surface hover:border-brand"
-                : isAnswer
-                  ? "border-brand bg-brand-soft"
-                  : option === picked
-                    ? "border-red-400 bg-red-50 dark:bg-red-950/40"
-                    : "border-line bg-surface opacity-60";
-              return (
-                <li key={option}>
-                  <button
-                    type="button"
-                    onClick={() => handlePick(option)}
-                    disabled={picked !== null}
-                    className={`min-h-12 w-full rounded-xl border-2 px-3 py-2 text-left font-semibold text-ink transition-colors ${state}`}
-                  >
-                    {option}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {picked && (
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className={`font-semibold ${picked === lines[turn].text ? "text-brand" : "text-red-600"}`}>
-                {picked === lines[turn].text ? "Correct!" : "Not quite. The right line is marked."}
-              </p>
-              <button type="button" onClick={handleNext} className="btn-3d btn-brand shrink-0 px-4 py-2 text-sm">
-                {answered + 1 === turns.length ? "See score" : "Next"}
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="mt-4 text-center">
-          <p className="text-3xl font-extrabold text-ink">
-            {score}/{turns.length}
-          </p>
-          <p className={`mt-1 font-semibold ${score >= passScore ? "text-brand" : "text-muted"}`}>
-            {score >= passScore ? "Passed! Now play it all and say your lines with the voice." : `You need ${passScore} to pass. Try once more.`}
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <button type="button" onClick={() => (playing >= 0 ? stop() : play(0, lines.length))} className="btn-3d btn-brand px-4 py-2 text-sm">
-              <Icon name={playing >= 0 ? "stop" : "volume"} className="size-4" />
-              {playing >= 0 ? "Stop" : "Play the whole conversation"}
-            </button>
-            <button type="button" onClick={restart} className="btn-3d px-4 py-2 text-sm">
-              <Icon name="repeat" className="size-4" />
-              Try again
-            </button>
-          </div>
-        </div>
+      {!isFinished && (
+        <ul lang="en" className="mt-5 space-y-2.5">
+          {options[answered].map((option) => {
+            const isAnswer = option === lines[turn].text;
+            const state = !picked
+              ? "border-line bg-surface hover:border-brand"
+              : isAnswer
+                ? "border-brand bg-brand-soft"
+                : option === picked
+                  ? "border-red-400 bg-red-50 dark:bg-red-950/40"
+                  : "border-line bg-surface opacity-50";
+            return (
+              <li key={option}>
+                <button
+                  type="button"
+                  onClick={() => handlePick(option)}
+                  disabled={picked !== null}
+                  className={`min-h-14 w-full rounded-2xl border-2 px-4 py-3 text-left font-semibold text-ink shadow-[0_3px_0_0_var(--color-line)] transition-colors ${state}`}
+                >
+                  {option}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </div>
+
+      {isFinished && (
+        <FocusSummary
+          title={`${score}/${turns.length}`}
+          detail={score >= passScore ? "Passed! Now play it all and say your lines with the voice." : `You need ${passScore} to pass. Try once more.`}
+          isPassed={score >= passScore}
+        >
+          <button type="button" onClick={() => (playing >= 0 ? stop() : play(0, lines.length))} className="btn-3d btn-brand py-3">
+            <Icon name={playing >= 0 ? "stop" : "volume"} className="size-4" />
+            {playing >= 0 ? "Stop" : "Play the whole conversation"}
+          </button>
+          <button type="button" onClick={restart} className="btn-3d py-3">
+            Try again
+          </button>
+          <button type="button" onClick={onClose} className="btn-3d py-3">
+            Back to the lesson
+          </button>
+        </FocusSummary>
+      )}
+      <div ref={endRef} />
+    </FocusScreen>
   );
 }

@@ -212,19 +212,34 @@ test("a grammar unit tells a story, shows the pattern in real videos and checks 
   await expect(page.getByText(/Correct!|Not quite/)).toBeVisible();
 });
 
-test("a vocabulary topic teaches phrases with pictures, situations and a conversation", async ({ page }) => {
+test("a vocabulary topic is a path of parts that open on a focus screen", async ({ page }) => {
   await openPage(page, "/words");
   await page.getByRole("link", { name: /At a café/ }).click();
   await expect(page).toHaveURL(/\/words\/at-a-cafe$/);
-  await expect(page.getByRole("button", { name: "Listen: Excuse me, can I have the bill, please?" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /What would you say\?/ })).toBeVisible();
-  await expect(page.getByText("Look at the picture", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "A table for two", exact: true }).first().click();
-  await expect(page.getByText(/Correct!|Answer:/).first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Mai has a coffee" })).toBeVisible();
-  await expect(page.getByText("What does Mai say next?")).toBeVisible();
-  await expect(page.getByText("You'll hear", { exact: true })).toBeVisible();
+  const parts = page.getByRole("region", { name: "Lesson parts" });
+  for (const name of ["Learn", "Match the picture", "What would you say?", "Build the conversation", "Your turn"]) {
+    await expect(parts.getByRole("button", { name })).toBeVisible();
+  }
   await expect(page.getByRole("link", { name: /Asking and rules/ })).toHaveAttribute("href", "/grammar/can-could-have-to");
+
+  await parts.getByRole("button", { name: "Start" }).click();
+  const learn = page.getByRole("dialog", { name: "Learn the phrases" });
+  await expect(learn.getByText("A table for two", { exact: true })).toBeVisible();
+  await learn.getByRole("button", { name: "Next" }).click();
+  await expect(learn.getByText(/^You say · 2 of 16$/)).toBeVisible();
+  await learn.getByRole("button", { name: "Close" }).click();
+  await expect(learn).toBeHidden();
+
+  await parts.getByRole("button", { name: /^Match the picture/ }).click();
+  const quiz = page.getByRole("dialog", { name: "Match the picture" });
+  await expect(quiz.getByRole("button", { name: "Check" })).toBeDisabled();
+  await quiz.locator("ul button").first().click();
+  await quiz.getByRole("button", { name: "Check" }).click();
+  await expect(quiz.getByText(/Correct!|Not quite/)).toBeVisible();
+  await quiz.getByRole("button", { name: "Close" }).click();
+
+  await parts.getByRole("button", { name: /^Build the conversation/ }).click();
+  await expect(page.getByRole("dialog", { name: "Mai has a coffee" }).getByText("Choose what Mai says next.")).toBeVisible();
 });
 
 test("lessons have a notes section and My notes asks to sign in", async ({ page }) => {
