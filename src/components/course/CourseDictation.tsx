@@ -1,12 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
+import { CourseVideoFrame, useCourseVideo } from "@/components/course/CourseVideo";
 import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
-import { getHostedMedia } from "@/lib/media";
 import { checkDictation, type WordResult } from "@/lib/practice";
 import type { StudySentence } from "@/lib/video-study";
 
@@ -18,17 +15,12 @@ interface CourseDictationProps {
   onDone: () => void;
 }
 
-const SLOW_RATE = 0.75;
 const PASS_SCORE = 70;
 
 // Hear a sentence from the day's video, type it, then see which words were missed.
 export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose, onDone }: CourseDictationProps) {
-  const media = getHostedMedia(videoId);
-  const youTube = useYouTubePlayer(media ? null : videoId, sentences[0]?.start ?? 0, { hideCaptions: true });
-  const audio = useAudioPlayer(media?.audioUrl ?? null, sentences[0]?.start ?? 0);
-  const { containerRef } = youTube;
-  const { isPlaying, playSegment, pause, setRate } = media ? audio : youTube;
-  const [isSlow, setIsSlow] = useState(playbackRate < 1);
+  const video = useCourseVideo(videoId, sentences[0]?.start ?? 0, playbackRate);
+  const { isPlaying, pause, isSlow, setIsSlow } = video;
   const [index, setIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ words: WordResult[]; score: number } | null>(null);
@@ -36,12 +28,8 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
   const isFinished = index >= sentences.length;
   const sentence = sentences[index];
 
-  useEffect(() => {
-    setRate(isSlow ? Math.min(playbackRate, SLOW_RATE) : playbackRate);
-  }, [isSlow, playbackRate, setRate]);
-
   const play = () => {
-    if (sentence) void playSegment(sentence.start, sentence.end);
+    if (sentence) void video.playSentence(sentence);
   };
 
   const check = () => {
@@ -114,17 +102,7 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
         </p>
       )}
       {/* Kept mounted after the last sentence, so the player still works for "Try them again". */}
-      <div className={`relative mt-3 aspect-video w-full overflow-hidden rounded-2xl bg-black ${isFinished ? "hidden" : ""}`}>
-        {media ? (
-          <Image src={media.imageUrl} alt="" fill sizes="42rem" className="object-cover opacity-80" />
-        ) : (
-          <>
-            {/* Until the first play loads the player. */}
-            <Image src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt="" fill sizes="42rem" className="object-cover opacity-80" />
-            <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
-          </>
-        )}
-      </div>
+      <CourseVideoFrame video={video} className={isFinished ? "hidden" : "mt-3"} />
       {!isFinished && (
         <>
           <div className="mt-3 flex gap-2">

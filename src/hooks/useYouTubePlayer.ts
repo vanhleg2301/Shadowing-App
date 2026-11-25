@@ -126,7 +126,8 @@ export function useYouTubePlayer(videoId: string | null, startSeconds = 0, { hid
   const play = useCallback(() => withPlayer((player) => player.playVideo()), [withPlayer]);
   const pause = useCallback(() => {
     endSegment();
-    playerRef.current?.pauseVideo();
+    // The player object exists before it is ready, but its methods don't yet.
+    if (isPlayerReadyRef.current) playerRef.current?.pauseVideo();
   }, [endSegment]);
   const seekTo = useCallback(
     (seconds: number) => {

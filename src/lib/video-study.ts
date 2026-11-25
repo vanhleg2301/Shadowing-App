@@ -190,6 +190,26 @@ export interface DayStudy {
   title: string;
   items: { text: string; sentence: StudySentence }[];
   sentences: StudySentence[];
+  // Lines said one after another, for taking turns with the speaker; empty when no run of lines fits.
+  turns: StudySentence[];
+}
+
+const TURN_COUNT = 6;
+const TURN_MIN_WORDS = 3;
+const TURN_MAX_WORDS = 16;
+
+// The first run of consecutive lines, from where the studied sentences start, that are all easy to say.
+function findTurns(sentences: Sentence[], from: number): number[] {
+  const fits = (s: Sentence) => {
+    const words = tokenize(s.text).length;
+    return words >= TURN_MIN_WORDS && words <= TURN_MAX_WORDS && !BOILERPLATE.test(s.text);
+  };
+  for (const start of [from, 0]) {
+    for (let i = start; i + TURN_COUNT <= sentences.length; i++) {
+      if (sentences.slice(i, i + TURN_COUNT).every(fits)) return Array.from({ length: TURN_COUNT }, (_, k) => i + k);
+    }
+  }
+  return [];
 }
 
 export function buildDayStudy(lesson: { videoId: string; title: string; sentences: Sentence[] }, size: number): DayStudy | null {
@@ -205,7 +225,8 @@ export function buildDayStudy(lesson: { videoId: string; title: string; sentence
     return at ? [{ text: sentence.text.slice(at.start, at.end), sentence }] : [];
   });
   if (items.length < 3) return null;
-  return { videoId: lesson.videoId, title: lesson.title, items, sentences: study.sentences.map(toStudySentence) };
+  const turns = findTurns(lesson.sentences, Math.min(...study.sentences)).map(toStudySentence);
+  return { videoId: lesson.videoId, title: lesson.title, items, sentences: study.sentences.map(toStudySentence), turns };
 }
 
 export interface WarmUpSentence {

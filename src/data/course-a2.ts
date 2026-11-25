@@ -11,7 +11,7 @@ export function getCourseId(collection: CollectionId): string {
   return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
 }
 
-export type BlockKind = "review" | "words" | "listen" | "readalong" | "guide" | "phrases" | "dictation" | "shadow" | "speak" | "quiz" | "extra" | "free";
+export type BlockKind = "review" | "words" | "listen" | "readalong" | "guide" | "phrases" | "dictation" | "shadow" | "turns" | "speak" | "quiz" | "extra" | "free";
 
 export interface CourseBlock {
   id: string;
@@ -406,6 +406,7 @@ export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): 
     { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
     { id: "dictation", kind: "dictation", title: "Write what you hear: 5 sentences from the video", minutes: 10, videoId: main.id },
     { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
+    { id: "turns", kind: "turns", title: "Take turns with the speaker", minutes: 10, videoId: main.id, isOptional: true },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
     ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
@@ -435,6 +436,7 @@ export function getGentleBlocks(day: CourseDay, collection: CollectionId = "spon
     { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 10 },
     { id: "dictation", kind: "dictation", title: "Write what you hear: 5 sentences from the video", minutes: 10, videoId: main.id },
     { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 10, videoId: main.id },
+    { id: "turns", kind: "turns", title: "Take turns with the speaker", minutes: 10, videoId: main.id, isOptional: true },
     { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id, isOptional: true },
     { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} short answers, copy the video first`, minutes: 10, isOptional: true },

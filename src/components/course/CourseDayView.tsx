@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { savePhrasesToReview, setCourseBlockDone, setCourseBlocksDone } from "@/app/actions";
 import { CourseDictation } from "@/components/course/CourseDictation";
+import { CourseTakeTurns } from "@/components/course/CourseTakeTurns";
 import { DayTest } from "@/components/course/DayTest";
 import { CardDeck } from "@/components/lesson/CardDeck";
 import { FocusScreen } from "@/components/lesson/FocusScreen";
@@ -54,6 +55,7 @@ const KIND_ICON: Record<BlockKind, IconName> = {
   guide: "news",
   phrases: "chat",
   dictation: "note",
+  turns: "user",
   shadow: "mic",
   speak: "record",
   quiz: "chart",
@@ -78,8 +80,8 @@ function blockHref(block: CourseBlock, day: number, playbackRate: number | undef
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-type SectionId = "review" | "words" | "guide" | "phrases" | "dictation" | "speak" | "quiz";
-const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "dictation", "speak", "quiz"];
+type SectionId = "review" | "words" | "guide" | "phrases" | "dictation" | "turns" | "speak" | "quiz";
+const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "dictation", "turns", "speak", "quiz"];
 const DICTATION_SIZE = 5;
 
 // Short enough to type on a phone, long enough to be more than a greeting.
@@ -102,6 +104,8 @@ function getStepTip(block: CourseBlock): string {
       return block.id.startsWith("relisten")
         ? "Listen straight through one more time, without stopping. Notice how much more you understand than the first time."
         : "Now with the text. Pause when you need to, and tap any word you don't know.";
+    case "turns":
+      return "Shadow the video, but take turns: let it say one line, then you say the next.";
     case "dictation":
       return "Play a sentence, type what you hear, then check it to see the words you missed.";
     case "shadow":
@@ -167,6 +171,7 @@ export function CourseDayView({
     if (kind === "review") return hasReviewSection;
     if (kind === "guide") return guide !== null;
     if (kind === "dictation") return study !== null;
+    if (kind === "turns") return (study?.turns.length ?? 0) > 0;
     return kind === "words" ? phrases.length > 0 : kind === "quiz" ? testQuestions.length > 0 : true;
   });
   const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
@@ -375,6 +380,9 @@ export function CourseDayView({
           onDone={() => finishBlock("dictation")}
         />
       );
+    }
+    if (section === "turns" && study) {
+      return <CourseTakeTurns videoId={study.videoId} lines={study.turns} playbackRate={playbackRate} onClose={close} onDone={() => finishBlock("turns")} />;
     }
     if (section === "guide" && guide) {
       return (

@@ -202,6 +202,20 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await expect(screen.getByText("Write what you hear · 2 of 5")).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();
 
+  // Taking turns: the video says a line, you say the next from its first letters.
+  await steps.getByRole("button", { name: /^Take turns with the speaker/ }).click();
+  screen = page.getByRole("dialog", { name: "Take turns with the speaker" });
+  await screen.getByRole("button", { name: "Start the conversation" }).click();
+  const conversation = screen.getByRole("list", { name: "Conversation" });
+  await expect(conversation.getByText("Video", { exact: true })).toBeVisible();
+  await screen.getByRole("button", { name: "Your turn" }).click();
+  await expect(conversation.getByText("You", { exact: true })).toBeVisible();
+  const hint = conversation.locator("li").nth(1).locator("p[lang=en]");
+  await expect(hint).toContainText("…");
+  await screen.getByRole("button", { name: "Show the line" }).click();
+  await expect(hint).not.toContainText("…");
+  await screen.getByRole("button", { name: "Close" }).click();
+
   // A video step says what to do, opens the video, and is ticked by hand.
   await steps.getByRole("button", { name: /^Listen 1, text hidden/ }).click();
   screen = page.getByRole("dialog", { name: /^Listen 1, text hidden/ });
