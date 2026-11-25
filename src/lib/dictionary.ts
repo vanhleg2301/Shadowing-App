@@ -8,6 +8,8 @@ export interface WordInfo {
   source: "ai" | "free";
   // A picture of the word, for words saved from a grammar unit.
   image?: string;
+  // The sentence of the video it was heard in, for phrases missed in a dictation.
+  sentenceIndex?: number;
 }
 
 export function normalizeWord(token: string): string {

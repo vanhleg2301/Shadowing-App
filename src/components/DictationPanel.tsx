@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
+import { MissedToReviewNote } from "@/components/MissedToReviewNote";
 import { PracticeNav } from "@/components/PracticeNav";
+import { useMissedToReview, type MissedResult } from "@/hooks/useMissedToReview";
 import type { Sentence } from "@/lib/lesson";
 import { checkDictation, type WordResult } from "@/lib/practice";
 
 interface DictationPanelProps {
+  videoId: string;
   sentence: Sentence;
   index: number;
   total: number;
@@ -15,19 +18,24 @@ interface DictationPanelProps {
   onReveal: () => void;
 }
 
-export function DictationPanel({ sentence, index, total, onListen, onPrev, onNext, onReveal }: DictationPanelProps) {
+export function DictationPanel({ videoId, sentence, index, total, onListen, onPrev, onNext, onReveal }: DictationPanelProps) {
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ words: WordResult[]; score: number } | null>(null);
+  const { saveMissed, isSignedIn } = useMissedToReview(videoId);
+  const [missed, setMissed] = useState<MissedResult | null>(null);
 
-  const handleCheck = () => {
-    setResult(checkDictation(sentence.text, typed));
+  const handleCheck = async () => {
+    const checked = checkDictation(sentence.text, typed);
+    setResult(checked);
     onReveal();
+    setMissed(null);
+    if (typed.trim()) setMissed(await saveMissed({ ...sentence, index }, checked.words));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleCheck();
+      void handleCheck();
     }
   };
 
@@ -63,11 +71,12 @@ export function DictationPanel({ sentence, index, total, onListen, onPrev, onNex
               </span>
             ))}
           </p>
+          <MissedToReviewNote missed={missed} isSignedIn={isSignedIn} />
         </div>
       )}
 
       <PracticeNav index={index} total={total} onPrev={onPrev} onNext={onNext} onListen={onListen}>
-        <button type="button" className="btn-3d btn-brand py-3 text-sm" onClick={handleCheck}>
+        <button type="button" className="btn-3d btn-brand py-3 text-sm" onClick={() => void handleCheck()}>
           Check
         </button>
       </PracticeNav>

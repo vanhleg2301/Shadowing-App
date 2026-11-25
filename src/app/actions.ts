@@ -245,6 +245,12 @@ const PhraseListSchema = z.object({
           .string()
           .regex(/^\/(grammar|words)\/[a-z0-9-]+\/[a-z0-9-]+\.webp$/)
           .optional(),
+        // Where it was heard: a phrase missed in a dictation links back to its sentence in the video.
+        videoId: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{11}$/)
+          .optional(),
+        sentenceIndex: z.number().int().min(0).max(5000).optional(),
       }),
     )
     .max(30),
@@ -262,13 +268,14 @@ export async function savePhrasesToReview(input: z.input<typeof PhraseListSchema
     user_id: ctx.user.id,
     word: p.text,
     sentence: p.example,
-    video_id: null,
+    video_id: p.videoId ?? null,
     entry: {
       word: p.text,
       meanings: [{ partOfSpeech: "phrase", definition: p.meaning, example: p.example }],
       phrases: [],
       source: "free",
       ...(p.image ? { image: p.image } : {}),
+      ...(p.sentenceIndex !== undefined ? { sentenceIndex: p.sentenceIndex } : {}),
     },
   }));
   // ignoreDuplicates keeps the review schedule of phrases the learner already saved.

@@ -4,6 +4,8 @@ import { useState, type KeyboardEvent } from "react";
 import { CourseVideoFrame, useCourseVideo } from "@/components/course/CourseVideo";
 import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
+import { MissedToReviewNote } from "@/components/MissedToReviewNote";
+import { useMissedToReview, type MissedResult } from "@/hooks/useMissedToReview";
 import { checkDictation, type WordResult } from "@/lib/practice";
 import type { StudySentence } from "@/lib/video-study";
 
@@ -25,6 +27,9 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<{ words: WordResult[]; score: number } | null>(null);
   const [scores, setScores] = useState<number[]>([]);
+  const { saveMissed, isSignedIn } = useMissedToReview(videoId);
+  const [missed, setMissed] = useState<MissedResult | null>(null);
+  const [savedCount, setSavedCount] = useState(0);
   const isFinished = index >= sentences.length;
   const sentence = sentences[index];
 
@@ -32,11 +37,14 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
     if (sentence) void video.playSentence(sentence);
   };
 
-  const check = () => {
+  const check = async () => {
     if (!sentence || !typed.trim()) return;
     const checked = checkDictation(sentence.text, typed);
     setResult(checked);
     setScores([...scores, checked.score]);
+    const saved = await saveMissed(sentence, checked.words);
+    setMissed(saved);
+    if (saved.isSaved) setSavedCount((n) => n + saved.phrases.length);
   };
 
   const next = () => {
@@ -45,18 +53,20 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
     setIndex(nextIndex);
     setTyped("");
     setResult(null);
+    setMissed(null);
     if (nextIndex >= sentences.length) onDone();
   };
 
   const restart = () => {
     setIndex(0);
     setScores([]);
+    setSavedCount(0);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      check();
+      void check();
     }
   };
 
@@ -71,7 +81,7 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
       <button type="button" onClick={() => setResult(checkDictation(sentence.text, ""))} className="btn-3d flex-1 py-3">
         Show it
       </button>
-      <button type="button" onClick={check} disabled={!typed.trim()} className="btn-3d btn-brand flex-[2] py-3 disabled:opacity-40">
+      <button type="button" onClick={() => void check()} disabled={!typed.trim()} className="btn-3d btn-brand flex-[2] py-3 disabled:opacity-40">
         Check
       </button>
     </div>
@@ -84,9 +94,10 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
           title={`${average}% heard right`}
           isPassed={average >= PASS_SCORE}
           detail={
-            average >= PASS_SCORE
+            (average >= PASS_SCORE
               ? "Your ears are catching the words. The ones you missed are usually the short, quick ones: listen for them when you shadow."
-              : "That's normal: the short words run together in real speech. Shadowing these sentences is what trains your ear."
+              : "That's normal: the short words run together in real speech. Shadowing these sentences is what trains your ear.") +
+            (savedCount > 0 ? ` ${savedCount} missed ${savedCount === 1 ? "phrase is" : "phrases are"} waiting in Review.` : "")
           }
         >
           <button type="button" onClick={restart} className="btn-3d py-3">
@@ -141,6 +152,7 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
                 ))}
               </p>
               {sentence.translation && <p className="mt-1 text-sm text-muted">{sentence.translation}</p>}
+              <MissedToReviewNote missed={missed} isSignedIn={isSignedIn} />
             </div>
           )}
         </>

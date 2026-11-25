@@ -198,6 +198,8 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await screen.getByRole("textbox", { name: "What you heard" }).fill("I think");
   await screen.getByRole("button", { name: "Check" }).click();
   await expect(screen.getByText(/% heard right|Perfect!/)).toBeVisible();
+  // What was missed is offered for Review; signed out, it asks to sign in.
+  await expect(screen.getByText(/^Sign in to practise “.+” again in Review\.$/)).toBeVisible();
   await screen.getByRole("button", { name: "Next sentence" }).click();
   await expect(screen.getByText("Write what you hear · 2 of 5")).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();

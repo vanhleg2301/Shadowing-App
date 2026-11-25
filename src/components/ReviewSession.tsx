@@ -113,8 +113,11 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
               </p>
             ))}
             {card.videoId && (
-              <Link href={`/watch/${card.videoId}`} className="mt-3 inline-block text-sm font-semibold text-brand">
-                Open the video →
+              <Link
+                href={card.entry?.sentenceIndex === undefined ? `/watch/${card.videoId}` : `/watch/${card.videoId}?mode=shadow&s=${card.entry.sentenceIndex}`}
+                className="mt-3 inline-block text-sm font-semibold text-brand"
+              >
+                {card.entry?.sentenceIndex === undefined ? "Open the video →" : "Hear it in the video →"}
               </Link>
             )}
           </div>

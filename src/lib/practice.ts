@@ -67,3 +67,32 @@ export function pickClozeIndexes(tokens: Token[]): number[] {
   const step = candidates.length / count;
   return Array.from({ length: count }, (_, k) => candidates[Math.floor(k * step + step / 2)]);
 }
+
+const MAX_MISSED_PER_SENTENCE = 2;
+const MAX_MISSED_WORDS = 4;
+
+// The runs of words missed in a dictation, as they are written in the sentence, to practise again in Review. A
+// lone little word ("up", "the") is kept with the word before it when that one carries meaning ("woke up"), and
+// dropped otherwise; a run longer than a few words means the learner didn't try.
+export function getMissedChunks(words: WordResult[]): string[] {
+  const isLittle = (text: string) => normalizeToken(text).length < 4 || CLOZE_SKIP.has(normalizeToken(text));
+  const runs: number[][] = [];
+  let run: number[] = [];
+  words.forEach((word, i) => {
+    if (!word.isCorrect) run.push(i);
+    if ((word.isCorrect || i === words.length - 1) && run.length) {
+      runs.push(run);
+      run = [];
+    }
+  });
+  const chunks = runs.flatMap((r) => {
+    if (r.length > MAX_MISSED_WORDS) return [];
+    if (r.length > 1 || !isLittle(words[r[0]].text)) return [r];
+    const before = r[0] - 1;
+    return before >= 0 && !CLOZE_SKIP.has(normalizeToken(words[before].text)) ? [[before, r[0]]] : [];
+  });
+  const texts = chunks
+    .map((c) => c.map((i) => words[i].text).join(" ").replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, ""))
+    .filter((text) => text.length > 0 && text.length <= 60);
+  return [...new Set(texts)].slice(0, MAX_MISSED_PER_SENTENCE);
+}

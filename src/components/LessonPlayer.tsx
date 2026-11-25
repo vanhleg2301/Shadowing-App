@@ -544,6 +544,7 @@ export function LessonPlayer({
         {mode === "dictation" && (
           <DictationPanel
             key={practiceIndex}
+            videoId={lesson.videoId}
             sentence={sentences[practiceIndex]}
             index={practiceIndex}
             total={sentences.length}
