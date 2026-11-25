@@ -8,9 +8,9 @@ import { formatNewsDate } from "@/lib/news";
 import { getTechArticle } from "@/lib/tech-news";
 import { getLessonUserState } from "@/lib/user-data";
 
-export const metadata: Metadata = { title: "AI & Tech · Shadowing English" };
+export const metadata: Metadata = { title: "News · Shadowing English" };
 
-export default function TechArticlePage({ params }: PageProps<"/news/ai-tech/[id]">) {
+export default function TechArticlePage({ params }: PageProps<"/news/article/[id]">) {
   return (
     <AppShell active="/news">
       <Suspense fallback={<LessonSkeleton />}>

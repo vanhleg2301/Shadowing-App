@@ -16,7 +16,7 @@ const KIND_LABELS: Record<string, string> = {
   grammar: "Grammar",
   vocab: "Vocabulary",
   story: "Story",
-  tech: "AI & Tech",
+  tech: "News article",
 };
 
 export default function NotesPage() {

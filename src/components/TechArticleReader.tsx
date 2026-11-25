@@ -9,6 +9,7 @@ import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { splitSentences } from "@/data/stories";
 import { READER_SIZES, READER_SPACINGS, useReaderPrefs } from "@/hooks/useReaderPrefs";
 import { useWordLookup } from "@/hooks/useWordLookup";
+import { getArticleHref, getTopicHref } from "@/lib/news";
 import { speak } from "@/lib/speech";
 import type { TechArticle } from "@/lib/tech-news";
 import { LessonNotes } from "@/components/LessonNotes";
@@ -83,7 +84,7 @@ export function TechArticleReader({ article, dateLabel, initialSavedWords, initi
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-44 pt-[calc(env(safe-area-inset-top)+1rem)] md:px-8 md:pb-32">
       <div className="flex items-center justify-between gap-3">
-        <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: "AI & Tech", href: "/news/ai-tech" }, { label: article.title }]} className="min-w-0" />
+        <Breadcrumbs items={[{ label: "News", href: "/news" }, { label: article.topic, href: getTopicHref(article.topic) }, { label: article.title }]} className="min-w-0" />
         <FavoriteButton videoId={article.id} title={article.title} initialIsFavorite={initialIsFavorite} />
       </div>
       <p className="mt-4 text-xs font-bold uppercase tracking-wide text-accent">
@@ -131,7 +132,7 @@ export function TechArticleReader({ article, dateLabel, initialSavedWords, initi
       </div>
 
       {article.disclosure && <p className="mt-8 text-xs italic text-muted">{article.disclosure}</p>}
-      <LessonNotes lessonKey={`tech:${article.id}`} title={article.title} href={`/news/ai-tech/${article.id}`} className="mt-10" />
+      <LessonNotes lessonKey={`tech:${article.id}`} title={article.title} href={getArticleHref(article.id)} className="mt-10" />
 
       {/* The page counter The Conversation requires for republished articles. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- a 1x1 counter must load as they serve it */}

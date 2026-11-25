@@ -28,11 +28,11 @@ export default function StoriesPage({ searchParams }: PageProps<"/stories">) {
         <p className="mt-8 text-sm text-muted">
           Looking for real news?{" "}
           <Link href="/news" className="font-semibold text-brand">
-            VOA news archive
+            Today&rsquo;s articles
           </Link>{" "}
-          or{" "}
-          <Link href="/news/ai-tech" className="font-semibold text-brand">
-            AI &amp; tech articles
+          or the{" "}
+          <Link href="/news?topic=voa" className="font-semibold text-brand">
+            VOA news archive
           </Link>
         </p>
       </main>

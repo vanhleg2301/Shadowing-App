@@ -3,10 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ArticleList } from "@/components/ArticleList";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ListSkeleton } from "@/components/Skeleton";
 import { getThumbnailUrl } from "@/lib/media";
-import { formatNewsDate } from "@/lib/news";
 import { getTechArticles, getTechVideos } from "@/lib/tech-news";
 
 export const metadata: Metadata = { title: "AI & Tech · Shadowing English" };
@@ -23,7 +23,7 @@ export default function AiTechPage() {
         </p>
         <Suspense fallback={<ListSkeleton />}>
           <VideoList />
-          <ArticleList />
+          <Articles />
         </Suspense>
       </main>
     </AppShell>
@@ -59,29 +59,13 @@ async function VideoList() {
   );
 }
 
-async function ArticleList() {
-  const articles = await getTechArticles();
+async function Articles() {
+  const articles = await getTechArticles("AI & Tech");
   if (articles.length === 0) return <p className="mt-8 text-muted">No articles yet. New ones arrive every morning.</p>;
   return (
     <section className="mt-8">
       <h2 className="text-xl font-extrabold text-ink">Articles</h2>
-      <ul className="stagger mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-        {articles.map((article) => (
-          <li key={article.id}>
-            <Link href={`/news/ai-tech/${article.id}`} className="pressable block h-full rounded-3xl border border-line bg-surface p-4 hover:border-brand">
-              <p className="text-xs font-bold uppercase tracking-wide text-accent">
-                ≈{article.level}
-                <span className="text-muted">
-                  {" "}
-                  · {formatNewsDate(article.published_at)} · {Math.max(1, Math.round(article.word_count / 200))} min read
-                </span>
-              </p>
-              <p className="mt-1 font-bold leading-snug text-ink">{article.title}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-muted">{article.summary}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <ArticleList articles={articles} />
     </section>
   );
 }

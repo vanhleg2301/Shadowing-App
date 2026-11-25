@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
     ],
   },
   partialPrefetching: true,
+  // Articles moved here when News got more topics than AI & Tech; saved links and notes still work.
+  async redirects() {
+    return [{ source: "/news/ai-tech/:id(tc-\\d{8})", destination: "/news/article/:id", permanent: true }];
+  },
   // Admin -> Theme uploads the app icon and link-preview image through a server action.
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   turbopack: {

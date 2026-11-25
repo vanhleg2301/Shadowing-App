@@ -39,9 +39,9 @@ export function OfflineLessons() {
       )}
       {lessons.length === 0 ? (
         <p className="mt-8 text-muted">
-          Nothing saved yet. Open a story in{" "}
-          <Link href="/news" className="font-semibold text-brand">
-            News
+          Nothing saved yet. Open a story in the{" "}
+          <Link href="/news?topic=voa" className="font-semibold text-brand">
+            VOA news archive
           </Link>{" "}
           and tap &ldquo;Save for offline&rdquo;.
         </p>

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PageNav } from "@/components/PageNav";
 import { getThumbnailUrl } from "@/lib/media";
 
+export const VOA_TAB = "voa";
+
 export interface NewsStory {
   videoId: string;
   title: string;
@@ -20,12 +22,12 @@ interface NewsListProps {
   totalPages: number;
 }
 
+// VOA stories are the "VOA archive" tab of /news.
 export function newsHref(category: string | null, page = 1): string {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ topic: VOA_TAB });
   if (category) params.set("category", category);
   if (page > 1) params.set("page", String(page));
-  const search = params.toString();
-  return search ? `/news?${search}` : "/news";
+  return `/news?${params.toString()}`;
 }
 
 // One page of stories; the category and page live in the URL.
@@ -34,21 +36,22 @@ export function NewsList({ stories, categories, category, page, totalPages }: Ne
 
   return (
     <>
-      <div className="no-scrollbar -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <p className="mt-5 max-w-2xl rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+        VOA Learning English stopped publishing in March 2025. Its stories stay here because they are read slowly and clearly,
+        with audio you can shadow.
+      </p>
+      <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
         {[null, ...categories].map((c) => (
           <Link
             key={c ?? "all"}
             href={newsHref(c)}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-              category === c ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink"
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              category === c ? "border-ink bg-ink text-cream" : "border-line bg-surface text-ink"
             }`}
           >
-            {c ?? "All"}
+            {c ?? "All VOA"}
           </Link>
         ))}
-        <Link href="/news/ai-tech" className="shrink-0 rounded-full border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors">
-          AI &amp; Tech
-        </Link>
       </div>
 
       {lead && page === 1 ? (

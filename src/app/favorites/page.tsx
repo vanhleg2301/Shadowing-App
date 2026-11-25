@@ -89,7 +89,7 @@ async function FavoritesList() {
           title="News"
           items={news.map((f) => ({
             favorite: f,
-            label: f.videoId.startsWith("tc-") ? "AI & Tech" : (catalog.find((v) => v.videoId === f.videoId)?.category ?? "News"),
+            label: f.videoId.startsWith("tc-") ? "Article" : (catalog.find((v) => v.videoId === f.videoId)?.category ?? "News"),
           }))}
         />
       )}

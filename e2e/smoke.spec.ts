@@ -31,7 +31,7 @@ async function expectInViewport(page: Page, locator: ReturnType<Page["locator"]>
     .toBe(true);
 }
 
-const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news/ai-tech", "/stories", "/placement", "/privacy", "/about", "/offline"];
+const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news?topic=voa", "/news/ai-tech", "/stories", "/placement", "/privacy", "/about", "/offline"];
 
 for (const path of STATIC_PAGES) {
   test(`page ${path} loads`, async ({ page }) => {
@@ -41,7 +41,7 @@ for (const path of STATIC_PAGES) {
 }
 
 test("a news story loads with its player fixed on screen", async ({ page }) => {
-  await openPage(page, "/news");
+  await openPage(page, "/news?topic=voa");
   const story = await firstHref(page, "/news/voa-");
   await openPage(page, story);
   await page.mouse.wheel(0, 1500);
@@ -64,19 +64,27 @@ test("the phone's More tab reaches every sidebar page", async ({ page, isMobile 
   await expect(sheet).toBeHidden();
 });
 
-test("news, stories and AI & Tech articles have a favorite button", async ({ page }) => {
-  await openPage(page, "/news");
+test("news stories, stories and articles have a favorite button", async ({ page }) => {
+  await openPage(page, "/news?topic=voa");
   const news = await firstHref(page, "/news/voa-");
   await openPage(page, "/news/ai-tech");
-  const article = await firstHref(page, "/news/ai-tech/tc-");
+  const article = await firstHref(page, "/news/article/tc-");
   for (const path of [news, article, "/stories/story-00049"]) {
     await openPage(page, path);
     await expect(page.getByRole("button", { name: "Add to favorites" })).toBeVisible();
   }
 });
 
-test("the transcript scrolls freely until Current brings it back", async ({ page }) => {
+test("news opens on the latest articles, and old article links still work", async ({ page }) => {
   await openPage(page, "/news");
+  await expect(page.getByRole("link", { name: "Latest" })).toHaveAttribute("aria-current", "page");
+  const article = await firstHref(page, "/news/article/tc-");
+  await openPage(page, article.replace("/news/article/", "/news/ai-tech/"));
+  await expect(page).toHaveURL(new RegExp(`${article}$`));
+});
+
+test("the transcript scrolls freely until Current brings it back", async ({ page }) => {
+  await openPage(page, "/news?topic=voa");
   await openPage(page, (await firstHref(page, "/news/voa-")).replace("/news/", "/watch/"));
   await page.getByRole("button", { name: "Next sentence" }).click();
   const transcript = page.getByTestId("transcript");

@@ -1,13 +1,24 @@
-// Imports AI articles from The Conversation for News > AI & Tech. Run daily by /api/cron/tech-news.
+// Imports articles from The Conversation for News: one a day from each section in FEEDS. Run daily by
+// /api/cron/tech-news.
 //
 // The Conversation allows republishing under CC BY-ND (https://theconversation.com/republishing-guidelines) with
 // these rules, which the importer and the reader keep: the words are not edited; authors, their institutions and
 // The Conversation are credited with a link; the page counter is shown; images are left out because their rights
 // differ; and not everything is republished, so each run takes only a few articles. Needs migration 025.
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { NewsTopic } from "./news";
 import type { TechArticle, TechArticleBlock } from "./tech-news";
 
-const FEED_URL = "https://theconversation.com/topics/artificial-intelligence-ai-90/articles.atom";
+// AI & Tech comes first, so an AI article that is also in the technology section is filed under AI & Tech.
+const FEEDS: { topic: NewsTopic; url: string; isFiltered?: boolean }[] = [
+  { topic: "AI & Tech", url: "https://theconversation.com/topics/artificial-intelligence-ai-90/articles.atom", isFiltered: true },
+  { topic: "World", url: "https://theconversation.com/us/world/articles.atom" },
+  { topic: "Health", url: "https://theconversation.com/us/health/articles.atom" },
+  { topic: "Environment", url: "https://theconversation.com/us/environment/articles.atom" },
+  { topic: "Science & Tech", url: "https://theconversation.com/us/technology/articles.atom" },
+  { topic: "Education", url: "https://theconversation.com/us/education/articles.atom" },
+  { topic: "Culture", url: "https://theconversation.com/us/arts/articles.atom" },
+];
 const USER_AGENT = "Mozilla/5.0 (compatible; ShadowingAppImporter/1.0; +https://shadowing-app-liard.vercel.app)";
 const MIN_WORDS = 300;
 const MAX_WORDS = 1800;
@@ -122,7 +133,7 @@ function getElementText(xml: string, tag: string): string {
   return cdata ? cdata[1] : decodeEntities(match[1]);
 }
 
-function parseEntry(entry: string): TechArticle | null {
+function parseEntry(entry: string, topic: NewsTopic, isFiltered: boolean): TechArticle | null {
   const number = getElementText(entry, "id").match(/article\/(\d+)$/);
   const content = getElementText(entry, "content");
   const counter = content.match(/https:\/\/counter\.theconversation\.com\/content\/\d+\/count\.gif/);
@@ -135,9 +146,10 @@ function parseEntry(entry: string): TechArticle | null {
   if (wordCount < MIN_WORDS || wordCount > MAX_WORDS) return null;
   const title = getElementText(entry, "title");
   const summary = getElementText(entry, "summary");
-  if (!ON_TOPIC.test(`${title} ${summary}`)) return null;
+  if (isFiltered && !ON_TOPIC.test(`${title} ${summary}`)) return null;
   return {
     id: `tc-${number[1].padStart(8, "0")}`,
+    topic,
     title: title.trim(),
     summary: summary.trim(),
     authors: [...entry.matchAll(/<author>([\s\S]*?)<\/author>/g)].map((m) => getElementText(m[1], "name").trim()),
@@ -151,25 +163,35 @@ function parseEntry(entry: string): TechArticle | null {
   };
 }
 
-export async function getFeedArticles(): Promise<{ entries: number; articles: TechArticle[] }> {
-  const response = await fetch(FEED_URL, { headers: { "User-Agent": USER_AGENT }, cache: "no-store" });
-  if (!response.ok) throw new Error(`Feed returned ${response.status}`);
+async function getFeedArticles(feed: (typeof FEEDS)[number]): Promise<{ entries: number; articles: TechArticle[] }> {
+  const response = await fetch(feed.url, { headers: { "User-Agent": USER_AGENT }, cache: "no-store" });
+  if (!response.ok) throw new Error(`${feed.topic} feed returned ${response.status}`);
   const xml = await response.text();
   const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => m[1]);
-  const articles = entries.map(parseEntry).filter((a): a is TechArticle => a !== null);
+  const articles = entries.map((entry) => parseEntry(entry, feed.topic, feed.isFiltered ?? false)).filter((a): a is TechArticle => a !== null);
   articles.sort((a, b) => b.published_at.localeCompare(a.published_at));
   return { entries: entries.length, articles };
 }
 
+// Takes up to `limit` new articles from each section. A section whose feed fails is reported, not fatal.
 export async function importTechArticles(admin: SupabaseClient, limit = 1) {
   const { data, error } = await admin.from("tech_articles").select("id");
   if (error) throw new Error(`Reading stored articles failed: ${error.message}`);
-  const stored = new Set((data ?? []).map((row: { id: string }) => row.id));
-  const { entries, articles } = await getFeedArticles();
-  const fresh = articles.filter((a) => !stored.has(a.id)).slice(0, limit);
+  const taken = new Set((data ?? []).map((row: { id: string }) => row.id));
+  const alreadyStored = taken.size;
+  const feeds = await Promise.allSettled(FEEDS.map(getFeedArticles));
+  const fresh: TechArticle[] = [];
+  const report = FEEDS.map((feed, i) => {
+    const result = feeds[i];
+    if (result.status === "rejected") return { topic: feed.topic, error: result.reason instanceof Error ? result.reason.message : "failed" };
+    const picked = result.value.articles.filter((a) => !taken.has(a.id)).slice(0, limit);
+    for (const article of picked) taken.add(article.id);
+    fresh.push(...picked);
+    return { topic: feed.topic, entries: result.value.entries, usable: result.value.articles.length, imported: picked.map((a) => a.id) };
+  });
   if (fresh.length > 0) {
     const { error: insertError } = await admin.from("tech_articles").insert(fresh);
     if (insertError) throw new Error(`Storing articles failed: ${insertError.message}`);
   }
-  return { entries, usable: articles.length, alreadyStored: stored.size, imported: fresh.map((a) => a.id) };
+  return { alreadyStored, feeds: report };
 }
