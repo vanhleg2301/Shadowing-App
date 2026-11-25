@@ -32,6 +32,7 @@ interface GrammarUnitViewProps {
 
 type StageId = "story" | "pattern" | "videos" | "check" | "speak";
 
+const CHECK_COVERS: StageId[] = ["story", "pattern", "videos"];
 const STORY_RATE = 0.85;
 const PICTURE_QUESTIONS = 3;
 
@@ -58,7 +59,10 @@ function highlight(text: string, pattern: string[]): ReactNode[] {
 // understand a picture story, notice the pattern, hear it in real videos, check it is understood, then say it.
 // The unit's words are taught in Vocabulary.
 export function GrammarUnitView({ unit, examples, narration, isSignedIn, passed, nextHref }: GrammarUnitViewProps) {
-  const [done, setDone] = useState(passed);
+  const [finished, setDone] = useState(passed);
+  // Passing the check shows the unit was understood, so the parts before it count as done too (units passed
+  // before the path existed stored only "check").
+  const done = finished.includes("check") ? [...new Set([...finished, ...CHECK_COVERS])] : finished;
   const [open, setOpen] = useState<StageId | null>(null);
   const [isReading, setIsReading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
