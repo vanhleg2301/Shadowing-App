@@ -230,6 +230,7 @@ export function getB1Blocks(day: CourseDay, collection: CollectionId): CourseBlo
     { id: "words", kind: "words", title: "Words and chunks from the video", minutes: 10 },
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
+    { id: "dictation", kind: "dictation", title: "Write what you hear: 5 sentences from the video", minutes: 10, videoId: main.id },
     { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
     { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },

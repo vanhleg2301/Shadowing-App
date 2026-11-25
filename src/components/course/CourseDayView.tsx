@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { savePhrasesToReview, setCourseBlockDone, setCourseBlocksDone } from "@/app/actions";
+import { CourseDictation } from "@/components/course/CourseDictation";
 import { DayTest } from "@/components/course/DayTest";
 import { CardDeck } from "@/components/lesson/CardDeck";
 import { FocusScreen } from "@/components/lesson/FocusScreen";
@@ -52,6 +53,7 @@ const KIND_ICON: Record<BlockKind, IconName> = {
   readalong: "volume",
   guide: "news",
   phrases: "chat",
+  dictation: "note",
   shadow: "mic",
   speak: "record",
   quiz: "chart",
@@ -72,11 +74,22 @@ function blockHref(block: CourseBlock, day: number, playbackRate: number | undef
   const from = fromCourse(day, playbackRate);
   if (block.kind === "listen" || block.kind === "extra") return `/watch/${block.videoId}?mode=watch&listen=1&${from}`;
   if (block.kind === "readalong") return `/watch/${block.videoId}?mode=watch&${from}`;
+  if (block.kind === "dictation") return `/watch/${block.videoId}?mode=dictation&${from}`;
   return `/watch/${block.videoId}?mode=shadow&${from}`;
 }
 
-type SectionId = "review" | "words" | "guide" | "phrases" | "speak" | "quiz";
-const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "speak", "quiz"];
+type SectionId = "review" | "words" | "guide" | "phrases" | "dictation" | "speak" | "quiz";
+const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "dictation", "speak", "quiz"];
+const DICTATION_SIZE = 5;
+
+// Short enough to type on a phone, long enough to be more than a greeting.
+function pickDictationSentences(sentences: StudySentence[]): StudySentence[] {
+  const fits = sentences.filter((s) => {
+    const words = s.text.split(/\s+/).length;
+    return words >= 4 && words <= 14;
+  });
+  return (fits.length >= DICTATION_SIZE ? fits : sentences).slice(0, DICTATION_SIZE);
+}
 
 // What to do in a step that happens in a video (or elsewhere in the app), shown before it opens.
 function getStepTip(block: CourseBlock): string {
@@ -89,6 +102,8 @@ function getStepTip(block: CourseBlock): string {
       return block.id.startsWith("relisten")
         ? "Listen straight through one more time, without stopping. Notice how much more you understand than the first time."
         : "Now with the text. Pause when you need to, and tap any word you don't know.";
+    case "dictation":
+      return "Play a sentence, type what you hear, then check it to see the words you missed.";
     case "shadow":
       return "Play a sentence, then say it with the speaker. Copy the rhythm and the stress, not only the words. Repeat the hard ones.";
     case "extra":
@@ -151,6 +166,7 @@ export function CourseDayView({
     if (!blocks.some((b) => b.kind === kind)) return false;
     if (kind === "review") return hasReviewSection;
     if (kind === "guide") return guide !== null;
+    if (kind === "dictation") return study !== null;
     return kind === "words" ? phrases.length > 0 : kind === "quiz" ? testQuestions.length > 0 : true;
   });
   const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
@@ -347,6 +363,17 @@ export function CourseDayView({
         >
           {sheets}
         </CardDeck>
+      );
+    }
+    if (section === "dictation" && study) {
+      return (
+        <CourseDictation
+          videoId={study.videoId}
+          sentences={pickDictationSentences(study.sentences)}
+          playbackRate={playbackRate}
+          onClose={close}
+          onDone={() => finishBlock("dictation")}
+        />
       );
     }
     if (section === "guide" && guide) {

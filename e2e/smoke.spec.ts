@@ -191,6 +191,17 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await expect(screen.getByText(/· 2 of \d+/)).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();
 
+  // Dictation: type what you hear, then see the words you missed.
+  await steps.getByRole("button", { name: /^Write what you hear/ }).click();
+  screen = page.getByRole("dialog", { name: "Write what you hear" });
+  await expect(screen.getByText("Write what you hear · 1 of 5")).toBeVisible();
+  await screen.getByRole("textbox", { name: "What you heard" }).fill("I think");
+  await screen.getByRole("button", { name: "Check" }).click();
+  await expect(screen.getByText(/% heard right|Perfect!/)).toBeVisible();
+  await screen.getByRole("button", { name: "Next sentence" }).click();
+  await expect(screen.getByText("Write what you hear · 2 of 5")).toBeVisible();
+  await screen.getByRole("button", { name: "Close" }).click();
+
   // A video step says what to do, opens the video, and is ticked by hand.
   await steps.getByRole("button", { name: /^Listen 1, text hidden/ }).click();
   screen = page.getByRole("dialog", { name: /^Listen 1, text hidden/ });

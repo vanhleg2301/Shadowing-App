@@ -21,6 +21,7 @@ const LABELS: Record<BlockKind, string> = {
   listen: "Listen with the text hidden and get the main idea",
   readalong: "Listen with the text and tap the words you don't know",
   phrases: "Hear and repeat the sentences from the video",
+  dictation: "Hear a sentence, type it, see what you missed",
   shadow: "Shadow: listen and repeat each sentence",
   speak: "If you like: retell the video out loud",
   guide: "Read the video's parts and its model, and hear each line",
