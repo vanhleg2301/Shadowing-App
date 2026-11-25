@@ -14,6 +14,8 @@ import type { TechArticle, TechArticleBlock } from "./tech-news";
 const FEEDS: { topic: NewsTopic; url: string; isFiltered?: boolean }[] = [
   { topic: "AI & Tech", url: "https://theconversation.com/topics/artificial-intelligence-ai-90/articles.atom", isFiltered: true },
   { topic: "World", url: "https://theconversation.com/us/world/articles.atom" },
+  { topic: "Politics", url: "https://theconversation.com/us/politics/articles.atom" },
+  { topic: "Economy", url: "https://theconversation.com/us/business/articles.atom" },
   { topic: "Health", url: "https://theconversation.com/us/health/articles.atom" },
   { topic: "Environment", url: "https://theconversation.com/us/environment/articles.atom" },
   { topic: "Science & Tech", url: "https://theconversation.com/us/technology/articles.atom" },

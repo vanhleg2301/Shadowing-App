@@ -7,7 +7,7 @@ export function formatNewsDate(publishedAt: string | undefined): string | null {
 }
 
 // Sections of the daily articles from The Conversation (src/lib/tech-news-import.ts).
-export const NEWS_TOPICS = ["World", "Health", "Environment", "Science & Tech", "Education", "Culture", "AI & Tech"] as const;
+export const NEWS_TOPICS = ["World", "Politics", "Economy", "Health", "Environment", "Science & Tech", "Education", "Culture", "AI & Tech"] as const;
 export type NewsTopic = (typeof NEWS_TOPICS)[number];
 
 export function isNewsTopic(value: string): value is NewsTopic {
