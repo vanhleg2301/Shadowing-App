@@ -26,9 +26,9 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
   }, [onClose]);
 
   // Rendered into <body>: a sheet opened from the sticky sidebar or a blurred bar would otherwise be
-  // trapped in that element's stacking context and show up behind the page.
+  // trapped in that element's stacking context and show up behind the page. Above focus screens (z-60) too.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

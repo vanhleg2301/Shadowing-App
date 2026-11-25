@@ -8,6 +8,8 @@ export interface LessonStage {
   detail: string;
   icon: IconName;
   isDone: boolean;
+  // Not needed to finish the lesson: never "next", and left out of the progress.
+  isOptional?: boolean;
 }
 
 interface LessonPathProps {
@@ -17,17 +19,18 @@ interface LessonPathProps {
 
 // A lesson as a path of parts: done ones are ticked, the next one is highlighted, and Continue opens it.
 export function LessonPath({ stages, onOpen }: LessonPathProps) {
-  const next = stages.find((stage) => !stage.isDone);
-  const doneCount = stages.filter((stage) => stage.isDone).length;
+  const required = stages.filter((stage) => !stage.isOptional);
+  const next = required.find((stage) => !stage.isDone);
+  const doneCount = required.filter((stage) => stage.isDone).length;
 
   return (
     <section aria-label="Lesson parts">
       <div className="flex items-center gap-3">
         <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-line">
-          <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${(doneCount / stages.length) * 100}%` }} />
+          <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${(doneCount / required.length) * 100}%` }} />
         </div>
         <span className="text-sm font-bold text-muted">
-          {doneCount}/{stages.length}
+          {doneCount}/{required.length}
         </span>
       </div>
 
@@ -54,8 +57,10 @@ export function LessonPath({ stages, onOpen }: LessonPathProps) {
                   <Icon name={stage.isDone ? "check" : stage.icon} className="size-6" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-extrabold text-ink">{stage.title}</span>
-                  <span className="block text-sm text-muted">{stage.isDone ? `Done · ${stage.detail}` : stage.detail}</span>
+                  <span className="block font-extrabold leading-snug text-ink">{stage.title}</span>
+                  <span className="block text-sm text-muted">
+                    {[stage.isDone && "Done", stage.isOptional && "Optional", stage.detail].filter(Boolean).join(" · ")}
+                  </span>
                 </span>
                 <Icon name="chevronRight" className="size-5 shrink-0 text-muted" />
               </button>

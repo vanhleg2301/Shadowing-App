@@ -30,7 +30,7 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
   const ipa = (accent: Accent) => (accent === "uk" ? info?.ipaUk : info?.ipaUs);
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

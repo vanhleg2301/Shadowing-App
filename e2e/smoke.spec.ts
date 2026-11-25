@@ -157,24 +157,38 @@ test("the course guide shows a timetable for the day", async ({ page }) => {
   await expect(guide.getByText("This is the plan for day 2.", { exact: false })).toBeVisible();
 });
 
-test("a course day is built from its video's own words and sentences", async ({ page }) => {
+test("a course day is a path of steps, each opened on its own screen", async ({ page }) => {
   await openPage(page, "/course/2");
-  // The warm-up is yesterday's video, heard before it is read.
-  await expect(page.locator("#review").getByRole("button", { name: "Show the sentence" }).first()).toBeVisible();
+  const steps = page.getByRole("region", { name: "Lesson parts" });
 
-  await page.getByRole("button", { name: /^Words from the video/ }).click();
-  const words = page.locator("#words");
-  await expect(words.locator("mark").first()).toBeVisible();
-  // A sentence plays in a sheet on the course page, with a way into the full lesson at that moment.
-  await words.getByRole("button", { name: "Hear it in the video" }).first().click();
-  const sheet = page.getByRole("dialog", { name: "From the video" });
+  // The warm-up is yesterday's video, heard before it is read.
+  await steps.getByRole("button", { name: /^Warm up: yesterday's sentences/ }).click();
+  let screen = page.getByRole("dialog", { name: "Yesterday's sentences" });
+  await expect(screen.getByRole("button", { name: "Show the sentence" })).toBeVisible();
+  await screen.getByRole("button", { name: "Close" }).click();
+
+  // Words come one at a time, in their sentence from the video.
+  await steps.getByRole("button", { name: /^Before you listen: words from the video/ }).click();
+  screen = page.getByRole("dialog", { name: "Words from the video" });
+  await expect(screen.locator("mark")).toBeVisible();
+  // A sentence plays in a sheet above the screen, with a way into the full lesson at that moment.
+  await screen.getByRole("button", { name: "Hear it in the video" }).click();
+  const sheet = page.getByRole("dialog", { name: "From the video", exact: true });
   await expect(sheet.locator('iframe[src*="youtube"]')).toBeAttached();
   await expect(sheet.getByRole("link", { name: /Open the whole lesson/ })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=shadow&s=\d+&from=course-2/);
   await sheet.getByRole("button", { name: "Close" }).click();
+  await screen.getByRole("button", { name: "Next" }).click();
+  await expect(screen.getByText(/· 2 of \d+/)).toBeVisible();
+  await screen.getByRole("button", { name: "Close" }).click();
 
-  // The day test can't be ticked by hand: passing it is what finishes the day.
-  await expect(page.getByRole("checkbox", { name: /Day test/ })).toBeDisabled();
-  await page.getByRole("button", { name: /^Day test/ }).click();
+  // A video step says what to do, opens the video, and is ticked by hand.
+  await steps.getByRole("button", { name: /^Listen 1, text hidden/ }).click();
+  screen = page.getByRole("dialog", { name: /^Listen 1, text hidden/ });
+  await expect(screen.getByRole("link", { name: "Open the video" })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=watch&listen=1&from=course-2/);
+  await expect(screen.getByRole("button", { name: "I've done it" })).toBeVisible();
+  await screen.getByRole("button", { name: "Close" }).click();
+
+  await steps.getByRole("button", { name: /^Day test/ }).click();
   await expect(page.getByText("Listen. Which sentence did you hear?")).toBeVisible();
 });
 
@@ -198,8 +212,8 @@ test("the course goes on week after week, with review and free days", async ({ p
 
   await openPage(page, "/course/8");
   await expect(page.getByText("Week 2 · Day 1 of 7")).toBeVisible();
-  await page.getByRole("button", { name: /^Words from the video/ }).click();
-  await expect(page.locator("#words mark").first()).toBeVisible();
+  await page.getByRole("button", { name: /^Before you listen: words from the video/ }).click();
+  await expect(page.getByRole("dialog", { name: "Words from the video" }).locator("mark")).toBeVisible();
 });
 
 test("a grammar unit tells a story, shows the pattern in real videos and checks it", async ({ page }) => {
