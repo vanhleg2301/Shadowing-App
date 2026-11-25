@@ -76,7 +76,7 @@ async function UnitContent({ slug }: { slug: string }) {
           examples={examples}
           narration={audio && lineTimes ? { url: audio.url, lineTimes } : null}
           isSignedIn={progress !== null}
-          isPassed={progress?.[unit.id]?.includes("check") ?? false}
+          passed={progress?.[unit.id] ?? []}
           nextHref={next ? `/grammar/${next.slug}` : null}
         />
       </div>

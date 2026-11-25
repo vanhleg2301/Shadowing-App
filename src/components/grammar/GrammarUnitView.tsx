@@ -7,6 +7,9 @@ import { setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
 import { Icon } from "@/components/Icon";
+import { CardDeck } from "@/components/lesson/CardDeck";
+import { FocusScreen } from "@/components/lesson/FocusScreen";
+import { LessonPath, type LessonStage } from "@/components/lesson/LessonPath";
 import { LessonNotes } from "@/components/LessonNotes";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { GRAMMAR_COURSE_ID, getStoryPicture, type GrammarUnit } from "@/data/grammar";
@@ -22,9 +25,12 @@ interface GrammarUnitViewProps {
   // browser's voice.
   narration: { url: string; lineTimes: { start: number; end: number }[] } | null;
   isSignedIn: boolean;
-  isPassed: boolean;
+  // Parts already finished: story, pattern, videos, check, speak. Passing the check finishes the unit.
+  passed: string[];
   nextHref: string | null;
 }
+
+type StageId = "story" | "pattern" | "videos" | "check" | "speak";
 
 const STORY_RATE = 0.85;
 const PICTURE_QUESTIONS = 3;
@@ -48,25 +54,12 @@ function highlight(text: string, pattern: string[]): ReactNode[] {
   );
 }
 
-function Step({ number, title, hint, children }: { number: number; title: string; hint: string; children: ReactNode }) {
-  return (
-    <section className="rounded-3xl border border-line bg-surface p-4 sm:p-5">
-      <h2 className="flex items-center gap-2 text-xl font-extrabold text-ink">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand">{number}</span>
-        {title}
-      </h2>
-      <p className="mt-1 text-sm text-muted">{hint}</p>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-// A grammar unit, in the order comprehensible input asks for: understand a picture story, notice the pattern, hear it
-// in real videos, check it is understood, then say it. The unit's words are taught in Vocabulary.
-export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPassed, nextHref }: GrammarUnitViewProps) {
-  const [isPatternShown, setIsPatternShown] = useState(false);
-  // Listen first: the story's words stay hidden until the learner chooses to read them.
-  const [isTextShown, setIsTextShown] = useState(false);
+// A grammar unit as a path of parts, each on its own focus screen, in the order comprehensible input asks for:
+// understand a picture story, notice the pattern, hear it in real videos, check it is understood, then say it.
+// The unit's words are taught in Vocabulary.
+export function GrammarUnitView({ unit, examples, narration, isSignedIn, passed, nextHref }: GrammarUnitViewProps) {
+  const [done, setDone] = useState(passed);
+  const [open, setOpen] = useState<StageId | null>(null);
   const [isReading, setIsReading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAtRef = useRef<number | null>(null);
@@ -102,7 +95,6 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
   };
   const activeLine = narration && isReading ? narration.lineTimes.findIndex((t) => time >= t.start && time <= t.end + 0.3) : -1;
   const [heard, setHeard] = useState<{ videoId: string; sentence: StudySentence } | null>(null);
-  const [hasPassed, setHasPassed] = useState(isPassed);
 
   const questions = useMemo<TestQuestion[]>(() => {
     const pictures = unit.story.lines.map((_, i) => getStoryPicture(unit, i));
@@ -137,11 +129,15 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
     );
   };
 
+  const stopReading = () => {
+    audioRef.current?.pause();
+    window.speechSynthesis?.cancel();
+    setIsReading(false);
+  };
+
   const readStory = () => {
     if (isReading) {
-      audioRef.current?.pause();
-      window.speechSynthesis?.cancel();
-      setIsReading(false);
+      stopReading();
       return;
     }
     if (playLines(0, storyCount - 1)) return;
@@ -149,13 +145,197 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
     speak(unit.story.lines.map((line) => line.text).join(" "), "us", STORY_RATE, () => setIsReading(false));
   };
 
-  const handlePass = () => {
-    setHasPassed(true);
-    if (isSignedIn) void setCourseBlockDone({ courseId: GRAMMAR_COURSE_ID, day: unit.id, blockId: "check", isDone: true });
+  const finishStage = (id: StageId) => {
+    if (done.includes(id)) return;
+    setDone((list) => [...list, id]);
+    if (isSignedIn) void setCourseBlockDone({ courseId: GRAMMAR_COURSE_ID, day: unit.id, blockId: id, isDone: true });
+  };
+
+  const close = () => {
+    stopReading();
+    setOpen(null);
+  };
+
+  const stages: LessonStage[] = [
+    { id: "story", title: unit.story.title, detail: `A picture story · ${storyCount} pictures`, icon: "book", isDone: done.includes("story") },
+    { id: "pattern", title: "Notice the pattern", detail: "How the story says it", icon: "search", isDone: done.includes("pattern") },
+  ];
+  if (examples.length > 0) {
+    stages.push({ id: "videos", title: "Hear it in real videos", detail: `${examples.length} lines from videos`, icon: "play", isDone: done.includes("videos") });
+  }
+  stages.push(
+    { id: "check", title: "Check", detail: "Get 80% right to finish the unit", icon: "chart", isDone: done.includes("check") },
+    { id: "speak", title: "Say it", detail: "Shadow the lines, then talk about you", icon: "mic", isDone: done.includes("speak"), isOptional: true },
+  );
+
+  const sentenceSheet = heard && (
+    <SentencePlayerSheet
+      key={`${heard.videoId}-${heard.sentence.index}`}
+      videoId={heard.videoId}
+      sentence={heard.sentence}
+      lessonHref={`/watch/${heard.videoId}?mode=shadow&s=${heard.sentence.index}`}
+      onClose={() => setHeard(null)}
+    />
+  );
+
+  const renderScreen = (id: StageId) => {
+    if (id === "story") {
+      return (
+        <CardDeck
+          title="The story"
+          cards={unit.story.lines.map((line, i) => (
+            <StoryCard key={line.text} picture={getStoryPicture(unit, i)} text={line.text} isActive={activeLine === i} onListen={() => playLine(i, line.text)} />
+          ))}
+          onClose={close}
+          onDone={() => finishStage("story")}
+          summaryTitle="You followed the story!"
+          summaryDetail="Now hear it all the way through."
+          finish={
+            <button type="button" onClick={readStory} className="btn-3d btn-brand py-3">
+              <Icon name={isReading ? "stop" : "volume"} className="size-4" />
+              {isReading ? "Stop" : "Listen to the whole story"}
+            </button>
+          }
+        />
+      );
+    }
+    if (id === "pattern") {
+      return (
+        <FocusScreen
+          title="Notice the pattern"
+          progress={done.includes("pattern") ? 1 : 0}
+          onClose={close}
+          footer={
+            <button
+              type="button"
+              onClick={() => {
+                finishStage("pattern");
+                close();
+              }}
+              className="btn-3d btn-brand w-full py-3"
+            >
+              Got it
+            </button>
+          }
+        >
+          <ul className="list-disc space-y-2 pl-5 text-lg leading-relaxed text-ink">
+            {unit.explanation.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+          <p className="mt-6 text-xs font-bold uppercase tracking-wide text-accent">In the story</p>
+          <ol lang="en" className="mt-2 space-y-2">
+            {unit.story.lines.map((line, i) => (
+              <li key={line.text} className={`flex items-center gap-3 rounded-2xl p-1.5 transition-colors ${activeLine === i ? "bg-brand-soft" : ""}`}>
+                <Image src={getStoryPicture(unit, i)} alt="" width={320} height={320} sizes="64px" className="size-16 shrink-0 rounded-xl border border-line" />
+                <p className="flex-1 leading-relaxed text-ink">{highlight(line.text, unit.pattern)}</p>
+                <button
+                  type="button"
+                  onClick={() => playLine(i, line.text)}
+                  aria-label={`Listen: ${line.text}`}
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
+                >
+                  <Icon name="play" className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ol>
+        </FocusScreen>
+      );
+    }
+    if (id === "videos") {
+      return (
+        <CardDeck
+          title="In real videos"
+          cards={examples.map((example) => (
+            <div key={`${example.videoId}-${example.sentence.index}`}>
+              <p lang="en" className="text-2xl font-semibold leading-snug text-ink">
+                {example.parts.map((part, i) =>
+                  part.isMatch ? (
+                    <mark key={i} className="rounded-md bg-highlight px-0.5 font-bold text-highlight-ink">
+                      {part.text}
+                    </mark>
+                  ) : (
+                    part.text
+                  ),
+                )}
+              </p>
+              <p className="mt-2 text-sm text-muted">{example.title}</p>
+              <button type="button" onClick={() => setHeard({ videoId: example.videoId, sentence: example.sentence })} className="btn-3d mt-4 px-4 py-2.5 text-sm">
+                <Icon name="play" className="size-4" />
+                Hear it in the video
+              </button>
+            </div>
+          ))}
+          onClose={close}
+          onDone={() => finishStage("videos")}
+          summaryTitle="Heard it for real!"
+          summaryDetail="Real people say it just like the story does. Now check you've got it."
+        >
+          {sentenceSheet}
+        </CardDeck>
+      );
+    }
+    if (id === "check") {
+      return (
+        <FocusScreen title="Check" progress={done.includes("check") ? 1 : 0} onClose={close}>
+          <p className="mb-4 text-sm text-muted">Match what you hear to the pictures, then answer about the story and the pattern. Get 80% right to finish the unit.</p>
+          <DayTest
+            questions={questions}
+            videoId={null}
+            onPass={() => finishStage("check")}
+            onListen={listenToStoryLine}
+            passMessage="Passed! This unit is done."
+            meaningLabel="The story and the pattern"
+          />
+        </FocusScreen>
+      );
+    }
+    return (
+      <CardDeck
+        title="Say it"
+        cards={[
+          ...unit.speak.shadow.map((line, i) => (
+            <div key={line}>
+              <p className="text-sm text-muted">Listen, then say it the same way.</p>
+              <div className="mt-2 flex items-start gap-2">
+                <p lang="en" className="flex-1 text-2xl font-semibold leading-snug text-ink">
+                  {line}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => playLine(storyCount + i, line)}
+                  aria-label={`Listen: ${line}`}
+                  className="grid size-10 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
+                >
+                  <Icon name="volume" className="size-5" />
+                </button>
+              </div>
+              <div className="mt-4">
+                <VoiceRecorder target={line} recordLabel="Say it" />
+              </div>
+            </div>
+          )),
+          ...unit.speak.prompts.map((prompt) => (
+            <div key={prompt}>
+              <p className="text-sm text-muted">Now about you. Recordings stay on your device.</p>
+              <p className="mt-2 text-2xl font-semibold leading-snug text-ink">{prompt}</p>
+              <div className="mt-4">
+                <VoiceRecorder recordLabel="Record your answer" />
+              </div>
+            </div>
+          )),
+        ]}
+        onClose={close}
+        onDone={() => finishStage("speak")}
+        summaryTitle="Well said!"
+        summaryDetail="Saying it about your own life is what makes the pattern yours."
+      />
+    );
   };
 
   return (
-    <div className="space-y-4 pb-20 md:pb-0">
+    <div className="space-y-6 pb-20 md:pb-0">
       {narration && (
         <audio
           ref={audioRef}
@@ -166,141 +346,9 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
           onEnded={() => setIsReading(false)}
         />
       )}
-      <Step number={1} title={unit.story.title} hint="Listen and look at the pictures first. Can you follow it? Then show the words and read along.">
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={readStory} className="btn-3d btn-brand px-4 py-2 text-sm">
-            <Icon name={isReading ? "stop" : "volume"} className="size-4" />
-            {isReading ? "Stop" : "Listen to the story"}
-          </button>
-          <button type="button" onClick={() => setIsTextShown(!isTextShown)} aria-pressed={isTextShown} className="btn-3d px-4 py-2 text-sm">
-            {isTextShown ? "Hide the words" : "Show the words"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsPatternShown(!isPatternShown);
-              setIsTextShown(true);
-            }}
-            aria-pressed={isPatternShown}
-            className="btn-3d px-4 py-2 text-sm"
-          >
-            {isPatternShown ? "Hide the pattern" : "Show the pattern"}
-          </button>
-        </div>
-        <ol lang="en" className="mt-4 space-y-3">
-          {unit.story.lines.map((line, i) => (
-            <li key={line.text} className={`flex items-center gap-3 rounded-2xl p-1.5 transition-colors ${activeLine === i ? "bg-brand-soft" : ""}`}>
-              <Image
-                src={getStoryPicture(unit, i)}
-                alt=""
-                width={320}
-                height={320}
-                sizes="(min-width: 640px) 144px, 96px"
-                className="size-24 shrink-0 rounded-xl border border-line sm:size-36"
-              />
-              {isTextShown ? (
-                <p className="flex-1 text-lg leading-relaxed text-ink">{isPatternShown ? highlight(line.text, unit.pattern) : line.text}</p>
-              ) : (
-                <p aria-hidden className="flex-1 select-none text-lg leading-relaxed text-ink blur-sm">
-                  {line.text}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => playLine(i, line.text)}
-                aria-label={isTextShown ? `Listen: ${line.text}` : `Listen to line ${i + 1}`}
-                className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
-              >
-                <Icon name="play" className="size-4" />
-              </button>
-            </li>
-          ))}
-        </ol>
-      </Step>
+      <LessonPath stages={stages} onOpen={(id) => setOpen(id as StageId)} />
 
-      <Step number={2} title="Notice the pattern" hint="Now look at how the story says it. Turn on “Show the pattern” above to see every one.">
-        <ul className="list-disc space-y-2 pl-5 leading-relaxed text-ink">
-          {unit.explanation.map((point) => (
-            <li key={point}>{point}</li>
-          ))}
-        </ul>
-      </Step>
-
-      {examples.length > 0 && (
-        <Step number={3} title="Hear it in real videos" hint="The same pattern, said by Bob the Canadian and English Sponge. Tap to hear each one.">
-          <ul className="space-y-2">
-            {examples.map((example) => (
-              <li key={`${example.videoId}-${example.sentence.index}`} className="flex items-start gap-3 rounded-2xl border border-line bg-cream p-3">
-                <button
-                  type="button"
-                  onClick={() => setHeard({ videoId: example.videoId, sentence: example.sentence })}
-                  aria-label="Hear it in the video"
-                  className="btn-3d shrink-0 px-3 py-1.5 text-sm"
-                >
-                  <Icon name="play" className="size-4" />
-                </button>
-                <div className="min-w-0">
-                  <p lang="en" className="leading-relaxed text-ink">
-                    {example.parts.map((part, i) =>
-                      part.isMatch ? (
-                        <mark key={i} className="rounded-md bg-highlight px-0.5 font-bold text-highlight-ink">
-                          {part.text}
-                        </mark>
-                      ) : (
-                        part.text
-                      ),
-                    )}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs text-muted">{example.title}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Step>
-      )}
-
-      <Step number={examples.length > 0 ? 4 : 3} title="Check" hint="Match what you hear to the pictures, then answer about the story and the pattern. Get 80% right to finish the unit.">
-        <DayTest
-          questions={questions}
-          videoId={null}
-          onPass={handlePass}
-          onListen={listenToStoryLine}
-          passMessage="Passed! This unit is done."
-          meaningLabel="The story and the pattern"
-        />
-        {hasPassed && <p className="mt-2 text-sm font-semibold text-brand">Unit done.</p>}
-      </Step>
-
-      <Step number={examples.length > 0 ? 5 : 4} title="Say it" hint="Shadow the lines, then answer about yourself. Recordings stay on your device.">
-        <ul lang="en" className="space-y-3">
-          {unit.speak.shadow.map((line, i) => (
-            <li key={line} className="rounded-2xl border border-line bg-cream p-3">
-              <div className="flex items-start gap-2">
-                <p className="flex-1 font-semibold leading-snug text-ink">{line}</p>
-                <button
-                  type="button"
-                  onClick={() => playLine(storyCount + i, line)}
-                  aria-label={`Listen: ${line}`}
-                  className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
-                >
-                  <Icon name="volume" className="size-5" />
-                </button>
-              </div>
-              <div className="mt-2">
-                <VoiceRecorder target={line} recordLabel="Say it" />
-              </div>
-            </li>
-          ))}
-          {unit.speak.prompts.map((prompt) => (
-            <li key={prompt} className="rounded-2xl border border-brand/30 bg-brand-soft/50 p-3">
-              <p className="font-semibold leading-snug text-ink">{prompt}</p>
-              <div className="mt-2">
-                <VoiceRecorder recordLabel="Record your answer" />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Step>
+      {done.includes("check") && <p className="rounded-2xl border border-brand/30 bg-brand-soft px-4 py-3 font-semibold text-brand">Unit done. Well done!</p>}
 
       <LessonNotes lessonKey={`grammar:${unit.slug}`} title={`Grammar: ${unit.title}`} href={`/grammar/${unit.slug}`} />
 
@@ -313,15 +361,48 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, isPasse
         </div>
       )}
 
-      {heard && (
-        <SentencePlayerSheet
-          key={`${heard.videoId}-${heard.sentence.index}`}
-          videoId={heard.videoId}
-          sentence={heard.sentence}
-          lessonHref={`/watch/${heard.videoId}?mode=shadow&s=${heard.sentence.index}`}
-          onClose={() => setHeard(null)}
-        />
-      )}
+      {open && renderScreen(open)}
+    </div>
+  );
+}
+
+interface StoryCardProps {
+  picture: string;
+  text: string;
+  isActive: boolean;
+  onListen: () => void;
+}
+
+// One picture of the story: listen first, then show the words if you need them.
+function StoryCard({ picture, text, isActive, onListen }: StoryCardProps) {
+  const [isShown, setIsShown] = useState(false);
+  return (
+    <div>
+      <Image
+        src={picture}
+        alt=""
+        width={640}
+        height={640}
+        sizes="(min-width: 640px) 24rem, 80vw"
+        className="mx-auto aspect-square w-full max-w-sm rounded-3xl border border-line"
+      />
+      <div className="mt-4 flex items-center gap-3">
+        <button type="button" onClick={onListen} aria-label="Listen to this picture" className="btn-3d btn-brand grid size-12 shrink-0 place-items-center p-0">
+          <Icon name="volume" className="size-5" />
+        </button>
+        {isShown ? (
+          <p lang="en" className={`flex-1 rounded-xl px-1 text-lg leading-relaxed text-ink ${isActive ? "bg-brand-soft" : ""}`}>
+            {text}
+          </p>
+        ) : (
+          <button type="button" onClick={() => setIsShown(true)} className="flex-1 text-left">
+            <span aria-hidden className="block select-none text-lg leading-relaxed text-ink blur-sm">
+              {text}
+            </span>
+            <span className="text-sm font-semibold text-brand">Show the words</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
