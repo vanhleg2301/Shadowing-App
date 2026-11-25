@@ -200,3 +200,49 @@ export async function importTechArticles(admin: SupabaseClient, limit = ARTICLES
   }
   return { alreadyStored, feeds: report };
 }
+
+// Articles are kept for about half a year, so the free database never fills up. One a learner saved, took words or
+// notes from, or studied is kept for good.
+const KEEP_DAYS = 180;
+const PAGE_SIZE = 1000;
+// Ids go in the request URL, so they are deleted a few hundred at a time.
+const DELETE_BATCH = 200;
+const REFERENCES: { table: string; column: string; prefix: string }[] = [
+  { table: "favorites", column: "video_id", prefix: "" },
+  { table: "saved_words", column: "video_id", prefix: "" },
+  { table: "lesson_progress", column: "video_id", prefix: "" },
+  { table: "video_notes", column: "video_id", prefix: "" },
+  { table: "lesson_notes", column: "lesson_key", prefix: "tech:" },
+];
+
+export async function pruneOldArticles(admin: SupabaseClient, now = new Date()): Promise<{ deleted: number; kept: number }> {
+  const cutoff = new Date(now.getTime() - KEEP_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { data: old, error } = await admin.from("tech_articles").select("id").lt("published_at", cutoff);
+  if (error) throw new Error(`Reading old articles failed: ${error.message}`);
+  if (!old?.length) return { deleted: 0, kept: 0 };
+  const used = new Set<string>();
+  for (const { table, column, prefix } of REFERENCES) {
+    // Page by page: a query returns at most 1,000 rows, and a missed row would lose an article someone kept.
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error: refError } = await admin
+        .from(table)
+        .select(column)
+        .like(column, `${prefix}tc-%`)
+        .range(from, from + PAGE_SIZE - 1);
+      // Without knowing what is in use, nothing is deleted.
+      if (refError) throw new Error(`Reading ${table} failed: ${refError.message}`);
+      const rows = (data ?? []) as unknown as Record<string, string>[];
+      for (const row of rows) used.add(row[column].slice(prefix.length));
+      if (rows.length < PAGE_SIZE) break;
+    }
+  }
+  const ids = old.map((row: { id: string }) => row.id).filter((id) => !used.has(id));
+  for (let i = 0; i < ids.length; i += DELETE_BATCH) {
+    const { error: deleteError } = await admin
+      .from("tech_articles")
+      .delete()
+      .in("id", ids.slice(i, i + DELETE_BATCH));
+    if (deleteError) throw new Error(`Deleting old articles failed: ${deleteError.message}`);
+  }
+  return { deleted: ids.length, kept: old.length - ids.length };
+}
