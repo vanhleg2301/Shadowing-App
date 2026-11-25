@@ -4,7 +4,7 @@ import { importTechArticles } from "@/lib/tech-news-import";
 
 export const maxDuration = 60;
 
-// Runs once a day (vercel.json): adds one new article from each News section of The Conversation.
+// Runs once a day (vercel.json): adds the newest articles from each News section of The Conversation.
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {

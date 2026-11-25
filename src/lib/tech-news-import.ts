@@ -1,10 +1,11 @@
-// Imports articles from The Conversation for News: one a day from each section in FEEDS. Run daily by
+// Imports articles from The Conversation for News: up to ARTICLES_PER_SECTION a day from each section in FEEDS. Run daily by
 // /api/cron/tech-news.
 //
 // The Conversation allows republishing under CC BY-ND (https://theconversation.com/republishing-guidelines) with
 // these rules, which the importer and the reader keep: the words are not edited; authors, their institutions and
 // The Conversation are credited with a link; the page counter is shown; images are left out because their rights
-// differ; and not everything is republished, so each run takes only a few articles. Needs migration 025.
+// differ; and not everything is republished ("You can't systematically republish all of our articles"): each feed
+// lists 25, and a run takes only the newest few. Needs migration 025.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NewsTopic } from "./news";
 import type { TechArticle, TechArticleBlock } from "./tech-news";
@@ -19,6 +20,8 @@ const FEEDS: { topic: NewsTopic; url: string; isFiltered?: boolean }[] = [
   { topic: "Education", url: "https://theconversation.com/us/education/articles.atom" },
   { topic: "Culture", url: "https://theconversation.com/us/arts/articles.atom" },
 ];
+// As many new articles as News can show without taking whole sections.
+const ARTICLES_PER_SECTION = 3;
 const USER_AGENT = "Mozilla/5.0 (compatible; ShadowingAppImporter/1.0; +https://shadowing-app-liard.vercel.app)";
 const MIN_WORDS = 300;
 const MAX_WORDS = 1800;
@@ -174,7 +177,7 @@ async function getFeedArticles(feed: (typeof FEEDS)[number]): Promise<{ entries:
 }
 
 // Takes up to `limit` new articles from each section. A section whose feed fails is reported, not fatal.
-export async function importTechArticles(admin: SupabaseClient, limit = 1) {
+export async function importTechArticles(admin: SupabaseClient, limit = ARTICLES_PER_SECTION) {
   const { data, error } = await admin.from("tech_articles").select("id");
   if (error) throw new Error(`Reading stored articles failed: ${error.message}`);
   const taken = new Set((data ?? []).map((row: { id: string }) => row.id));
