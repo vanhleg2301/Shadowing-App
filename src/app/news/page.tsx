@@ -7,7 +7,7 @@ import { NewsList, VOA_TAB } from "@/components/NewsList";
 import { PageNav } from "@/components/PageNav";
 import { ListSkeleton } from "@/components/Skeleton";
 import { getNewsVideos } from "@/lib/catalog";
-import { NEWS_TOPICS, formatNewsDate, getTopicHref, isNewsTopic, type NewsTopic } from "@/lib/news";
+import { NEWS_LEVELS, NEWS_TOPICS, formatNewsDate, getTopicHref, isNewsLevel, isNewsTopic, isUpToLevel, type NewsLevel, type NewsTopic } from "@/lib/news";
 import { getTechArticles } from "@/lib/tech-news";
 
 const STORIES_PER_PAGE = 13;
@@ -30,13 +30,14 @@ export default function NewsPage({ searchParams }: PageProps<"/news">) {
             const topic = typeof sp.topic === "string" ? sp.topic : "";
             const tab: Tab = topic === VOA_TAB ? VOA_TAB : isNewsTopic(topic) ? topic : null;
             const page = Number(sp.page) || 1;
+            const level = typeof sp.level === "string" && isNewsLevel(sp.level) ? sp.level : null;
             return (
               <>
-                <NewsTabs tab={tab} />
+                <NewsTabs tab={tab} level={level} />
                 {tab === VOA_TAB ? (
                   <VoaStories category={typeof sp.category === "string" ? sp.category : null} page={page} />
                 ) : (
-                  <Articles topic={tab} page={page} />
+                  <Articles topic={tab} page={page} level={level} />
                 )}
               </>
             );
@@ -47,10 +48,11 @@ export default function NewsPage({ searchParams }: PageProps<"/news">) {
   );
 }
 
-function NewsTabs({ tab }: { tab: Tab }) {
+// The chosen level stays on when switching topics.
+function NewsTabs({ tab, level }: { tab: Tab; level: NewsLevel | null }) {
   const tabs: { label: string; href: string; isCurrent: boolean }[] = [
-    { label: "Latest", href: "/news", isCurrent: tab === null },
-    ...NEWS_TOPICS.map((topic) => ({ label: topic, href: getTopicHref(topic), isCurrent: tab === topic })),
+    { label: "Latest", href: getTopicHref(null, 1, level), isCurrent: tab === null },
+    ...NEWS_TOPICS.map((topic) => ({ label: topic, href: getTopicHref(topic, 1, level), isCurrent: tab === topic })),
     { label: "VOA archive", href: `/news?topic=${VOA_TAB}`, isCurrent: tab === VOA_TAB },
   ];
   return (
@@ -71,15 +73,41 @@ function NewsTabs({ tab }: { tab: Tab }) {
   );
 }
 
-async function Articles({ topic, page }: { topic: NewsTopic | null; page: number }) {
-  const articles = await getTechArticles(topic ?? undefined);
-  if (articles.length === 0) return <p className="mt-8 text-muted">No articles here yet. New ones arrive every morning.</p>;
+async function Articles({ topic, page, level }: { topic: NewsTopic | null; page: number; level: NewsLevel | null }) {
+  const all = await getTechArticles(topic ?? undefined);
+  if (all.length === 0) return <p className="mt-8 text-muted">No articles here yet. New ones arrive every morning.</p>;
+  const articles = level ? all.filter((a) => isUpToLevel(a.level, level)) : all;
   const totalPages = Math.max(1, Math.ceil(articles.length / ARTICLES_PER_PAGE));
   const safePage = Math.min(Math.max(1, Math.floor(page)), totalPages);
+  const levels = [
+    { label: "All levels", value: null, count: all.length },
+    ...NEWS_LEVELS.map((value) => ({ label: `Up to ${value}`, value, count: all.filter((a) => isUpToLevel(a.level, value)).length })),
+  ];
   return (
     <>
-      <ArticleList articles={articles.slice((safePage - 1) * ARTICLES_PER_PAGE, safePage * ARTICLES_PER_PAGE)} isTopicShown={topic === null} />
-      <PageNav page={safePage} totalPages={totalPages} hrefFor={(p) => getTopicHref(topic, p)} />
+      <nav aria-label="Article level" className="no-scrollbar -mx-4 mt-3 flex items-center gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+        <span className="shrink-0 text-sm font-semibold text-muted">Level:</span>
+        {levels.map((l) => (
+          <Link
+            key={l.label}
+            href={getTopicHref(topic, 1, l.value)}
+            aria-current={l.value === level ? "page" : undefined}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold ${
+              l.value === level ? "border-ink bg-ink text-cream" : "border-line bg-surface text-ink"
+            }`}
+          >
+            {l.label} <span className="font-normal opacity-70">{l.count}</span>
+          </Link>
+        ))}
+      </nav>
+      {articles.length === 0 ? (
+        <p className="mt-6 text-muted">No articles at this level here yet. Try a higher level or another topic: most news is B2 and above.</p>
+      ) : (
+        <>
+          <ArticleList articles={articles.slice((safePage - 1) * ARTICLES_PER_PAGE, safePage * ARTICLES_PER_PAGE)} isTopicShown={topic === null} />
+          <PageNav page={safePage} totalPages={totalPages} hrefFor={(p) => getTopicHref(topic, p, level)} />
+        </>
+      )}
     </>
   );
 }

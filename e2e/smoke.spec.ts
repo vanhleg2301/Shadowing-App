@@ -83,6 +83,18 @@ test("news opens on the latest articles, and old article links still work", asyn
   await expect(page).toHaveURL(new RegExp(`${article}$`));
 });
 
+test("news can hide articles above a level, across topics", async ({ page }) => {
+  await openPage(page, "/news");
+  const levels = page.getByRole("navigation", { name: "Article level" });
+  await levels.getByRole("link", { name: /^Up to B2/ }).click();
+  await expect(page).toHaveURL(/level=B2/);
+  await expect(levels.getByRole("link", { name: /^Up to B2/ })).toHaveAttribute("aria-current", "page");
+  const labels = await page.locator('a[href^="/news/article/"] p:first-child').allTextContents();
+  for (const label of labels) expect(label).toMatch(/≈(A1|A2|B1|B2)\b/);
+  await page.getByRole("navigation", { name: "News topics" }).getByRole("link", { name: "Health" }).click();
+  await expect(page).toHaveURL(/topic=Health&level=B2/);
+});
+
 test("the transcript scrolls freely until Current brings it back", async ({ page }) => {
   await openPage(page, "/news?topic=voa");
   await openPage(page, (await firstHref(page, "/news/voa-")).replace("/news/", "/watch/"));

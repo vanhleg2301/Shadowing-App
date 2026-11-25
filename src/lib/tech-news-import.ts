@@ -7,7 +7,7 @@
 // differ; and not everything is republished ("You can't systematically republish all of our articles"): each feed
 // lists 25, and a run takes only the newest few. Needs migration 025.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { NewsTopic } from "./news";
+import { getLevelRank, type NewsTopic } from "./news";
 import type { TechArticle, TechArticleBlock } from "./tech-news";
 
 // AI & Tech comes first, so an AI article that is also in the technology section is filed under AI & Tech.
@@ -24,6 +24,8 @@ const FEEDS: { topic: NewsTopic; url: string; isFiltered?: boolean }[] = [
 ];
 // As many new articles as News can show without taking whole sections.
 const ARTICLES_PER_SECTION = 3;
+// The window the easiest are chosen from: a few days of a section, so the news stays new.
+const PICK_FROM = 10;
 const USER_AGENT = "Mozilla/5.0 (compatible; ShadowingAppImporter/1.0; +https://shadowing-app-liard.vercel.app)";
 const MIN_WORDS = 300;
 const MAX_WORDS = 1800;
@@ -189,7 +191,12 @@ export async function importTechArticles(admin: SupabaseClient, limit = ARTICLES
   const report = FEEDS.map((feed, i) => {
     const result = feeds[i];
     if (result.status === "rejected") return { topic: feed.topic, error: result.reason instanceof Error ? result.reason.message : "failed" };
-    const picked = result.value.articles.filter((a) => !taken.has(a.id)).slice(0, limit);
+    // Of the newest few not stored yet, the easiest: learners read B1-B2 far more easily than C1-C2.
+    const picked = result.value.articles
+      .filter((a) => !taken.has(a.id))
+      .slice(0, PICK_FROM)
+      .sort((a, b) => getLevelRank(a.level) - getLevelRank(b.level) || b.published_at.localeCompare(a.published_at))
+      .slice(0, limit);
     for (const article of picked) taken.add(article.id);
     fresh.push(...picked);
     return { topic: feed.topic, entries: result.value.entries, usable: result.value.articles.length, imported: picked.map((a) => a.id) };
