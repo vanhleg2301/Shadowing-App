@@ -16,11 +16,12 @@ import { Icon, type IconName } from "@/components/Icon";
 import { WordLookupSheet } from "@/components/WordLookupSheet";
 import { type BlockKind, type CourseBlock, type CourseDay, type CoursePhrase } from "@/data/course-a2";
 import { isCourseDayComplete, TEST_SKIPPED_BLOCK } from "@/data/courses";
+import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { useAuth } from "@/hooks/useAuth";
 import { useWordLookup } from "@/hooks/useWordLookup";
 import { speak, type Accent } from "@/lib/speech";
 import { buildDayTest, getPassScore } from "@/lib/day-test";
-import type { DayGuide, DayStudy, StudySentence } from "@/lib/video-study";
+import type { DayGuide, DayStudy, StudySentence, WarmUpSentence } from "@/lib/video-study";
 import { LessonNotes } from "@/components/LessonNotes";
 
 interface CourseDayViewProps {
@@ -33,8 +34,8 @@ interface CourseDayViewProps {
   study: DayStudy | null;
   // The main video's written guide, when there is one.
   guide: DayGuide | null;
-  // Yesterday's main video, for the warm-up.
-  previousStudy: DayStudy | null;
+  // Sentences from the main videos 1, 3 and 7 study days back, for the warm-up.
+  warmUp: WarmUpSentence[];
   initialDone: string[];
   isSignedIn: boolean;
   hasNextDay: boolean;
@@ -63,7 +64,7 @@ const DEFAULT_PROMPT_COUNT = 3;
 
 const fromCourse = (day: number, playbackRate?: number) => `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
 
-// The warm-up is its own section when yesterday's video gave sentences to hear again; otherwise it is Review.
+// The warm-up is its own section when earlier videos gave sentences to hear again; otherwise it is Review.
 function blockHref(block: CourseBlock, day: number, playbackRate: number | undefined, hasReviewSection: boolean): string | null {
   if (block.kind === "review") return hasReviewSection ? null : "/review";
   if (block.kind === "free") return block.id === "stories" ? "/stories" : "/";
@@ -129,7 +130,7 @@ export function CourseDayView({
   blocks,
   study,
   guide,
-  previousStudy,
+  warmUp,
   initialDone,
   isSignedIn,
   hasNextDay,
@@ -144,7 +145,7 @@ export function CourseDayView({
     : day.phrases;
   const prompts = getPrompts(study, guide, day, promptCount);
   const testQuestions = buildDayTest(study, phrases, guide?.questions ?? [], day.day * 7);
-  const hasReviewSection = previousStudy !== null;
+  const hasReviewSection = warmUp.length > 0;
   // Only the activities this day has: review and free days are all videos, and words need something to show.
   const sections = SECTION_KINDS.filter((kind) => {
     if (!blocks.some((b) => b.kind === kind)) return false;
@@ -266,19 +267,24 @@ export function CourseDayView({
 
   const renderScreen = (block: CourseBlock) => {
     const section = sections.includes(block.kind) ? (block.kind as SectionId) : null;
-    if (section === "review" && previousStudy) {
+    if (section === "review") {
       return (
         <CardDeck
-          title="Yesterday's sentences"
-          cards={previousStudy.sentences.slice(0, 5).map((sentence) => (
-            <ul key={sentence.index}>
-              <VideoSentence sentence={sentence} onHear={() => setHeard({ videoId: previousStudy.videoId, sentence })} isHiddenFirst onWordClick={openWord} />
-            </ul>
+          title="Earlier sentences"
+          cards={warmUp.map(({ videoId, title, day: from, sentence }) => (
+            <div key={`${videoId}-${sentence.index}`}>
+              <p className="mb-2 text-sm text-muted">
+                {from === day.day - 1 ? "Yesterday" : `Week ${weekOf(from)} · Day ${dayInWeek(from)}`} · {title}
+              </p>
+              <ul>
+                <VideoSentence sentence={sentence} onHear={() => setHeard({ videoId, sentence })} isHiddenFirst onWordClick={openWord} />
+              </ul>
+            </div>
           ))}
           onClose={close}
           onDone={() => finishBlock("review")}
           summaryTitle="Warmed up!"
-          summaryDetail="Sentences you can understand by ear are the ones you'll understand in real life."
+          summaryDetail="Hearing a sentence again after a day, three days and a week is what makes it stick."
         >
           {sheets}
         </CardDeck>

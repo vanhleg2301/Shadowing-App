@@ -157,13 +157,23 @@ test("the course guide shows a timetable for the day", async ({ page }) => {
   await expect(guide.getByText("This is the plan for day 2.", { exact: false })).toBeVisible();
 });
 
+test("the warm-up brings back sentences from days further back", async ({ page }) => {
+  await openPage(page, "/course/4");
+  await page.getByRole("region", { name: "Lesson parts" }).getByRole("button", { name: /^Warm up: earlier sentences/ }).click();
+  const screen = page.getByRole("dialog", { name: "Earlier sentences" });
+  await expect(screen.getByText("Earlier sentences · 1 of 5")).toBeVisible();
+  for (let i = 0; i < 4; i++) await screen.getByRole("button", { name: "Next" }).click();
+  await expect(screen.getByText(/^Week 1 · Day 1 · /)).toBeVisible();
+});
+
 test("a course day is a path of steps, each opened on its own screen", async ({ page }) => {
   await openPage(page, "/course/2");
   const steps = page.getByRole("region", { name: "Lesson parts" });
 
-  // The warm-up is yesterday's video, heard before it is read.
-  await steps.getByRole("button", { name: /^Warm up: yesterday's sentences/ }).click();
-  let screen = page.getByRole("dialog", { name: "Yesterday's sentences" });
+  // The warm-up is earlier videos, heard before they are read.
+  await steps.getByRole("button", { name: /^Warm up: earlier sentences/ }).click();
+  let screen = page.getByRole("dialog", { name: "Earlier sentences" });
+  await expect(screen.getByText(/^Yesterday · /)).toBeVisible();
   await expect(screen.getByRole("button", { name: "Show the sentence" })).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();
 

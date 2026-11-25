@@ -16,7 +16,7 @@ import { buildDaySchedule } from "@/lib/course-schedule";
 import { getStoredLesson } from "@/lib/lessons";
 import { getCourseProgress } from "@/lib/user-data";
 import { VIDEO_GUIDES } from "@/data/video-guides";
-import { buildDayStudy, resolveGuide, type DayGuide, type DayStudy } from "@/lib/video-study";
+import { buildDayStudy, buildWarmUp, resolveGuide, WARM_UP_DAYS_BACK, type DayGuide, type DayStudy } from "@/lib/video-study";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 const FULL_STUDY_SIZE = 10;
@@ -62,15 +62,24 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
   const progress = await getCourseProgress(courseId).catch(() => null);
   const blocks = getDayBlocks(plan, day);
   const studySize = course.phraseCount ?? FULL_STUDY_SIZE;
-  // The warm-up replays the last video day, even across a review or free day.
-  const previousDay = plan.days.filter((d) => d.day < day.day && (d.kind ?? "study") === "study").at(-1);
+  // The warm-up replays video days 1, 3 and 7 study days back, skipping review and free days.
   const isStudyDay = (day.kind ?? "study") === "study";
-  const [today, previous] = await Promise.all([
+  const earlierDays = isStudyDay
+    ? plan.days
+        .filter((d) => d.day < day.day && (d.kind ?? "study") === "study")
+        .reverse()
+        .slice(0, Math.max(...WARM_UP_DAYS_BACK))
+    : [];
+  const [today, earlier] = await Promise.all([
     isStudyDay ? getMainVideoStudy(blocks, studySize) : null,
-    isStudyDay && previousDay ? getMainVideoStudy(getDayBlocks(plan, previousDay), studySize) : null,
+    Promise.all(
+      earlierDays.map(async (d, i) =>
+        WARM_UP_DAYS_BACK.includes(i + 1) ? { day: d.day, study: (await getMainVideoStudy(getDayBlocks(plan, d), studySize)).study } : undefined,
+      ),
+    ),
   ]);
   const study = today?.study ?? null;
-  const previousStudy = previous?.study ?? null;
+  const warmUp = buildWarmUp(earlier);
   const week = weekOf(day.day);
 
   return (
@@ -96,7 +105,7 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           blocks={blocks}
           study={study}
           guide={today?.guide ?? null}
-          previousStudy={previousStudy}
+          warmUp={warmUp}
           progressDay={getProgressDay(day.day)}
           initialDone={progress?.[getProgressDay(day.day)] ?? []}
           isSignedIn={progress !== null}

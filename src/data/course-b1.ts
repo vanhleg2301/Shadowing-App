@@ -225,7 +225,7 @@ export function getB1Blocks(day: CourseDay, collection: CollectionId): CourseBlo
   if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
   const [main, second, extra] = getB1DayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: earlier sentences, by ear", minutes: 5 }] : []),
     { id: "listen-1", kind: "listen", title: `Listen 1, no subtitles: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "words", kind: "words", title: "Words and chunks from the video", minutes: 10 },
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },

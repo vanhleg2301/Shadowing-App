@@ -16,7 +16,7 @@ export interface ScheduleSession {
 }
 
 const LABELS: Record<BlockKind, string> = {
-  review: "Listen again to yesterday's sentences",
+  review: "Listen again to sentences from 1, 3 and 7 days back",
   words: "Learn the video's words before you listen",
   listen: "Listen with the text hidden and get the main idea",
   readalong: "Listen with the text and tap the words you don't know",

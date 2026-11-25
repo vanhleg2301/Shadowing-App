@@ -399,7 +399,7 @@ export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): 
   if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
   const [main, second, extra] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: earlier sentences, by ear", minutes: 5 }] : []),
     { id: "words", kind: "words", title: "Before you listen: words from the video", minutes: 10 },
     { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
@@ -427,7 +427,7 @@ export function getGentleBlocks(day: CourseDay, collection: CollectionId = "spon
   if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
   const [main, second] = getDayVideos(day, collection);
   return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: yesterday's sentences, by ear", minutes: 5 }] : []),
+    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: earlier sentences, by ear", minutes: 5 }] : []),
     { id: "words", kind: "words", title: `Before you listen: ${GENTLE_PHRASE_COUNT} words from the video`, minutes: 10 },
     { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
     { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },

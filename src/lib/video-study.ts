@@ -208,6 +208,33 @@ export function buildDayStudy(lesson: { videoId: string; title: string; sentence
   return { videoId: lesson.videoId, title: lesson.title, items, sentences: study.sentences.map(toStudySentence) };
 }
 
+export interface WarmUpSentence {
+  videoId: string;
+  title: string;
+  day: number;
+  sentence: StudySentence;
+}
+
+const WARM_UP_SIZE = 5;
+export const WARM_UP_DAYS_BACK = [1, 3, 7];
+// Spaced: one sentence each from 3 and 7 study days back, the rest from the day before. Each older day gives a
+// sentence that wasn't in its own warm-ups (the day before shows 0-2, 3 back shows 3, 7 back shows 4).
+const OLDER_PICKS = [
+  { daysBack: 3, sentence: 3 },
+  { daysBack: 7, sentence: 4 },
+];
+
+// `earlier` holds the study days before today, nearest first.
+export function buildWarmUp(earlier: ({ day: number; study: DayStudy | null } | undefined)[]): WarmUpSentence[] {
+  const take = (entry: { day: number; study: DayStudy | null } | undefined, index: number): WarmUpSentence[] => {
+    const sentence = entry?.study?.sentences[index];
+    return entry?.study && sentence ? [{ videoId: entry.study.videoId, title: entry.study.title, day: entry.day, sentence }] : [];
+  };
+  const older = OLDER_PICKS.flatMap((pick) => take(earlier[pick.daysBack - 1], pick.sentence));
+  const recent = Array.from({ length: WARM_UP_SIZE - older.length }, (_, i) => take(earlier[0], i)).flat();
+  return [...recent, ...older];
+}
+
 // A written guide with its lines found in the transcript, so each can be played.
 export interface DayGuide {
   overview: string;
