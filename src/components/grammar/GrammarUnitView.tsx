@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { setCourseBlockDone } from "@/app/actions";
 import { DayTest } from "@/components/course/DayTest";
 import { SentencePlayerSheet } from "@/components/course/SentencePlayerSheet";
@@ -36,6 +36,11 @@ const CHECK_COVERS: StageId[] = ["story", "pattern", "videos"];
 const STORY_RATE = 0.85;
 const PICTURE_QUESTIONS = 3;
 
+function playFrom(audio: HTMLAudioElement, seconds: number) {
+  audio.currentTime = seconds;
+  void audio.play();
+}
+
 // Every place the pattern is used in a line, longest phrases first so "doesn't like" wins over "doesn't".
 function highlight(text: string, pattern: string[]): ReactNode[] {
   const alternatives = [...pattern]
@@ -65,32 +70,30 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, passed,
   const done = finished.includes("check") ? [...new Set([...finished, ...CHECK_COVERS])] : finished;
   const [open, setOpen] = useState<StageId | null>(null);
   const [isReading, setIsReading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const stopAtRef = useRef<number | null>(null);
+  // State rather than refs: the story's play buttons are built during render, and the React Compiler can't tell
+  // they only read the player when tapped.
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [stopAt, setStopAt] = useState<number | null>(null);
   const [time, setTime] = useState(-1);
   const storyCount = unit.story.lines.length;
 
   // Stops exactly where a line (or the story) ends, more precisely than the timeupdate event can.
   useEffect(() => {
-    if (!isReading || !narration) return;
+    if (!isReading || !narration || !audio) return;
     const id = setInterval(() => {
-      const el = audioRef.current;
-      if (!el) return;
-      setTime(el.currentTime);
-      if (stopAtRef.current !== null && el.currentTime >= stopAtRef.current) {
-        el.pause();
-        stopAtRef.current = null;
+      setTime(audio.currentTime);
+      if (stopAt !== null && audio.currentTime >= stopAt) {
+        audio.pause();
+        setStopAt(null);
       }
     }, 50);
     return () => clearInterval(id);
-  }, [isReading, narration]);
+  }, [isReading, narration, audio, stopAt]);
 
   const playLines = (first: number, last: number) => {
-    const el = audioRef.current;
-    if (!narration || !el) return false;
-    el.currentTime = narration.lineTimes[first].start;
-    stopAtRef.current = narration.lineTimes[last].end;
-    void el.play();
+    if (!narration || !audio) return false;
+    setStopAt(narration.lineTimes[last].end);
+    playFrom(audio, narration.lineTimes[first].start);
     return true;
   };
 
@@ -134,7 +137,7 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, passed,
   };
 
   const stopReading = () => {
-    audioRef.current?.pause();
+    audio?.pause();
     window.speechSynthesis?.cancel();
     setIsReading(false);
   };
@@ -342,7 +345,7 @@ export function GrammarUnitView({ unit, examples, narration, isSignedIn, passed,
     <div className="space-y-6 pb-20 md:pb-0">
       {narration && (
         <audio
-          ref={audioRef}
+          ref={setAudio}
           src={narration.url}
           preload="metadata"
           onPlay={() => setIsReading(true)}
