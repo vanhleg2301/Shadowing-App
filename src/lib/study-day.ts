@@ -29,9 +29,3 @@ export function getDayIn(timeZone: string, date = new Date()): string {
 export async function getLocalToday(): Promise<string> {
   return getDayIn(await getTimeZone());
 }
-
-export function previousDay(day: string): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
-}

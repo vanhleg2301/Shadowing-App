@@ -419,10 +419,6 @@ export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): 
   return getVideoDayBlocks(day, getDayVideos(day, collection), { wordsTitle: "Before you watch: words from the video" });
 }
 
-export function getCourseDay(dayNumber: number): CourseDay | undefined {
-  return COURSE_DAYS.find((d) => d.day === dayNumber);
-}
-
 // "Gentle" plan for A1 learners moving up to A2: the same days and steps with fewer words and questions, and slower
 // playback. Block ids match the full plan, so progress carries over.
 export const GENTLE_PHRASE_COUNT = 8;
