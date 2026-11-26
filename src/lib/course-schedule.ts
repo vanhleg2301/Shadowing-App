@@ -1,5 +1,5 @@
-// Turns a course day's steps into a suggested timetable for the "?" guide: morning for new material, the middle of
-// the day for the second video, the evening for speaking. Times are a suggestion; the order is what matters.
+// Turns a course day's steps into a suggested timetable for the "?" guide. Times are a suggestion; the order is what
+// matters.
 import type { BlockKind, CourseBlock } from "@/data/course-a2";
 
 export interface ScheduleItem {
@@ -16,23 +16,17 @@ export interface ScheduleSession {
 }
 
 const LABELS: Record<BlockKind, string> = {
-  review: "Listen again to sentences from 1, 3 and 7 days back",
-  words: "Learn the video's words before you listen",
-  listen: "Listen with the text hidden and get the main idea",
-  readalong: "Listen with the text and tap the words you don't know",
-  phrases: "Hear and repeat the sentences from the video",
-  dictation: "Hear a sentence, type it, see what you missed",
-  shadow: "Shadow: listen and repeat each sentence",
-  turns: "If you like: take turns saying the lines with the video",
-  speak: "If you like: retell the video out loud",
-  guide: "Read the video's parts and its model, and hear each line",
+  review: "Warm up: hear sentences from 1, 3 and 7 days back",
+  words: "Learn the video's words",
+  watch: "Watch the video twice: text hidden, then with the text",
+  practice: "Practise 5 sentences: hear, write, say",
   quiz: "Take the day test: it finishes the day",
-  extra: "If you have energy: bonus video",
+  more: "If you have time: take turns, speak, more videos",
+  listen: "Listen with the text hidden and get the main idea",
   free: "Listen to anything you enjoy",
 };
 
-const SESSION_STARTS = { morning: 8 * 60, midday: 13 * 60 + 30, evening: 20 * 60 };
-const EVENING_KINDS: BlockKind[] = ["speak", "quiz", "extra"];
+const SESSION_STARTS = { main: 8 * 60, extra: 20 * 60 };
 const LONG_STEP_MINUTES = 30;
 const LONG_BREAK_MINUTES = 10;
 const SHORT_BREAK_MINUTES = 5;
@@ -56,14 +50,11 @@ function toSession(name: string, start: number, blocks: CourseBlock[]): Schedule
   return { name, items };
 }
 
+// The day's steps in one sitting with short breaks; the optional ones later, if there is time.
 export function buildDaySchedule(blocks: CourseBlock[]): ScheduleSession[] {
-  const daytime = blocks.filter((b) => !EVENING_KINDS.includes(b.kind));
-  // The morning runs until the day's phrases and its first shadowing are both done.
-  const morningEnd = Math.max(daytime.findIndex((b) => b.kind === "phrases"), daytime.findIndex((b) => b.kind === "shadow")) + 1;
   const sessions = [
-    toSession("Morning", SESSION_STARTS.morning, daytime.slice(0, morningEnd)),
-    toSession("Early afternoon", SESSION_STARTS.midday, daytime.slice(morningEnd)),
-    toSession("Evening", SESSION_STARTS.evening, blocks.filter((b) => EVENING_KINDS.includes(b.kind))),
+    toSession("The day's steps", SESSION_STARTS.main, blocks.filter((b) => !b.isOptional)),
+    toSession("If you have time", SESSION_STARTS.extra, blocks.filter((b) => b.isOptional)),
   ];
   return sessions.filter((s) => s.items.length > 0);
 }

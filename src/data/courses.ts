@@ -40,9 +40,10 @@ export interface Course {
   playbackRate?: number;
 }
 
-// The steps every plan had before the days were built around their video (A2, Gentle and B1 alike). Days finished
-// then still count as finished, so nobody is locked out of the next day.
-const EARLIER_CORE_BLOCKS = ["listen-1", "phrases", "shadow-1", "speak", "quiz"];
+// The steps every finished day had before the day was cut down to five (A2, Gentle and B1 alike; "speak" was
+// required before that and optional after). Days finished then still count as finished, so nobody is locked out
+// of the next day.
+const EARLIER_CORE_BLOCKS = ["listen-1", "phrases", "shadow-1", "quiz"];
 
 // Stored with a day finished by "Mark day as done" before its test was passed, so the course can show it.
 export const TEST_SKIPPED_BLOCK = "test-skipped";
@@ -56,7 +57,7 @@ const SPEAK_A2: Course = {
   title: "Understand A2 English",
   shortTitle: "A2 English",
   description:
-    "For learners at about A2. One video a day, about an hour: learn its words first, listen three times until you understand all of it, and shadow its sentences. Each week has five video days, a day to hear them again and a free day, and the next week is always ready.",
+    "For learners at about A2. One video a day in five steps, under an hour: warm up on earlier sentences, learn its words, watch it twice, practise five of its sentences (hear, write, say), then pass the day test. Each week has five video days, a day to hear them again and a free day, and the next week is always ready.",
   tagline: "One video a day, about an hour. A new week every week.",
   days: COURSE_DAYS,
   fallbackCollection: "sponge",
@@ -71,7 +72,7 @@ const NATURAL_B1: Course = {
   title: "Natural speed",
   shortTitle: "Natural speed",
   description:
-    "For B1 learners who lose track when real people talk fast. One video a day, about an hour: hear it with no subtitles, learn the chunks it uses, listen again until it is all clear, and shadow it. Five video days, a review day and a free day each week, week after week.",
+    "For B1 learners who lose track when real people talk fast. One video a day in five steps, under an hour: warm up, watch it with no subtitles and then with the text, learn the chunks it uses, practise five of its sentences (hear, write, say), then pass the day test. Five video days, a review day and a free day each week, week after week.",
   tagline: "Keep up with fast, real English. About an hour a day.",
   days: COURSE_B1_DAYS,
   fallbackCollection: "bbc",
@@ -86,7 +87,7 @@ const GENTLE_A2: Course = {
   title: "Understand A2 English · Gentle",
   shortTitle: "A2 · Gentle",
   description:
-    "For A1 learners on the way to A2. The same videos at 0.75x, with fewer and shorter steps: 8 words and 8 sentences from each video, heard until they are clear. Under an hour a day. Take two real days per course day if you need to.",
+    "For A1 learners on the way to A2. The same videos and five steps at 0.75x, with 8 words from each video and a shorter test. Under an hour a day. Take two real days per course day if you need to.",
   tagline: "From A1 to A2, under an hour a day.",
   getBlocks: getGentleBlocks,
   startLevel: "A1",

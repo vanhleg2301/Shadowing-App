@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { savePhrasesToReview, setCourseBlockDone, setCourseBlocksDone } from "@/app/actions";
-import { CourseDictation } from "@/components/course/CourseDictation";
+import { CoursePractice } from "@/components/course/CoursePractice";
 import { CourseTakeTurns } from "@/components/course/CourseTakeTurns";
 import { DayTest } from "@/components/course/DayTest";
 import { CardDeck } from "@/components/lesson/CardDeck";
@@ -50,16 +50,11 @@ interface CourseDayViewProps {
 const KIND_ICON: Record<BlockKind, IconName> = {
   review: "repeat",
   words: "book",
-  listen: "headphones",
-  readalong: "volume",
-  guide: "news",
-  phrases: "chat",
-  dictation: "note",
-  turns: "user",
-  shadow: "mic",
-  speak: "record",
+  watch: "headphones",
+  practice: "mic",
   quiz: "chart",
-  extra: "plus",
+  more: "plus",
+  listen: "headphones",
   free: "play",
 };
 
@@ -68,55 +63,35 @@ const DEFAULT_PROMPT_COUNT = 3;
 
 const fromCourse = (day: number, playbackRate?: number) => `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
 
-// The warm-up is its own section when earlier videos gave sentences to hear again; otherwise it is Review.
+// Steps done elsewhere: a rest day's videos, Review, or anything the learner enjoys. The warm-up is its own screen
+// when earlier videos gave sentences to hear again; otherwise it is Review.
 function blockHref(block: CourseBlock, day: number, playbackRate: number | undefined, hasReviewSection: boolean): string | null {
   if (block.kind === "review") return hasReviewSection ? null : "/review";
   if (block.kind === "free") return block.id === "stories" ? "/stories" : "/";
   if (!block.videoId) return null;
-  const from = fromCourse(day, playbackRate);
-  if (block.kind === "listen" || block.kind === "extra") return `/watch/${block.videoId}?mode=watch&listen=1&${from}`;
-  if (block.kind === "readalong") return `/watch/${block.videoId}?mode=watch&${from}`;
-  if (block.kind === "dictation") return `/watch/${block.videoId}?mode=dictation&${from}`;
-  return `/watch/${block.videoId}?mode=shadow&${from}`;
+  return `/watch/${block.videoId}?mode=watch&listen=1&${fromCourse(day, playbackRate)}`;
 }
 
-type SectionId = "review" | "words" | "guide" | "phrases" | "dictation" | "turns" | "speak" | "quiz";
-const SECTION_KINDS: readonly string[] = ["review", "words", "guide", "phrases", "dictation", "turns", "speak", "quiz"];
-const DICTATION_SIZE = 5;
+type SectionId = "review" | "words" | "practice" | "quiz" | "more";
+const SECTION_KINDS: readonly string[] = ["review", "words", "practice", "quiz", "more"];
+// Parts of "More if you have time", each on its own screen.
+type ExtraScreen = "turns" | "speak" | "guide";
+const EXTRA_SCREENS: readonly string[] = ["turns", "speak", "guide"];
+const PRACTICE_SIZE = 5;
 
 // Short enough to type on a phone, long enough to be more than a greeting.
-function pickDictationSentences(sentences: StudySentence[]): StudySentence[] {
+function pickPracticeSentences(sentences: StudySentence[]): StudySentence[] {
   const fits = sentences.filter((s) => {
     const words = s.text.split(/\s+/).length;
     return words >= 4 && words <= 14;
   });
-  return (fits.length >= DICTATION_SIZE ? fits : sentences).slice(0, DICTATION_SIZE);
+  return (fits.length >= PRACTICE_SIZE ? fits : sentences).slice(0, PRACTICE_SIZE);
 }
 
-// What to do in a step that happens in a video (or elsewhere in the app), shown before it opens.
 function getStepTip(block: CourseBlock): string {
-  switch (block.kind) {
-    case "listen":
-      return block.id === "listen-1"
-        ? "Listen once with the text hidden. Don't stop or go back: get the general idea first. It's fine not to catch every word."
-        : "Listen with the text hidden. Notice what you understand now that you didn't before.";
-    case "readalong":
-      return block.id.startsWith("relisten")
-        ? "Listen straight through one more time, without stopping. Notice how much more you understand than the first time."
-        : "Now with the text. Pause when you need to, and tap any word you don't know.";
-    case "turns":
-      return "Shadow the video, but take turns: let it say one line, then you say the next.";
-    case "dictation":
-      return "Play a sentence, type what you hear, then check it to see the words you missed.";
-    case "shadow":
-      return "Play a sentence, then say it with the speaker. Copy the rhythm and the stress, not only the words. Repeat the hard ones.";
-    case "extra":
-      return "More listening, just for fun. You don't need to understand everything.";
-    case "review":
-      return "Go through the words you saved, as flashcards.";
-    default:
-      return "Anything you enjoy counts: a video, a podcast, a story.";
-  }
+  if (block.kind === "listen") return "Listen with the text hidden. Notice what you understand now that you didn't before.";
+  if (block.kind === "review") return "Go through the words you saved, as flashcards.";
+  return "Anything you enjoy counts: a video, a podcast, a story.";
 }
 
 function getStepLink(block: CourseBlock): string {
@@ -169,9 +144,7 @@ export function CourseDayView({
   const sections = SECTION_KINDS.filter((kind) => {
     if (!blocks.some((b) => b.kind === kind)) return false;
     if (kind === "review") return hasReviewSection;
-    if (kind === "guide") return guide !== null;
-    if (kind === "dictation") return study !== null;
-    if (kind === "turns") return (study?.turns.length ?? 0) > 0;
+    if (kind === "practice") return study !== null;
     return kind === "words" ? phrases.length > 0 : kind === "quiz" ? testQuestions.length > 0 : true;
   });
   const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
@@ -189,6 +162,7 @@ export function CourseDayView({
   const [open, setOpen] = useState<string | null>(null);
   const openBlock = blocks.find((b) => b.id === open) ?? null;
   const close = () => setOpen(null);
+  const backToMore = () => setOpen("more");
 
   const toggleBlock = (blockId: string, isDone: boolean) => {
     if (!isSignedIn) {
@@ -257,7 +231,7 @@ export function CourseDayView({
   const handleRecorded = (index: number) => {
     const next = new Set(recorded).add(index);
     setRecorded(next);
-    if (next.size === prompts.length) finishBlock("speak");
+    if (next.size === prompts.length) finishBlock("more");
   };
 
   const stages: LessonStage[] = blocks.map((block) => ({
@@ -349,64 +323,15 @@ export function CourseDayView({
         </CardDeck>
       );
     }
-    if (section === "phrases" && study) {
+    if (section === "practice" && study) {
       return (
-        <CardDeck
-          title="Sentences from the video"
-          cards={study.sentences.map((sentence) => (
-            <div key={sentence.index}>
-              <ul>
-                <VideoSentence sentence={sentence} onHear={() => setHeard({ videoId: study.videoId, sentence })} onWordClick={openWord} />
-              </ul>
-              <p className="mt-3 text-sm text-muted">Hear it, then say it with the speaker a few times, until it feels easy.</p>
-            </div>
-          ))}
-          onClose={close}
-          onDone={() => finishBlock("phrases")}
-          summaryTitle="Well said!"
-          summaryDetail="Now shadow the whole video: you already know every sentence in it."
-        >
-          {sheets}
-        </CardDeck>
-      );
-    }
-    if (section === "dictation" && study) {
-      return (
-        <CourseDictation
+        <CoursePractice
           videoId={study.videoId}
-          sentences={pickDictationSentences(study.sentences)}
+          sentences={pickPracticeSentences(study.sentences)}
           playbackRate={playbackRate}
           onClose={close}
-          onDone={() => finishBlock("dictation")}
+          onDone={() => finishBlock("practice")}
         />
-      );
-    }
-    if (section === "turns" && study) {
-      return <CourseTakeTurns videoId={study.videoId} lines={study.turns} playbackRate={playbackRate} onClose={close} onDone={() => finishBlock("turns")} />;
-    }
-    if (section === "guide" && guide) {
-      return (
-        <FocusScreen
-          title="The video on one page"
-          progress={done.has("guide") ? 1 : 0}
-          onClose={close}
-          footer={
-            <button
-              type="button"
-              onClick={() => {
-                finishBlock("guide");
-                close();
-              }}
-              className="btn-3d btn-brand w-full py-3"
-            >
-              Done
-            </button>
-          }
-        >
-          <p className="mb-4 text-muted">See how the video is built, hear its key lines, and get a model to copy.</p>
-          <VideoGuideSection guide={guide} onHear={(sentence) => study && setHeard({ videoId: study.videoId, sentence })} />
-          {sheets}
-        </FocusScreen>
       );
     }
     if (section === "quiz") {
@@ -420,30 +345,23 @@ export function CourseDayView({
         </FocusScreen>
       );
     }
-    if (section === "speak") {
+    if (section === "more") {
+      return <MoreScreen block={block} study={study} guide={guide} day={day.day} playbackRate={playbackRate} isDone={done.has("more")} onOpen={setOpen} onClose={close} />;
+    }
+    if (block.kind === "watch" && block.videoId) {
       return (
-        <FocusScreen
-          title="Speak"
-          progress={recorded.size / prompts.length}
+        <WatchScreen
+          block={block}
+          from={fromCourse(day.day, playbackRate)}
+          isListenFirst={blocks.findIndex((b) => b.kind === "watch") < blocks.findIndex((b) => b.kind === "words")}
+          isDone={done.has(block.id)}
+          isPending={isPending}
+          onToggle={(isDone) => {
+            toggleBlock(block.id, isDone);
+            if (isDone) close();
+          }}
           onClose={close}
-          footer={
-            <div className="flex items-center gap-3">
-              <p className="min-w-0 flex-1 text-sm font-semibold text-muted">
-                {recorded.size}/{prompts.length} answered
-              </p>
-              <button type="button" onClick={close} className="btn-3d btn-brand shrink-0 px-6 py-3">
-                Back to the day
-              </button>
-            </div>
-          }
-        >
-          <p className="mb-4 text-muted">Answer out loud, record, listen back, then try once more. Recordings stay on your device.</p>
-          <ol lang="en" className="space-y-3">
-            {prompts.map((prompt, i) => (
-              <SpeakingPrompt key={prompt.text} index={i} prompt={prompt.text} sampleAnswer={prompt.sampleAnswer} onRecorded={() => handleRecorded(i)} />
-            ))}
-          </ol>
-        </FocusScreen>
+        />
       );
     }
     const href = blockHref(block, day.day, playbackRate, hasReviewSection);
@@ -484,6 +402,54 @@ export function CourseDayView({
           )}
           <p className="mt-4 max-w-sm text-sm text-muted">Come back here when you&apos;ve finished, and tick it off.</p>
         </div>
+      </FocusScreen>
+    );
+  };
+
+  const renderExtra = (screen: ExtraScreen) => {
+    if (screen === "turns" && study) {
+      return <CourseTakeTurns videoId={study.videoId} lines={study.turns} playbackRate={playbackRate} onClose={backToMore} onDone={() => finishBlock("more")} />;
+    }
+    if (screen === "guide" && guide) {
+      return (
+        <FocusScreen
+          title="The video on one page"
+          progress={0}
+          onClose={backToMore}
+          footer={
+            <button type="button" onClick={backToMore} className="btn-3d btn-brand w-full py-3">
+              Done
+            </button>
+          }
+        >
+          <p className="mb-4 text-muted">See how the video is built, hear its key lines, and get a model to copy.</p>
+          <VideoGuideSection guide={guide} onHear={(sentence) => study && setHeard({ videoId: study.videoId, sentence })} />
+          {sheets}
+        </FocusScreen>
+      );
+    }
+    return (
+      <FocusScreen
+        title="Speak"
+        progress={recorded.size / prompts.length}
+        onClose={backToMore}
+        footer={
+          <div className="flex items-center gap-3">
+            <p className="min-w-0 flex-1 text-sm font-semibold text-muted">
+              {recorded.size}/{prompts.length} answered
+            </p>
+            <button type="button" onClick={backToMore} className="btn-3d btn-brand shrink-0 px-6 py-3">
+              Done
+            </button>
+          </div>
+        }
+      >
+        <p className="mb-4 text-muted">Answer out loud, record, listen back, then try once more. Recordings stay on your device.</p>
+        <ol lang="en" className="space-y-3">
+          {prompts.map((prompt, i) => (
+            <SpeakingPrompt key={prompt.text} index={i} prompt={prompt.text} sampleAnswer={prompt.sampleAnswer} onRecorded={() => handleRecorded(i)} />
+          ))}
+        </ol>
       </FocusScreen>
     );
   };
@@ -531,7 +497,7 @@ export function CourseDayView({
 
       <LessonNotes lessonKey={`course:${courseId}:${progressDay}`} title={`Day ${day.day}: ${day.title}`} href={`/course/${day.day}`} />
 
-      {openBlock ? renderScreen(openBlock) : sheets}
+      {open && EXTRA_SCREENS.includes(open) ? renderExtra(open as ExtraScreen) : openBlock ? renderScreen(openBlock) : sheets}
     </div>
   );
 }
@@ -560,5 +526,134 @@ function PhraseCard({ phrase }: { phrase: CoursePhrase }) {
       <p className="mt-3 rounded-xl bg-cream px-3 py-2 italic text-ink/90">“{phrase.example}”</p>
       <p className="mt-3 text-sm text-muted">Say it out loud twice.</p>
     </div>
+  );
+}
+
+interface WatchScreenProps {
+  block: CourseBlock;
+  from: string;
+  // B1 hears the video before its words, with no subtitles at all.
+  isListenFirst: boolean;
+  isDone: boolean;
+  isPending: boolean;
+  onToggle: (isDone: boolean) => void;
+  onClose: () => void;
+}
+
+// The day's main video, heard twice: first for the general idea, then with the text to catch the rest.
+function WatchScreen({ block, from, isListenFirst, isDone, isPending, onToggle, onClose }: WatchScreenProps) {
+  const passes = [
+    {
+      label: isListenFirst ? "No subtitles" : "Text hidden",
+      tip: "Don't stop or go back: get the general idea. It's fine not to catch every word.",
+      href: `/watch/${block.videoId}?mode=watch&listen=1&${from}`,
+    },
+    {
+      label: "With the text",
+      tip: "Pause when you need to, and tap any word you don't know.",
+      href: `/watch/${block.videoId}?mode=watch&${from}`,
+    },
+  ];
+  return (
+    <FocusScreen
+      title={block.title}
+      progress={isDone ? 1 : 0}
+      onClose={onClose}
+      footer={
+        <button type="button" onClick={() => onToggle(!isDone)} disabled={isPending} className={`btn-3d w-full py-3 ${isDone ? "" : "btn-brand"}`}>
+          {isDone ? "Not done yet" : "I've watched it twice"}
+        </button>
+      }
+    >
+      <p className="text-xs font-bold uppercase tracking-wide text-accent">Watch twice · about {block.minutes} min</p>
+      <p className="mt-1 text-2xl font-extrabold leading-snug text-ink">{block.title.replace(/^Watch it twice: /, "")}</p>
+      <ol className="mt-5 space-y-3">
+        {passes.map((pass, i) => (
+          <li key={pass.label}>
+            <Link href={pass.href} className="pressable flex items-center gap-4 rounded-3xl border border-line bg-surface p-4 hover:border-brand">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-soft font-extrabold text-brand">{i + 1}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-extrabold text-ink">{pass.label}</span>
+                <span className="block text-sm text-muted">{pass.tip}</span>
+              </span>
+              <Icon name="chevronRight" className="size-5 shrink-0 text-muted" />
+            </Link>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 text-sm text-muted">Come back here after the second time, and tick it off.</p>
+    </FocusScreen>
+  );
+}
+
+interface MoreScreenProps {
+  block: CourseBlock;
+  study: DayStudy | null;
+  guide: DayGuide | null;
+  day: number;
+  playbackRate?: number;
+  isDone: boolean;
+  onOpen: (screen: string) => void;
+  onClose: () => void;
+}
+
+// Everything that used to be its own optional step, in one place: none of it is needed to finish the day.
+function MoreScreen({ block, study, guide, day, playbackRate, isDone, onOpen, onClose }: MoreScreenProps) {
+  const from = fromCourse(day, playbackRate);
+  const items: { title: string; detail: string; icon: IconName; open?: string; href?: string }[] = [
+    ...((study?.turns.length ?? 0) > 0 ? [{ title: "Take turns with the speaker", detail: "The video says a line, you say the next", icon: "user" as const, open: "turns" }] : []),
+    { title: "Speak about it", detail: "Retell the video and talk about your own life", icon: "record", open: "speak" },
+    ...(guide ? [{ title: "The video on one page", detail: "Its parts, and a model to copy", icon: "news" as const, open: "guide" }] : []),
+    ...(block.videoId ? [{ title: "Shadow the whole video", detail: "Say every sentence with the speaker", icon: "mic" as const, href: `/watch/${block.videoId}?mode=shadow&${from}` }] : []),
+    ...(block.extras ?? []).map((video) => ({
+      title: `Same topic: ${video.title}`,
+      detail: "Another video, text hidden",
+      icon: "play" as const,
+      href: `/watch/${video.id}?mode=watch&listen=1&${from}`,
+    })),
+  ];
+  return (
+    <FocusScreen
+      title="More if you have time"
+      progress={isDone ? 1 : 0}
+      onClose={onClose}
+      footer={
+        <button type="button" onClick={onClose} className="btn-3d btn-brand w-full py-3">
+          Back to the day
+        </button>
+      }
+    >
+      <p className="text-muted">The day is done without these. Pick what you enjoy.</p>
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => {
+          const content = (
+            <>
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+                <Icon name={item.icon} className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-extrabold text-ink">{item.title}</span>
+                <span className="block text-sm text-muted">{item.detail}</span>
+              </span>
+              <Icon name="chevronRight" className="size-5 shrink-0 text-muted" />
+            </>
+          );
+          const className = "pressable flex w-full items-center gap-4 rounded-3xl border border-line bg-surface p-4 text-left hover:border-brand";
+          return (
+            <li key={item.title}>
+              {item.href ? (
+                <Link href={item.href} className={className}>
+                  {content}
+                </Link>
+              ) : (
+                <button type="button" onClick={() => item.open && onOpen(item.open)} className={className}>
+                  {content}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </FocusScreen>
   );
 }

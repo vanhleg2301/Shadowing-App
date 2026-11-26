@@ -35,16 +35,18 @@ export function useCourseVideo(videoId: string, startSeconds: number, playbackRa
 }
 
 interface CourseVideoFrameProps {
-  video: { videoId: string; imageUrl: string | null; containerRef: RefObject<HTMLDivElement | null> };
+  videoId: string;
+  imageUrl: string | null;
+  containerRef: RefObject<HTMLDivElement | null>;
   className?: string;
 }
 
-export function CourseVideoFrame({ video, className = "" }: CourseVideoFrameProps) {
+export function CourseVideoFrame({ videoId, imageUrl, containerRef, className = "" }: CourseVideoFrameProps) {
   return (
     <div className={`relative aspect-video w-full overflow-hidden rounded-2xl bg-black ${className}`}>
       {/* The YouTube player loads on the first play; the thumbnail shows until then. */}
-      <Image src={video.imageUrl ?? `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`} alt="" fill sizes="42rem" className="object-cover opacity-80" />
-      {!video.imageUrl && <div ref={video.containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />}
+      <Image src={imageUrl ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt="" fill sizes="42rem" className="object-cover opacity-80" />
+      {!imageUrl && <div ref={containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />}
     </div>
   );
 }

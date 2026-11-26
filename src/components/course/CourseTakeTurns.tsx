@@ -87,7 +87,7 @@ export function CourseTakeTurns({ videoId, lines, playbackRate = 1, onClose, onD
         </>
       )}
       {/* Kept mounted after the end, so the player still works after swapping parts. */}
-      <CourseVideoFrame video={video} className={isFinished ? "hidden" : "mt-3"} />
+      <CourseVideoFrame videoId={videoId} imageUrl={video.imageUrl} containerRef={video.containerRef} className={isFinished ? "hidden" : "mt-3"} />
       {!isFinished && (
         <>
           <div className="mt-3 flex gap-2">

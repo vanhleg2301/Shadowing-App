@@ -181,6 +181,8 @@ test("the warm-up brings back sentences from days further back", async ({ page }
 test("a course day is a path of steps, each opened on its own screen", async ({ page }) => {
   await openPage(page, "/course/2");
   const steps = page.getByRole("region", { name: "Lesson parts" });
+  // Five steps a day; the rest waits under "More if you have time".
+  await expect(steps.getByText("0/5")).toBeVisible();
 
   // The warm-up is earlier videos, heard before they are read.
   await steps.getByRole("button", { name: /^Warm up: earlier sentences/ }).click();
@@ -190,7 +192,7 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await screen.getByRole("button", { name: "Close" }).click();
 
   // Words come one at a time, in their sentence from the video.
-  await steps.getByRole("button", { name: /^Before you listen: words from the video/ }).click();
+  await steps.getByRole("button", { name: /^Before you watch: words from the video/ }).click();
   screen = page.getByRole("dialog", { name: "Words from the video" });
   await expect(screen.locator("mark")).toBeVisible();
   // A sentence plays in a sheet above the screen, with a way into the full lesson at that moment.
@@ -203,21 +205,33 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await expect(screen.getByText(/· 2 of \d+/)).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();
 
-  // Dictation: type what you hear, then see the words you missed.
-  await steps.getByRole("button", { name: /^Write what you hear/ }).click();
-  screen = page.getByRole("dialog", { name: "Write what you hear" });
-  await expect(screen.getByText("Write what you hear · 1 of 5")).toBeVisible();
+  // The main video, twice: text hidden, then with the text.
+  await steps.getByRole("button", { name: /^Watch it twice: / }).click();
+  screen = page.getByRole("dialog", { name: /^Watch it twice/ });
+  await expect(screen.getByRole("link", { name: /^1 Text hidden/ })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=watch&listen=1&from=course-2/);
+  await expect(screen.getByRole("link", { name: /^2 With the text/ })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=watch&from=course-2/);
+  await expect(screen.getByRole("button", { name: "I've watched it twice" })).toBeVisible();
+  await screen.getByRole("button", { name: "Close" }).click();
+
+  // Practice: hear a sentence, write it, see the words missed, then say it.
+  await steps.getByRole("button", { name: /^Practise 5 sentences/ }).click();
+  screen = page.getByRole("dialog", { name: "Practise the sentences" });
+  await expect(screen.getByText("Hear, write, say · 1 of 5")).toBeVisible();
   await screen.getByRole("textbox", { name: "What you heard" }).fill("I think");
   await screen.getByRole("button", { name: "Check" }).click();
   await expect(screen.getByText(/% heard right|Perfect!/)).toBeVisible();
   // What was missed is offered for Review; signed out, it asks to sign in.
   await expect(screen.getByText(/^Sign in to practise “.+” again in Review\.$/)).toBeVisible();
+  await expect(screen.getByText("Now say it like the speaker: same rhythm, same stress.")).toBeVisible();
   await screen.getByRole("button", { name: "Next sentence" }).click();
-  await expect(screen.getByText("Write what you hear · 2 of 5")).toBeVisible();
+  await expect(screen.getByText("Hear, write, say · 2 of 5")).toBeVisible();
   await screen.getByRole("button", { name: "Close" }).click();
 
-  // Taking turns: the video says a line, you say the next from its first letters.
-  await steps.getByRole("button", { name: /^Take turns with the speaker/ }).click();
+  // The optional parts are in one place. Taking turns: the video says a line, you say the next.
+  await steps.getByRole("button", { name: /^More if you have time/ }).click();
+  const more = page.getByRole("dialog", { name: "More if you have time" });
+  await expect(more.getByRole("link", { name: /^Shadow the whole video/ })).toHaveAttribute("href", /mode=shadow&from=course-2/);
+  await more.getByRole("button", { name: /^Take turns with the speaker/ }).click();
   screen = page.getByRole("dialog", { name: "Take turns with the speaker" });
   await screen.getByRole("button", { name: "Start the conversation" }).click();
   const conversation = screen.getByRole("list", { name: "Conversation" });
@@ -228,14 +242,9 @@ test("a course day is a path of steps, each opened on its own screen", async ({ 
   await expect(hint).toContainText("…");
   await screen.getByRole("button", { name: "Show the line" }).click();
   await expect(hint).not.toContainText("…");
+  // Closing it goes back to the list of extras.
   await screen.getByRole("button", { name: "Close" }).click();
-
-  // A video step says what to do, opens the video, and is ticked by hand.
-  await steps.getByRole("button", { name: /^Listen 1, text hidden/ }).click();
-  screen = page.getByRole("dialog", { name: /^Listen 1, text hidden/ });
-  await expect(screen.getByRole("link", { name: "Open the video" })).toHaveAttribute("href", /^\/watch\/[^?]+\?mode=watch&listen=1&from=course-2/);
-  await expect(screen.getByRole("button", { name: "I've done it" })).toBeVisible();
-  await screen.getByRole("button", { name: "Close" }).click();
+  await more.getByRole("button", { name: "Back to the day" }).click();
 
   await steps.getByRole("button", { name: /^Day test/ }).click();
   await expect(page.getByText("Listen. Which sentence did you hear?")).toBeVisible();
@@ -245,6 +254,7 @@ test("a video with a guide shows its parts and a model to copy", async ({ page, 
   // Bob the Canadian, week 1 day 1: "How to Describe Yourself in English".
   await context.addCookies([{ name: "collection", value: "bob", url: baseURL ?? "http://localhost:3000" }]);
   await openPage(page, "/course/1");
+  await page.getByRole("button", { name: /^More if you have time/ }).click();
   await page.getByRole("button", { name: /^The video on one page/ }).click();
   await expect(page.getByText("Model: Introduce yourself")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Hear “I'm afraid of heights\.” in the video$/ })).toBeVisible();
@@ -261,7 +271,7 @@ test("the course goes on week after week, with review and free days", async ({ p
 
   await openPage(page, "/course/8");
   await expect(page.getByText("Week 2 · Day 1 of 7")).toBeVisible();
-  await page.getByRole("button", { name: /^Before you listen: words from the video/ }).click();
+  await page.getByRole("button", { name: /^Before you watch: words from the video/ }).click();
   await expect(page.getByRole("dialog", { name: "Words from the video" }).locator("mark")).toBeVisible();
 });
 

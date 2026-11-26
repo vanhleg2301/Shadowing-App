@@ -76,9 +76,9 @@ export function CourseGuide({ planTitle, scheduleTitle, schedule }: CourseGuideP
             <section>
               <h3 className="text-base font-extrabold">3. Rest</h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
-                <li>Take the breaks in the timetable. Don&apos;t join the steps into one long session.</li>
+                <li>Take the short breaks in the timetable, even when you feel fine.</li>
                 <li>Between sessions, do something else. You don&apos;t need to study more.</li>
-                <li>Sleep about 7–8 hours. If you are tired at night, take the quiz, go to bed and do the speaking tomorrow.</li>
+                <li>Sleep about 7–8 hours. If you are tired, take the day test and leave the extras for another day.</li>
                 <li>If it is too much, spread one course day over two real days. Studying regularly matters more than finishing fast.</li>
               </ul>
             </section>

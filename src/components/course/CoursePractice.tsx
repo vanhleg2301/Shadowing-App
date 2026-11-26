@@ -5,11 +5,12 @@ import { CourseVideoFrame, useCourseVideo } from "@/components/course/CourseVide
 import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
 import { MissedToReviewNote } from "@/components/MissedToReviewNote";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { useMissedToReview, type MissedResult } from "@/hooks/useMissedToReview";
 import { checkDictation, type WordResult } from "@/lib/practice";
 import type { StudySentence } from "@/lib/video-study";
 
-interface CourseDictationProps {
+interface CoursePracticeProps {
   videoId: string;
   sentences: StudySentence[];
   playbackRate?: number;
@@ -19,8 +20,9 @@ interface CourseDictationProps {
 
 const PASS_SCORE = 70;
 
-// Hear a sentence from the day's video, type it, then see which words were missed.
-export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose, onDone }: CourseDictationProps) {
+// Each sentence in three moves: hear it from the video, write what you heard and see the words you missed (they go to
+// Review), then say it like the speaker. Dictation and shadowing in one pass.
+export function CoursePractice({ videoId, sentences, playbackRate = 1, onClose, onDone }: CoursePracticeProps) {
   const video = useCourseVideo(videoId, sentences[0]?.start ?? 0, playbackRate);
   const { isPlaying, pause, isSlow, setIsSlow } = video;
   const [index, setIndex] = useState(0);
@@ -88,15 +90,15 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
   );
 
   return (
-    <FocusScreen title="Write what you hear" progress={index / sentences.length} onClose={onClose} footer={footer}>
+    <FocusScreen title="Practise the sentences" progress={index / sentences.length} onClose={onClose} footer={footer}>
       {isFinished ? (
         <FocusSummary
           title={`${average}% heard right`}
           isPassed={average >= PASS_SCORE}
           detail={
             (average >= PASS_SCORE
-              ? "Your ears are catching the words. The ones you missed are usually the short, quick ones: listen for them when you shadow."
-              : "That's normal: the short words run together in real speech. Shadowing these sentences is what trains your ear.") +
+              ? "Your ears are catching the words. The ones you missed are usually the short, quick ones: listen for them next time."
+              : "That's normal: the short words run together in real speech. Saying the sentences like the speaker is what trains your ear.") +
             (savedCount > 0 ? ` ${savedCount} missed ${savedCount === 1 ? "phrase is" : "phrases are"} waiting in Review.` : "")
           }
         >
@@ -109,11 +111,11 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
         </FocusSummary>
       ) : (
         <p className="text-xs font-bold uppercase tracking-wide text-accent">
-          Write what you hear · {index + 1} of {sentences.length}
+          Hear, write, say · {index + 1} of {sentences.length}
         </p>
       )}
       {/* Kept mounted after the last sentence, so the player still works for "Try them again". */}
-      <CourseVideoFrame video={video} className={isFinished ? "hidden" : "mt-3"} />
+      <CourseVideoFrame videoId={videoId} imageUrl={video.imageUrl} containerRef={video.containerRef} className={isFinished ? "hidden" : "mt-3"} />
       {!isFinished && (
         <>
           <div className="mt-3 flex gap-2">
@@ -153,6 +155,21 @@ export function CourseDictation({ videoId, sentences, playbackRate = 1, onClose,
               </p>
               {sentence.translation && <p className="mt-1 text-sm text-muted">{sentence.translation}</p>}
               <MissedToReviewNote missed={missed} isSignedIn={isSignedIn} />
+            </div>
+          )}
+          {result && (
+            <div className="mt-3 animate-fade-in">
+              <p className="text-sm font-semibold text-ink">Now say it like the speaker: same rhythm, same stress.</p>
+              <div className="mt-2">
+                <VoiceRecorder
+                  key={index}
+                  target={sentence.text}
+                  onPlayOriginal={() => video.playSentence(sentence)}
+                  originalDurationSec={sentence.end - sentence.start}
+                  onBeforeRecord={pause}
+                  recordLabel="Say it"
+                />
+              </div>
             </div>
           )}
         </>

@@ -11,7 +11,8 @@ export function getCourseId(collection: CollectionId): string {
   return collection === "sponge" ? COURSE_ID : `${COURSE_ID}:${collection}`;
 }
 
-export type BlockKind = "review" | "words" | "listen" | "readalong" | "guide" | "phrases" | "dictation" | "shadow" | "turns" | "speak" | "quiz" | "extra" | "free";
+// "listen" is a rest day's video; "watch" is a video day's main video, heard twice.
+export type BlockKind = "review" | "words" | "watch" | "practice" | "quiz" | "more" | "listen" | "free";
 
 export interface CourseBlock {
   id: string;
@@ -20,6 +21,8 @@ export interface CourseBlock {
   minutes: number;
   isOptional?: boolean;
   videoId?: string;
+  // "More if you have time": the day's other videos on the same topic.
+  extras?: { id: string; title: string }[];
 }
 
 export interface CoursePhrase {
@@ -365,14 +368,6 @@ export function getDayVideos(day: CourseDay, collection: CollectionId): CourseDa
 // Passing it is what finishes a video day; it has the block id "quiz" so earlier progress still counts.
 export const DAY_TEST_TITLE = "Day test: hear, fill the gaps, and the video";
 
-// Days whose main video has a written guide (src/data/video-guides.ts) study it after the second listen.
-export function withGuideBlock(blocks: CourseBlock[], hasGuide: boolean): CourseBlock[] {
-  if (!hasGuide) return blocks;
-  const at = blocks.findIndex((b) => b.id === "readalong-1") + 1;
-  const guide: CourseBlock = { id: "guide", kind: "guide", title: "The video on one page: its parts and a model to copy", minutes: 10 };
-  return [...blocks.slice(0, at), guide, ...blocks.slice(at)];
-}
-
 // The last two days of every week: hear the week's videos again, then listen to anything for pleasure.
 export function getRestDayBlocks(day: CourseDay): CourseBlock[] {
   if (day.kind === "review") {
@@ -393,53 +388,48 @@ export function getRestDayBlocks(day: CourseDay): CourseBlock[] {
   ];
 }
 
-// Comprehensible input: the day is one main video, made understandable first with its own words and heard three
-// times, about an hour in all. A second video on the same topic and speaking come after, if there is time.
-export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
-  if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
-  const [main, second, extra] = getDayVideos(day, collection);
+// Comprehensible input in five steps, about 55 minutes: warm up on earlier sentences, learn the video's words, watch
+// it twice (text hidden, then with the text), practise five of its sentences (hear, write, say) and pass the day
+// test. Everything else waits in "More if you have time". The main video keeps the id "listen-1", so earlier
+// progress still counts.
+export function getVideoDayBlocks(
+  day: CourseDay,
+  [main, ...extras]: CourseDay["videos"],
+  { wordsTitle, isListenFirst = false }: { wordsTitle: string; isListenFirst?: boolean },
+): CourseBlock[] {
+  const words: CourseBlock = { id: "words", kind: "words", title: wordsTitle, minutes: 10 };
+  const watch: CourseBlock = {
+    id: "listen-1",
+    kind: "watch",
+    title: `Watch it twice: ${main.title}`,
+    minutes: 15,
+    videoId: main.id,
+  };
   return [
     ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: earlier sentences, by ear", minutes: 5 }] : []),
-    { id: "words", kind: "words", title: "Before you listen: words from the video", minutes: 10 },
-    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: "Sentences from the video", minutes: 10 },
-    { id: "dictation", kind: "dictation", title: "Write what you hear: 5 sentences from the video", minutes: 10, videoId: main.id },
-    { id: "shadow-1", kind: "shadow", title: `Shadow: ${main.title}`, minutes: 15, videoId: main.id },
-    { id: "turns", kind: "turns", title: "Take turns with the speaker", minutes: 10, videoId: main.id, isOptional: true },
-    { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id },
+    ...(isListenFirst ? [watch, words] : [words, watch]),
+    { id: "practice", kind: "practice", title: "Practise 5 sentences: hear, write, say", minutes: 15, videoId: main.id },
     { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
-    ...(second ? [{ id: "listen-2", kind: "listen" as const, title: `Same topic, text hidden: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
-    { id: "speak", kind: "speak", title: "Speak: retell the video in your own words", minutes: 10, isOptional: true },
-    ...(extra ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${extra.title}`, minutes: 15, videoId: extra.id, isOptional: true }] : []),
+    { id: "more", kind: "more", title: "More if you have time", minutes: 15, isOptional: true, videoId: main.id, extras },
   ];
+}
+
+export function getBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
+  if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
+  return getVideoDayBlocks(day, getDayVideos(day, collection), { wordsTitle: "Before you watch: words from the video" });
 }
 
 export function getCourseDay(dayNumber: number): CourseDay | undefined {
   return COURSE_DAYS.find((d) => d.day === dayNumber);
 }
 
-// "Gentle" plan for A1 learners moving up to A2: the same days with fewer, shorter steps (about 60–75 minutes)
-// and slower playback. Block ids match the full plan, so progress carries over.
+// "Gentle" plan for A1 learners moving up to A2: the same days and steps with fewer words and questions, and slower
+// playback. Block ids match the full plan, so progress carries over.
 export const GENTLE_PHRASE_COUNT = 8;
 export const GENTLE_PROMPT_COUNT = 3;
 export const GENTLE_PLAYBACK_RATE = 0.75;
 
 export function getGentleBlocks(day: CourseDay, collection: CollectionId = "sponge"): CourseBlock[] {
   if (day.kind === "review" || day.kind === "free") return getRestDayBlocks(day);
-  const [main, second] = getDayVideos(day, collection);
-  return [
-    ...(day.day > 1 ? [{ id: "review", kind: "review" as const, title: "Warm up: earlier sentences, by ear", minutes: 5 }] : []),
-    { id: "words", kind: "words", title: `Before you listen: ${GENTLE_PHRASE_COUNT} words from the video`, minutes: 10 },
-    { id: "listen-1", kind: "listen", title: `Listen 1, text hidden: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "readalong-1", kind: "readalong", title: `Listen 2, with the text: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "phrases", kind: "phrases", title: `${GENTLE_PHRASE_COUNT} sentences from the video`, minutes: 10 },
-    { id: "dictation", kind: "dictation", title: "Write what you hear: 5 sentences from the video", minutes: 10, videoId: main.id },
-    { id: "shadow-1", kind: "shadow", title: `Shadow slowly: ${main.title}`, minutes: 10, videoId: main.id },
-    { id: "turns", kind: "turns", title: "Take turns with the speaker", minutes: 10, videoId: main.id, isOptional: true },
-    { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
-    { id: "relisten-1", kind: "readalong", title: `Listen 3, straight through: ${main.title}`, minutes: 10, videoId: main.id, isOptional: true },
-    { id: "speak", kind: "speak", title: `Speak: ${GENTLE_PROMPT_COUNT} short answers, copy the video first`, minutes: 10, isOptional: true },
-    ...(second ? [{ id: "extra", kind: "extra" as const, title: `Bonus listening: ${second.title}`, minutes: 15, videoId: second.id, isOptional: true }] : []),
-  ];
+  return getVideoDayBlocks(day, getDayVideos(day, collection), { wordsTitle: `Before you watch: ${GENTLE_PHRASE_COUNT} words from the video` });
 }
