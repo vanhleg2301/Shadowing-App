@@ -13,9 +13,13 @@ const nextConfig: NextConfig = {
     ],
   },
   partialPrefetching: true,
-  // Articles moved here when News got more topics than AI & Tech; saved links and notes still work.
+  // AI & Tech had its own page, with its articles under it; saved links and notes still work.
   async redirects() {
-    return [{ source: "/news/ai-tech/:id(tc-\\d{8})", destination: "/news/article/:id", permanent: true }];
+    return [
+      { source: "/news/ai-tech/:id(tc-\\d{8})", destination: "/news/article/:id", permanent: true },
+      // Next decodes the destination once, so "&" is encoded twice to stay inside the topic.
+      { source: "/news/ai-tech", destination: "/news?topic=AI+%2526+Tech", permanent: true },
+    ];
   },
   // Admin -> Theme uploads the app icon and link-preview image through a server action.
   experimental: { serverActions: { bodySizeLimit: "6mb" } },

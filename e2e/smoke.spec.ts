@@ -31,7 +31,7 @@ async function expectInViewport(page: Page, locator: ReturnType<Page["locator"]>
     .toBe(true);
 }
 
-const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news?topic=voa", "/news/ai-tech", "/stories", "/placement", "/privacy", "/about", "/offline"];
+const STATIC_PAGES = ["/", "/course", "/course/1", "/course/level-check", "/news", "/news?topic=voa", "/stories", "/placement", "/privacy", "/about", "/offline"];
 
 for (const path of STATIC_PAGES) {
   test(`page ${path} loads`, async ({ page }) => {
@@ -67,7 +67,7 @@ test("the phone's More tab reaches every sidebar page", async ({ page, isMobile 
 test("news stories, stories and articles have a favorite button", async ({ page }) => {
   await openPage(page, "/news?topic=voa");
   const news = await firstHref(page, "/news/voa-");
-  await openPage(page, "/news/ai-tech");
+  await openPage(page, "/news");
   const article = await firstHref(page, "/news/article/tc-");
   for (const path of [news, article, "/stories/story-00049"]) {
     await openPage(page, path);
@@ -81,6 +81,9 @@ test("news opens on the latest articles, and old article links still work", asyn
   const article = await firstHref(page, "/news/article/tc-");
   await openPage(page, article.replace("/news/article/", "/news/ai-tech/"));
   await expect(page).toHaveURL(new RegExp(`${article}$`));
+  // AI & Tech used to have its own page; it is a topic like the others now.
+  await openPage(page, "/news/ai-tech");
+  await expect(page.getByRole("navigation", { name: "News topics" }).getByRole("link", { name: "AI & Tech" })).toHaveAttribute("aria-current", "page");
 });
 
 test("news can hide articles above a level, across topics", async ({ page }) => {

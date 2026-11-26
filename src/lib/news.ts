@@ -38,9 +38,8 @@ export function getLevelRank(level: string): number {
   return index < 0 ? LEVEL_ORDER.length : index;
 }
 
-// AI & Tech has its own page, with videos too; the other topics are a filter on /news.
+// Every topic, AI & Tech too, is a filter on /news.
 export function getTopicHref(topic: NewsTopic | null, page = 1, level: NewsLevel | null = null): string {
-  if (topic === "AI & Tech") return "/news/ai-tech";
   const params = new URLSearchParams();
   if (topic) params.set("topic", topic);
   if (level) params.set("level", level);

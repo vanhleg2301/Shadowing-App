@@ -26,27 +26,6 @@ export interface TechArticle extends TechArticleItem {
   disclosure: string | null;
 }
 
-export interface TechVideo {
-  video_id: string;
-  title: string;
-  channel: string;
-  duration: string;
-  level: string;
-  published_at: string;
-}
-
-export async function getTechVideos(): Promise<TechVideo[]> {
-  "use cache";
-  cacheLife("minutes");
-  const supabase = createPublicClient();
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("tech_videos")
-    .select("video_id, title, channel, duration, level, published_at")
-    .order("published_at", { ascending: false })
-    .limit(60);
-  return error ? [] : ((data ?? []) as TechVideo[]);
-}
 
 // The newest articles, of one topic or of all of them.
 export async function getTechArticles(topic?: NewsTopic): Promise<TechArticleItem[]> {
