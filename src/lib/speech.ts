@@ -15,7 +15,8 @@ function pickVoice(lang: string): SpeechSynthesisVoice | undefined {
   return voices.find((v) => v.localService) ?? voices[0];
 }
 
-export function speak(text: string, accent: Accent, rate = 0.9, onEnd?: () => void) {
+// One voice everywhere (American English); stories pass the accent of each character.
+export function speak(text: string, accent: Accent = "us", rate = 0.9, onEnd?: () => void) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = LANG[accent];
   const voice = pickVoice(LANG[accent]);

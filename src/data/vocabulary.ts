@@ -33,6 +33,21 @@ export function getVocabTopic(slug: string): VocabTopic | undefined {
   return VOCAB_TOPICS.find((topic) => topic.slug === slug);
 }
 
+// What is narrated for a topic with Kokoro (scripts/story-audio): each phrase and its example, the conversation
+// (its second speaker in the second voice) and the model answers of "Your turn".
+export const getVocabNarrationId = (topic: VocabTopic) => `vocab-${topic.slug}`;
+
+export function getVocabNarration(topic: VocabTopic): { speaker: string | null; text: string }[] {
+  return [
+    ...topic.phrases.flatMap((p) => [
+      { speaker: null, text: p.phrase },
+      { speaker: null, text: p.example },
+    ]),
+    ...(topic.dialogue?.lines ?? []).map((line) => ({ speaker: line.speaker, text: line.text })),
+    ...(topic.speak ?? []).map((task) => ({ speaker: null, text: task.answer })),
+  ];
+}
+
 // The topic whose words a grammar unit uses.
 export function getTopicForGrammar(grammarSlug: string): VocabTopic | undefined {
   return WORD_TOPICS.find((topic) => topic.grammarSlug === grammarSlug);

@@ -6,13 +6,13 @@ import { useState, useTransition } from "react";
 import { setSavedWord } from "@/app/actions";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { SavedWord } from "@/lib/user-data";
-import { speak, type Accent } from "@/lib/speech";
+import { Icon } from "@/components/Icon";
+import { speak } from "@/lib/speech";
 
 interface SavedWordCardProps {
   item: SavedWord;
 }
 
-const ACCENTS: Accent[] = ["uk", "us"];
 
 export function SavedWordCard({ item }: SavedWordCardProps) {
   const [isRemoved, setIsRemoved] = useState(false);
@@ -39,21 +39,15 @@ export function SavedWordCard({ item }: SavedWordCardProps) {
         <div className="min-w-0 flex-1">
           <p className="text-xl font-extrabold text-ink">{item.word}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {ACCENTS.map((accent) => {
-              const ipa = accent === "uk" ? entry?.ipaUk : entry?.ipaUs;
-              return (
-                <button
-                  key={accent}
-                  type="button"
-                  onClick={() => speak(item.word, accent)}
-                  aria-label={`Listen in ${accent.toUpperCase()} English`}
-                  className="min-h-9 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
-                >
-                  {accent.toUpperCase()}
-                  {ipa && <span className="font-normal"> /{ipa}/</span>}
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              onClick={() => speak(item.word)}
+              aria-label={`Listen to "${item.word}"`}
+              className="flex min-h-9 items-center gap-1.5 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
+            >
+              <Icon name="volume" className="size-4" />
+              {(entry?.ipaUs ?? entry?.ipaUk) && <span className="font-normal">/{entry?.ipaUs ?? entry?.ipaUk}/</span>}
+            </button>
           </div>
         </div>
         <button

@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import type { Level } from "@/data/curated";
 import { LEVEL_STORAGE_KEY, PLACEMENT_QUESTIONS, getPlacementLevel } from "@/data/placement";
-import { speak } from "@/lib/speech";
+import { useLinePlayer } from "@/hooks/useLinePlayer";
+import type { LineNarration } from "@/lib/story-audio";
 
 const LEVEL_ADVICE: Record<Level, string> = {
   A1: "Start with A1 videos: slow, clear speech about everyday things.",
@@ -13,7 +14,9 @@ const LEVEL_ADVICE: Record<Level, string> = {
   B1: "You're ready for B1 videos. Shadow them to sound more natural.",
 };
 
-export function PlacementTest() {
+// narration: the app's Kokoro sentences (src/data/app-narration.ts), in the voice of the daily stories.
+export function PlacementTest({ narration }: { narration: LineNarration | null }) {
+  const { playText, audioProps } = useLinePlayer(narration);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const question = PLACEMENT_QUESTIONS[index];
@@ -58,6 +61,7 @@ export function PlacementTest() {
 
   return (
     <div className="rounded-3xl border border-line bg-surface p-5">
+      <audio {...audioProps} />
       <div className="flex items-center justify-between text-sm font-semibold text-muted">
         <span>
           Question {index + 1} of {PLACEMENT_QUESTIONS.length}
@@ -68,7 +72,7 @@ export function PlacementTest() {
         <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${(index / PLACEMENT_QUESTIONS.length) * 100}%` }} />
       </div>
       {question.listen && (
-        <button type="button" onClick={() => speak(question.listen ?? "", "uk", 0.85)} className="btn-3d mt-5 px-4 py-2.5">
+        <button type="button" onClick={() => playText(question.listen ?? "", undefined, 0.9)} className="btn-3d mt-5 px-4 py-2.5">
           <Icon name="volume" className="size-5" />
           Play the sentence
         </button>

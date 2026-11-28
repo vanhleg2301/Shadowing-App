@@ -181,6 +181,32 @@ test("the warm-up brings back sentences from days further back", async ({ page }
   await expect(screen.getByText(/^Week 1 · Day 1 · /)).toBeVisible();
 });
 
+test("quick answers ask a question out loud and time the answer", async ({ page }) => {
+  await openPage(page, "/speak");
+  await expect(page.getByRole("button", { name: /questions · about 5 min/ })).toHaveCount(12);
+  await page.getByRole("button", { name: /^Travel/ }).click();
+  const screen = page.getByRole("dialog", { name: "Quick answers" });
+  await expect(screen.getByText("Travel · 1 of 8")).toBeVisible();
+  await screen.getByRole("button", { name: "Ask me" }).click();
+  // The question is heard, not read, unless the learner asks to see it.
+  await screen.getByRole("button", { name: "Show the question" }).click();
+  // Headless browsers may never finish speaking, so the learner can start answering before the question ends.
+  const answerNow = screen.getByRole("button", { name: "Answer now" });
+  const finished = screen.getByRole("button", { name: "I've finished" });
+  await expect(answerNow.or(finished)).toBeVisible();
+  if (await answerNow.isVisible()) await answerNow.click();
+  await finished.click();
+  await expect(screen.getByText("A model answer")).toBeVisible();
+  await screen.getByRole("button", { name: "I got stuck" }).click();
+  await expect(screen.getByText("Travel · 2 of 9")).toBeVisible();
+});
+
+test("a course day offers quick answers on its video's topic", async ({ page }) => {
+  await openPage(page, "/course/2");
+  await page.getByRole("region", { name: "Lesson parts" }).getByRole("button", { name: /^Quick answers/ }).click();
+  await expect(page.getByRole("dialog", { name: "Quick answers" }).getByRole("button", { name: "Ask me" })).toBeVisible();
+});
+
 test("a course day is a path of steps, each opened on its own screen", async ({ page }) => {
   await openPage(page, "/course/2");
   const steps = page.getByRole("region", { name: "Lesson parts" });

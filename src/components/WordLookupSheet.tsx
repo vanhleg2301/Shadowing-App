@@ -2,7 +2,7 @@
 
 import { Icon } from "@/components/Icon";
 import type { WordInfo } from "@/lib/dictionary";
-import { speak, type Accent } from "@/lib/speech";
+import { speak } from "@/lib/speech";
 
 export interface WordLookupState {
   word: string;
@@ -20,14 +20,9 @@ interface WordLookupSheetProps {
   saved?: { isSaved: boolean; onToggle: () => void };
 }
 
-const ACCENTS: { accent: Accent; label: string }[] = [
-  { accent: "uk", label: "UK" },
-  { accent: "us", label: "US" },
-];
-
 export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupSheetProps) {
   const { info } = lookup;
-  const ipa = (accent: Accent) => (accent === "uk" ? info?.ipaUk : info?.ipaUs);
+  const ipa = info?.ipaUs ?? info?.ipaUk;
 
   return (
     <div className="fixed inset-0 z-[70] flex animate-fade-in items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
@@ -66,19 +61,11 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {ACCENTS.map(({ accent, label }) => (
-            <button
-              key={accent}
-              type="button"
-              onClick={() => speak(lookup.word, accent)}
-              aria-label={`Listen in ${label} English`}
-              className="btn-3d btn-soft gap-2 px-3 py-2 text-sm"
-            >
-              <Icon name="volume" className="size-4" />
-              <span className="font-bold">{label}</span>
-              {ipa(accent) && <span className="font-normal">/{ipa(accent)}/</span>}
-            </button>
-          ))}
+          <button type="button" onClick={() => speak(lookup.word)} aria-label={`Listen to "${lookup.word}"`} className="btn-3d btn-soft gap-2 px-3 py-2 text-sm">
+            <Icon name="volume" className="size-4" />
+            <span className="font-bold">Listen</span>
+            {ipa && <span className="font-normal">/{ipa}/</span>}
+          </button>
         </div>
 
         <p className="mt-4 rounded-2xl bg-cream p-3 text-sm italic text-muted">“{lookup.sentence}”</p>
@@ -134,19 +121,14 @@ export function WordLookupSheet({ lookup, onClose, onRetry, saved }: WordLookupS
                     {p.meaning && <p className="text-sm text-ink/80">{p.meaning}</p>}
                     {p.example && <p className="text-sm italic text-muted">“{p.example}”</p>}
                   </div>
-                  <div className="flex shrink-0 gap-1">
-                    {ACCENTS.map(({ accent, label }) => (
-                      <button
-                        key={accent}
-                        type="button"
-                        aria-label={`Listen to "${p.text}" in ${label} English`}
-                        className="min-h-9 min-w-10 rounded-lg px-2.5 text-xs font-bold text-brand hover:bg-brand-soft"
-                        onClick={() => speak(p.text, accent)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Listen to "${p.text}"`}
+                    className="grid size-9 shrink-0 place-items-center rounded-lg text-brand hover:bg-brand-soft"
+                    onClick={() => speak(p.text)}
+                  >
+                    <Icon name="volume" className="size-4" />
+                  </button>
                 </li>
               ))}
             </ul>

@@ -7,9 +7,8 @@ import { ListSkeleton } from "@/components/Skeleton";
 import Link from "next/link";
 import { GRAMMAR_COURSE_ID, GRAMMAR_UNITS, getGrammarNarration, getGrammarNarrationId, getGrammarUnit } from "@/data/grammar";
 import { getTopicForGrammar } from "@/data/vocabulary";
-import { splitSentences } from "@/data/stories";
 import { getGrammarExamples } from "@/lib/grammar-examples";
-import { getNarration } from "@/lib/story-audio";
+import { getLineNarration } from "@/lib/story-audio";
 import { getCourseProgress } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -37,18 +36,8 @@ async function UnitContent({ slug }: { slug: string }) {
   const [examples, progress, audio] = await Promise.all([
     getGrammarExamples(unit.videoPhrases).catch(() => []),
     getCourseProgress(GRAMMAR_COURSE_ID).catch(() => null),
-    getNarration(getGrammarNarrationId(unit), narration.map((line) => line.text)).catch(() => null),
+    getLineNarration(getGrammarNarrationId(unit), narration.map((line) => line.text)),
   ]);
-  // Where each narrated line (the story, then the lines to shadow) starts and ends in the recording.
-  let sentence = 0;
-  const lineTimes = audio
-    ? narration.map((line) => {
-        const count = splitSentences(line.text).length;
-        const times = { start: audio.sentences[sentence].start, end: audio.sentences[sentence + count - 1].end };
-        sentence += count;
-        return times;
-      })
-    : null;
   const next = GRAMMAR_UNITS.find((u) => u.id === unit.id + 1);
   const wordTopic = getTopicForGrammar(unit.slug);
 
@@ -74,7 +63,7 @@ async function UnitContent({ slug }: { slug: string }) {
         <GrammarUnitView
           unit={unit}
           examples={examples}
-          narration={audio && lineTimes ? { url: audio.url, lineTimes } : null}
+          narration={audio}
           isSignedIn={progress !== null}
           passed={progress?.[unit.id] ?? []}
           nextHref={next ? `/grammar/${next.slug}` : null}

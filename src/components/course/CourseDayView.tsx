@@ -21,10 +21,14 @@ import { isCourseDayComplete, TEST_SKIPPED_BLOCK } from "@/data/courses";
 import { dayInWeek, weekOf } from "@/data/course-weeks";
 import { useAuth } from "@/hooks/useAuth";
 import { useWordLookup } from "@/hooks/useWordLookup";
-import { speak, type Accent } from "@/lib/speech";
+import { speak } from "@/lib/speech";
 import { buildDayTest, getPassScore } from "@/lib/day-test";
 import type { DayGuide, DayStudy, StudySentence, WarmUpSentence } from "@/lib/video-study";
 import { LessonNotes } from "@/components/LessonNotes";
+import { QuickAnswers } from "@/components/speak/QuickAnswers";
+import { useLinePlayer } from "@/hooks/useLinePlayer";
+import type { QuickTopic } from "@/data/quick-answers";
+import type { LineNarration } from "@/lib/story-audio";
 
 interface CourseDayViewProps {
   day: CourseDay;
@@ -38,6 +42,10 @@ interface CourseDayViewProps {
   guide: DayGuide | null;
   // Sentences from the main videos 1, 3 and 7 study days back, for the warm-up.
   warmUp: WarmUpSentence[];
+  // Speaking reflex questions on the main video's topic, with their recording.
+  quick: { topic: QuickTopic; narration: LineNarration | null };
+  // The app's Kokoro sentences, for reading the video guide's model aloud.
+  appNarration: LineNarration | null;
   initialDone: string[];
   isSignedIn: boolean;
   hasNextDay: boolean;
@@ -53,12 +61,12 @@ const KIND_ICON: Record<BlockKind, IconName> = {
   watch: "headphones",
   practice: "mic",
   quiz: "chart",
+  quick: "chat",
   more: "plus",
   listen: "headphones",
   free: "play",
 };
 
-const ACCENTS: Accent[] = ["uk", "us"];
 const DEFAULT_PROMPT_COUNT = 3;
 
 const fromCourse = (day: number, playbackRate?: number) => `from=course-${day}${playbackRate ? `&rate=${playbackRate}` : ""}`;
@@ -72,8 +80,8 @@ function blockHref(block: CourseBlock, day: number, playbackRate: number | undef
   return `/watch/${block.videoId}?mode=watch&listen=1&${fromCourse(day, playbackRate)}`;
 }
 
-type SectionId = "review" | "words" | "practice" | "quiz" | "more";
-const SECTION_KINDS: readonly string[] = ["review", "words", "practice", "quiz", "more"];
+type SectionId = "review" | "words" | "practice" | "quiz" | "quick" | "more";
+const SECTION_KINDS: readonly string[] = ["review", "words", "practice", "quiz", "quick", "more"];
 // Parts of "More if you have time", each on its own screen.
 type ExtraScreen = "turns" | "speak" | "guide";
 const EXTRA_SCREENS: readonly string[] = ["turns", "speak", "guide"];
@@ -125,6 +133,8 @@ export function CourseDayView({
   study,
   guide,
   warmUp,
+  quick,
+  appNarration,
   initialDone,
   isSignedIn,
   hasNextDay,
@@ -149,6 +159,7 @@ export function CourseDayView({
   });
   const { lookup, openWord, sheetProps } = useWordLookup(study?.videoId ?? "", []);
   const { signInWithGoogle } = useAuth();
+  const appVoice = useLinePlayer(appNarration);
   const [done, setDone] = useState(() => new Set(initialDone));
   const [recorded, setRecorded] = useState(() => new Set<number>());
   const [phraseMessage, setPhraseMessage] = useState<string | null>(null);
@@ -345,6 +356,9 @@ export function CourseDayView({
         </FocusScreen>
       );
     }
+    if (section === "quick") {
+      return <QuickAnswers topic={quick.topic} narration={quick.narration} onClose={close} onDone={() => finishBlock("quick")} />;
+    }
     if (section === "more") {
       return <MoreScreen block={block} study={study} guide={guide} day={day.day} playbackRate={playbackRate} isDone={done.has("more")} onOpen={setOpen} onClose={close} />;
     }
@@ -423,7 +437,7 @@ export function CourseDayView({
           }
         >
           <p className="mb-4 text-muted">See how the video is built, hear its key lines, and get a model to copy.</p>
-          <VideoGuideSection guide={guide} onHear={(sentence) => study && setHeard({ videoId: study.videoId, sentence })} />
+          <VideoGuideSection guide={guide} onHear={(sentence) => study && setHeard({ videoId: study.videoId, sentence })} voice={appVoice.voice} />
           {sheets}
         </FocusScreen>
       );
@@ -456,6 +470,7 @@ export function CourseDayView({
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
+      <audio {...appVoice.audioProps} />
       <StudyTimer />
       <p className="text-sm font-semibold text-muted">
         {isDayComplete ? "All done for today" : `About ${Math.round(minutesLeft / 6) / 10} h left today`}
@@ -508,19 +523,14 @@ function PhraseCard({ phrase }: { phrase: CoursePhrase }) {
     <div lang="en" className="rounded-3xl border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-2xl font-extrabold text-ink">{phrase.text}</p>
-        <div className="flex shrink-0 gap-1">
-          {ACCENTS.map((accent) => (
-            <button
-              key={accent}
-              type="button"
-              onClick={() => speak(phrase.example, accent)}
-              aria-label={`Listen to the example in ${accent.toUpperCase()} English`}
-              className="min-h-9 min-w-10 rounded-lg bg-brand-soft px-2.5 text-xs font-bold text-brand"
-            >
-              {accent.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => speak(phrase.example)}
+          aria-label="Listen to the example"
+          className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand"
+        >
+          <Icon name="volume" className="size-5" />
+        </button>
       </div>
       <p className="mt-2 text-muted">{phrase.meaning}</p>
       <p className="mt-3 rounded-xl bg-cream px-3 py-2 italic text-ink/90">“{phrase.example}”</p>

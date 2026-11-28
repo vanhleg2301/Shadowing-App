@@ -1,3 +1,7 @@
+import { Suspense } from "react";
+import { ListSkeleton } from "@/components/Skeleton";
+import { APP_NARRATION_ID, getAppNarration } from "@/data/app-narration";
+import { getLineNarration } from "@/lib/story-audio";
 import { AppShell } from "@/components/AppShell";
 import { PlacementTest } from "@/components/PlacementTest";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -12,9 +16,15 @@ export default function PlacementPage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">Find your level</h1>
         <p className="mt-2 text-muted">12 quick questions, about 3 minutes. Turn your sound on for the listening ones.</p>
         <div className="mt-6">
-          <PlacementTest />
+          <Suspense fallback={<ListSkeleton rows={3} />}>
+            <PlacementTestWithVoice />
+          </Suspense>
         </div>
       </main>
     </AppShell>
   );
+}
+
+async function PlacementTestWithVoice() {
+  return <PlacementTest narration={await getLineNarration(APP_NARRATION_ID, getAppNarration())} />;
 }

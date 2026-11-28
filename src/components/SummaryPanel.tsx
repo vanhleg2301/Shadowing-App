@@ -83,7 +83,7 @@ export function SummaryPanel({ lesson, onPlaySentence }: SummaryPanelProps) {
                       <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
-                          onClick={() => speak(k.word, "uk")}
+                          onClick={() => speak(k.word)}
                           aria-label={`Hear "${k.word}"`}
                           className="grid size-9 place-items-center rounded-full text-brand hover:bg-brand-soft"
                         >

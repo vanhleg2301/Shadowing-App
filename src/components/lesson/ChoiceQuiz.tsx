@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { getPassScore } from "@/lib/day-test";
-import { speak } from "@/lib/speech";
+import { browserVoice, type Voice } from "@/hooks/useLinePlayer";
 import { FocusScreen, FocusSummary } from "./FocusScreen";
 
 export interface ChoiceQuestion {
@@ -20,10 +20,11 @@ interface ChoiceQuizProps {
   questions: ChoiceQuestion[];
   onClose: () => void;
   onPass: () => void;
+  voice?: Voice;
 }
 
 // Multiple choice on a focus screen: choose, check, see right away whether it was right, continue.
-export function ChoiceQuiz({ title, questions, onClose, onPass }: ChoiceQuizProps) {
+export function ChoiceQuiz({ title, questions, onClose, onPass, voice = browserVoice }: ChoiceQuizProps) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [isChecked, setIsChecked] = useState(false);
@@ -37,7 +38,7 @@ export function ChoiceQuiz({ title, questions, onClose, onPass }: ChoiceQuizProp
     if (!picked) return;
     setIsChecked(true);
     if (isRight) setScore((s) => s + 1);
-    speak(question.answer, "us", 0.9);
+    voice.say(question.answer);
   };
 
   const next = () => {

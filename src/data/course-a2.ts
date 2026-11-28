@@ -12,7 +12,7 @@ export function getCourseId(collection: CollectionId): string {
 }
 
 // "listen" is a rest day's video; "watch" is a video day's main video, heard twice.
-export type BlockKind = "review" | "words" | "watch" | "practice" | "quiz" | "more" | "listen" | "free";
+export type BlockKind = "review" | "words" | "watch" | "practice" | "quiz" | "quick" | "more" | "listen" | "free";
 
 export interface CourseBlock {
   id: string;
@@ -410,6 +410,7 @@ export function getVideoDayBlocks(
     ...(isListenFirst ? [watch, words] : [words, watch]),
     { id: "practice", kind: "practice", title: "Practise 5 sentences: hear, write, say", minutes: 15, videoId: main.id },
     { id: "quiz", kind: "quiz", title: DAY_TEST_TITLE, minutes: 10 },
+    { id: "quick", kind: "quick", title: "Quick answers: speak without stopping to think", minutes: 5, isOptional: true },
     { id: "more", kind: "more", title: "More if you have time", minutes: 15, isOptional: true, videoId: main.id, extras },
   ];
 }

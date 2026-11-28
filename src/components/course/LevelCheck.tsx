@@ -6,48 +6,9 @@ import { selectCollection, setCourseMode } from "@/app/actions";
 import { Icon } from "@/components/Icon";
 import type { CollectionId } from "@/data/collections";
 import type { CourseMode } from "@/lib/course-mode";
-import { speak } from "@/lib/speech";
-
-interface Question {
-  sentence: string;
-  rate: number;
-  question: string;
-  options: string[];
-  answer: number;
-}
-
-// From A1 to B1, a little faster each time. The learner only hears the sentence.
-const QUESTIONS: Question[] = [
-  { sentence: "My name is Tom and I'm twenty years old.", rate: 0.8, question: "How old is Tom?", options: ["12", "20", "22"], answer: 1 },
-  {
-    sentence: "I usually get up at seven and have breakfast at home.",
-    rate: 0.85,
-    question: "What time does the speaker get up?",
-    options: ["At seven", "At eleven", "At eight"],
-    answer: 0,
-  },
-  {
-    sentence: "Excuse me, could you tell me where the nearest train station is?",
-    rate: 0.9,
-    question: "What does the speaker want?",
-    options: ["A train ticket", "Directions", "A taxi"],
-    answer: 1,
-  },
-  {
-    sentence: "I've been feeling really tired lately, so I'm going to see the doctor tomorrow.",
-    rate: 1,
-    question: "Why is the speaker going to the doctor?",
-    options: ["They broke their leg", "They start a new job", "They feel tired"],
-    answer: 2,
-  },
-  {
-    sentence: "If it hadn't rained, we would have gone to the beach instead of staying in all day.",
-    rate: 1.05,
-    question: "What did they do?",
-    options: ["Stayed at home", "Went to the beach", "Swam in the rain"],
-    answer: 0,
-  },
-];
+import { LEVEL_CHECK_QUESTIONS } from "@/data/level-check";
+import { useLinePlayer } from "@/hooks/useLinePlayer";
+import type { LineNarration } from "@/lib/story-audio";
 
 interface Result {
   mode: CourseMode;
@@ -81,14 +42,16 @@ function getResult(score: number): Result {
   };
 }
 
-export function LevelCheck() {
+// narration: the app's Kokoro sentences (src/data/app-narration.ts), in the voice of the daily stories.
+export function LevelCheck({ narration }: { narration: LineNarration | null }) {
   const router = useRouter();
+  const { playText, audioProps } = useLinePlayer(narration);
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  if (index >= QUESTIONS.length) {
+  if (index >= LEVEL_CHECK_QUESTIONS.length) {
     const result = getResult(score);
     const handleApply = () =>
       startTransition(async () => {
@@ -99,7 +62,7 @@ export function LevelCheck() {
     return (
       <section className="animate-fade-up rounded-3xl border border-line bg-surface p-5 text-center">
         <p className="text-sm font-semibold text-muted">
-          {score}/{QUESTIONS.length} right
+          {score}/{LEVEL_CHECK_QUESTIONS.length} right
         </p>
         <p className="mt-1 text-2xl font-extrabold text-ink">{result.title}</p>
         <p className="mt-2 text-muted">{result.detail}</p>
@@ -110,7 +73,7 @@ export function LevelCheck() {
     );
   }
 
-  const question = QUESTIONS[index];
+  const question = LEVEL_CHECK_QUESTIONS[index];
   const handlePick = (option: number) => {
     if (picked !== null) return;
     setPicked(option);
@@ -123,12 +86,13 @@ export function LevelCheck() {
 
   return (
     <section className="rounded-3xl border border-line bg-surface p-5">
+      <audio {...audioProps} />
       <p className="text-xs font-bold uppercase tracking-wide text-accent">
-        Question {index + 1} of {QUESTIONS.length}
+        Question {index + 1} of {LEVEL_CHECK_QUESTIONS.length}
       </p>
       <button
         type="button"
-        onClick={() => speak(question.sentence, "us", question.rate)}
+        onClick={() => playText(question.sentence, undefined, question.rate)}
         className="btn-3d mt-4 flex w-full items-center justify-center gap-2 py-4 text-lg font-bold"
       >
         <Icon name="volume" className="size-6" />
@@ -158,7 +122,7 @@ export function LevelCheck() {
             You heard: <span className="italic text-ink">“{question.sentence}”</span>
           </p>
           <button type="button" onClick={handleNext} className="btn-3d btn-brand mt-3 w-full py-2.5">
-            {index + 1 < QUESTIONS.length ? "Next" : "See my plan"}
+            {index + 1 < LEVEL_CHECK_QUESTIONS.length ? "Next" : "See my plan"}
           </button>
         </div>
       )}

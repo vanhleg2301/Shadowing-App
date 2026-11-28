@@ -97,7 +97,7 @@ export function CollectionPicker({ current, counts, onDone, isStacked = false }:
                           </button>
                           <button
                             type="button"
-                            onClick={() => speak(SAMPLE, "uk", SAMPLE_RATE[c.speed])}
+                            onClick={() => speak(SAMPLE, "us", SAMPLE_RATE[c.speed])}
                             className="btn-3d shrink-0 px-3 py-2.5 text-sm"
                             aria-label={`Hear how ${c.speedLabel.toLowerCase()} speed sounds`}
                           >

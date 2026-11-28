@@ -8,7 +8,10 @@ import { CollectionSwitcher } from "@/components/CollectionSwitcher";
 import { DEFAULT_COLLECTION } from "@/data/collections";
 import type { CourseBlock } from "@/data/course-a2";
 import { DAYS_PER_WEEK, dayInWeek, weekOf } from "@/data/course-weeks";
-import { getCollectionCounts } from "@/lib/catalog";
+import { getCatalogVideo, getCollectionCounts } from "@/lib/catalog";
+import { getQuickNarration, getQuickNarrationId, getQuickTopicFor } from "@/data/quick-answers";
+import { getLineNarration } from "@/lib/story-audio";
+import { APP_NARRATION_ID, getAppNarration } from "@/data/app-narration";
 import { getSelectedCollection } from "@/lib/collection";
 import { getCourseMode } from "@/lib/course-mode";
 import { getCoursePlan, getDay, getDayBlocks, getProgressDay, getProgressId } from "@/lib/course-plan";
@@ -29,6 +32,13 @@ async function getMainVideoStudy(blocks: CourseBlock[], size: number): Promise<{
   if (!lesson) return { study: null, guide: null };
   const guide = VIDEO_GUIDES[videoId];
   return { study: buildDayStudy(lesson, size), guide: guide ? resolveGuide(guide, lesson.sentences) : null };
+}
+
+// Speaking questions on the topic of the day's main video.
+async function getQuickForVideo(videoId: string | undefined) {
+  const video = videoId ? await getCatalogVideo(videoId).catch(() => undefined) : undefined;
+  const topic = getQuickTopicFor(video?.topic);
+  return { topic, narration: await getLineNarration(getQuickNarrationId(topic), getQuickNarration(topic)) };
 }
 
 // Week 1 is built ahead; later days render on first visit.
@@ -79,6 +89,10 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
     ),
   ]);
   const study = today?.study ?? null;
+  const [quick, appNarration] = await Promise.all([
+    getQuickForVideo(blocks.find((b) => b.id === "listen-1")?.videoId),
+    getLineNarration(APP_NARRATION_ID, getAppNarration()),
+  ]);
   const warmUp = buildWarmUp(earlier);
   const week = weekOf(day.day);
 
@@ -106,6 +120,8 @@ async function DayContent({ dayNumber }: { dayNumber: number }) {
           study={study}
           guide={today?.guide ?? null}
           warmUp={warmUp}
+          quick={quick}
+          appNarration={appNarration}
           progressDay={getProgressDay(day.day)}
           initialDone={progress?.[getProgressDay(day.day)] ?? []}
           isSignedIn={progress !== null}

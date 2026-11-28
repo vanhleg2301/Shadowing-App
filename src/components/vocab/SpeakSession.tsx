@@ -5,16 +5,17 @@ import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import type { SpeakTask } from "@/data/vocabulary";
-import { speak } from "@/lib/speech";
+import { browserVoice, type Voice } from "@/hooks/useLinePlayer";
 
 interface SpeakSessionProps {
   tasks: SpeakTask[];
   onClose: () => void;
   onDone: () => void;
+  voice?: Voice;
 }
 
 // "Your turn": one situation at a time; say it, then compare with an example answer.
-export function SpeakSession({ tasks, onClose, onDone }: SpeakSessionProps) {
+export function SpeakSession({ tasks, onClose, onDone, voice = browserVoice }: SpeakSessionProps) {
   const [index, setIndex] = useState(0);
   const [isShown, setIsShown] = useState(false);
   const isFinished = index >= tasks.length;
@@ -54,7 +55,7 @@ export function SpeakSession({ tasks, onClose, onDone }: SpeakSessionProps) {
           {isShown ? (
             <button
               type="button"
-              onClick={() => speak(task.answer, "us", 0.85)}
+              onClick={() => voice.say(task.answer)}
               className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-brand/30 bg-brand-soft p-4 text-left"
             >
               <Icon name="volume" className="size-5 shrink-0 text-brand" />

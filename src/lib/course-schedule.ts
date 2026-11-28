@@ -21,6 +21,7 @@ const LABELS: Record<BlockKind, string> = {
   watch: "Watch the video twice: text hidden, then with the text",
   practice: "Practise 5 sentences: hear, write, say",
   quiz: "Take the day test: it finishes the day",
+  quick: "Answer 8 questions out loud, fast",
   more: "If you have time: take turns, speak, more videos",
   listen: "Listen with the text hidden and get the main idea",
   free: "Listen to anything you enjoy",

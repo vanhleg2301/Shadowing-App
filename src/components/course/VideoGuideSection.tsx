@@ -1,16 +1,18 @@
 "use client";
 
 import { Icon } from "@/components/Icon";
-import { speak } from "@/lib/speech";
+import { browserVoice, type Voice } from "@/hooks/useLinePlayer";
+import { getGuideModelText } from "@/lib/guide-model";
 import type { DayGuide, StudySentence } from "@/lib/video-study";
 
 interface VideoGuideSectionProps {
   guide: DayGuide;
   onHear: (sentence: StudySentence) => void;
+  voice?: Voice;
 }
 
 // The whole video at a glance: what it covers, its parts in order with lines said in it, and a model to copy.
-export function VideoGuideSection({ guide, onHear }: VideoGuideSectionProps) {
+export function VideoGuideSection({ guide, onHear, voice = browserVoice }: VideoGuideSectionProps) {
   return (
     <div lang="en" className="space-y-4">
       <p className="leading-relaxed text-ink">{guide.overview}</p>
@@ -46,7 +48,7 @@ export function VideoGuideSection({ guide, onHear }: VideoGuideSectionProps) {
           <p className="font-extrabold text-ink">Model: {guide.model.title}</p>
           <button
             type="button"
-            onClick={() => speak(guide.model.text.replace(/[[\]]/g, ""), "us", 0.85)}
+            onClick={() => voice.say(getGuideModelText(guide.model.text))}
             aria-label="Read the model aloud"
             className="grid size-9 shrink-0 place-items-center rounded-full text-brand hover:bg-brand-soft"
           >

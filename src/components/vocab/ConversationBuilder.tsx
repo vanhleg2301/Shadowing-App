@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
 import type { DialogueLine } from "@/data/vocabulary";
 import { getPassScore, shuffle } from "@/lib/day-test";
-import { speak } from "@/lib/speech";
+import { browserVoice, type Voice } from "@/hooks/useLinePlayer";
 
 interface ConversationBuilderProps {
   title: string;
@@ -14,13 +14,13 @@ interface ConversationBuilderProps {
   seed: number;
   onClose: () => void;
   onPass: () => void;
+  // Reads the conversation in two voices when it is recorded.
+  voice?: Voice;
 }
-
-const RATE = 0.85;
 
 // The conversation plays line by line. At each of the learner's turns they choose what comes next from
 // the context, then hear it said, so the whole conversation is built one guess at a time.
-export function ConversationBuilder({ title, you, lines, seed, onClose, onPass }: ConversationBuilderProps) {
+export function ConversationBuilder({ title, you, lines, seed, onClose, onPass, voice = browserVoice }: ConversationBuilderProps) {
   const turns = useMemo(() => lines.flatMap((line, i) => (line.speaker === you ? [i] : [])), [lines, you]);
   const options = useMemo(
     () =>
@@ -33,7 +33,6 @@ export function ConversationBuilder({ title, you, lines, seed, onClose, onPass }
       }),
     [turns, lines, seed],
   );
-  const speakers = useMemo(() => [...new Set(lines.map((line) => line.speaker))], [lines]);
   const [answered, setAnswered] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -51,8 +50,9 @@ export function ConversationBuilder({ title, you, lines, seed, onClose, onPass }
   useEffect(
     () => () => {
       runRef.current++;
-      window.speechSynthesis?.cancel();
+      voice.stop();
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -70,14 +70,14 @@ export function ConversationBuilder({ title, you, lines, seed, onClose, onPass }
         return;
       }
       setPlaying(index);
-      speak(lines[index].text, speakers.indexOf(lines[index].speaker) % 2 === 0 ? "us" : "uk", RATE, () => next(index + 1));
+      voice.say(lines[index].text, () => next(index + 1));
     };
     next(from);
   };
 
   const stop = () => {
     runRef.current++;
-    window.speechSynthesis?.cancel();
+    voice.stop();
     setPlaying(-1);
   };
 

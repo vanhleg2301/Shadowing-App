@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "@/components/Icon";
 import { FocusScreen, FocusSummary } from "@/components/lesson/FocusScreen";
 import { getPhrasePicture, type VocabTopic } from "@/data/vocabulary";
-import { speak } from "@/lib/speech";
+import { browserVoice, type Voice } from "@/hooks/useLinePlayer";
 
 interface PhraseDeckProps {
   topic: VocabTopic;
@@ -13,12 +13,11 @@ interface PhraseDeckProps {
   onDone: () => void;
   // Shown on the last screen, e.g. "Add all to Review".
   finish?: ReactNode;
+  voice?: Voice;
 }
 
-const RATE = 0.85;
-
 // The topic's phrases one card at a time: the phrases you say first, then the ones you hear.
-export function PhraseDeck({ topic, onClose, onDone, finish }: PhraseDeckProps) {
+export function PhraseDeck({ topic, onClose, onDone, finish, voice = browserVoice }: PhraseDeckProps) {
   const cards = [...topic.phrases.filter((p) => !p.role), ...topic.phrases.filter((p) => p.role === "hear")];
   const hasHear = cards.some((p) => p.role === "hear");
   const [index, setIndex] = useState(0);
@@ -26,11 +25,15 @@ export function PhraseDeck({ topic, onClose, onDone, finish }: PhraseDeckProps) 
   const card = cards[index];
 
   // Each new card is read out once, the phrase then its example.
+  const { say, stop } = voice;
   useEffect(() => {
-    if (card) speak(`${card.phrase}. ${card.example}`, "us", RATE);
+    if (card) say(card.phrase, () => say(card.example));
+    // Only when the card changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card]);
 
-  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => stop(), []);
 
   const next = () => {
     const nextIndex = index + 1;
@@ -77,7 +80,7 @@ export function PhraseDeck({ topic, onClose, onDone, finish }: PhraseDeckProps) 
           <p className="mt-2 text-muted">{card.meaning}</p>
           <button
             type="button"
-            onClick={() => speak(card.example, "us", RATE)}
+            onClick={() => say(card.example)}
             className="mt-4 flex items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-left text-ink hover:border-brand"
           >
             <Icon name="volume" className="size-5 shrink-0 text-brand" />

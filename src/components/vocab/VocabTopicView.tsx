@@ -8,6 +8,8 @@ import { ChoiceQuiz, type ChoiceQuestion } from "@/components/lesson/ChoiceQuiz"
 import { LessonPath, type LessonStage } from "@/components/lesson/LessonPath";
 import { LessonNotes } from "@/components/LessonNotes";
 import { useAuth } from "@/hooks/useAuth";
+import { useLinePlayer } from "@/hooks/useLinePlayer";
+import type { LineNarration } from "@/lib/story-audio";
 import { VOCAB_COURSE_ID, getPhraseCore, getPhrasePicture, type VocabTopic } from "@/data/vocabulary";
 import { shuffle } from "@/lib/day-test";
 import { ConversationBuilder } from "./ConversationBuilder";
@@ -16,6 +18,8 @@ import { SpeakSession } from "./SpeakSession";
 
 interface VocabTopicViewProps {
   topic: VocabTopic;
+  // Kokoro recording of the phrases, examples, conversation and model answers (the voice of the daily stories).
+  narration: LineNarration | null;
   isSignedIn: boolean;
   // Parts already finished: learn, picture, situation, dialogue, speak.
   passed: string[];
@@ -37,7 +41,8 @@ function getOptions(answer: string, all: string[], seed: number): string[] {
 
 // A vocabulary topic as a path of parts, each opened on its own focus screen: learn what you say and what you
 // hear, match the pictures, choose what is said in a situation, build a conversation, then say it yourself.
-export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTopicViewProps) {
+export function VocabTopicView({ topic, narration, isSignedIn, passed, nextHref }: VocabTopicViewProps) {
+  const { voice, audioProps } = useLinePlayer(narration);
   const { signInWithGoogle } = useAuth();
   const [done, setDone] = useState(passed);
   const [open, setOpen] = useState<StageId | null>(null);
@@ -145,9 +150,14 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
         </div>
       )}
 
-      {open === "learn" && <PhraseDeck topic={topic} onClose={close} onDone={() => finishStage("learn")} finish={saveButton} />}
-      {open === "picture" && <ChoiceQuiz title="Match the picture" questions={pictureQuestions} onClose={close} onPass={() => finishStage("picture")} />}
-      {open === "situation" && <ChoiceQuiz title="What would you say?" questions={situationQuestions} onClose={close} onPass={() => finishStage("situation")} />}
+      <audio {...audioProps} />
+      {open === "learn" && <PhraseDeck topic={topic} onClose={close} onDone={() => finishStage("learn")} finish={saveButton} voice={voice} />}
+      {open === "picture" && (
+        <ChoiceQuiz title="Match the picture" questions={pictureQuestions} onClose={close} onPass={() => finishStage("picture")} voice={voice} />
+      )}
+      {open === "situation" && (
+        <ChoiceQuiz title="What would you say?" questions={situationQuestions} onClose={close} onPass={() => finishStage("situation")} voice={voice} />
+      )}
       {open === "dialogue" && topic.dialogue && (
         <ConversationBuilder
           title={topic.dialogue.title}
@@ -156,9 +166,10 @@ export function VocabTopicView({ topic, isSignedIn, passed, nextHref }: VocabTop
           seed={topic.id * 29}
           onClose={close}
           onPass={() => finishStage("dialogue")}
+          voice={voice}
         />
       )}
-      {open === "speak" && topic.speak && <SpeakSession tasks={topic.speak} onClose={close} onDone={() => finishStage("speak")} />}
+      {open === "speak" && topic.speak && <SpeakSession tasks={topic.speak} onClose={close} onDone={() => finishStage("speak")} voice={voice} />}
     </div>
   );
 }

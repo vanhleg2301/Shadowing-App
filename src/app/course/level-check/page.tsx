@@ -1,3 +1,7 @@
+import { Suspense } from "react";
+import { ListSkeleton } from "@/components/Skeleton";
+import { APP_NARRATION_ID, getAppNarration } from "@/data/app-narration";
+import { getLineNarration } from "@/lib/story-audio";
 import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
 import { LevelCheck } from "@/components/course/LevelCheck";
@@ -13,9 +17,15 @@ export default function LevelCheckPage() {
         <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">2-minute level check</h1>
         <p className="mt-2 text-muted">Listen to 5 short sentences and answer a question about each. We&apos;ll suggest a plan and a video speed for you.</p>
         <div className="mt-6">
-          <LevelCheck />
+          <Suspense fallback={<ListSkeleton rows={3} />}>
+            <LevelCheckWithVoice />
+          </Suspense>
         </div>
       </main>
     </AppShell>
   );
+}
+
+async function LevelCheckWithVoice() {
+  return <LevelCheck narration={await getLineNarration(APP_NARRATION_ID, getAppNarration())} />;
 }

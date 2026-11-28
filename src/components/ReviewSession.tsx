@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { gradeWord } from "@/app/actions";
 import { StudyTimer } from "@/components/StudyTimer";
-import { speak, type Accent } from "@/lib/speech";
+import { Icon } from "@/components/Icon";
+import { speak } from "@/lib/speech";
 import { formatDelay, schedule, type Grade } from "@/lib/srs";
 import type { ReviewCard } from "@/lib/user-data";
 
@@ -20,7 +21,6 @@ const GRADES: { grade: Grade; label: string; className: string }[] = [
   { grade: "easy", label: "Easy", className: "border-sky-700 bg-sky-600 text-white shadow-[0_3px_0_0_#0369a1]" },
 ];
 
-const ACCENTS: Accent[] = ["uk", "us"];
 
 function blankOut(sentence: string, word: string): string {
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -78,20 +78,15 @@ export function ReviewSession({ cards }: ReviewSessionProps) {
       >
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-3xl font-extrabold text-ink">{card.word}</p>
-          {ACCENTS.map((accent) => {
-            const ipa = accent === "uk" ? card.entry?.ipaUk : card.entry?.ipaUs;
-            return (
-              <button
-                key={accent}
-                type="button"
-                onClick={() => speak(card.word, accent)}
-                className="min-h-9 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
-              >
-                {accent.toUpperCase()}
-                {ipa && <span className="font-normal"> /{ipa}/</span>}
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => speak(card.word)}
+            aria-label={`Listen to "${card.word}"`}
+            className="flex min-h-9 items-center gap-1.5 rounded-lg bg-brand-soft px-2.5 text-xs font-semibold text-brand-dark hover:bg-brand/20"
+          >
+            <Icon name="volume" className="size-4" />
+            {(card.entry?.ipaUs ?? card.entry?.ipaUk) && <span className="font-normal">/{card.entry?.ipaUs ?? card.entry?.ipaUk}/</span>}
+          </button>
         </div>
 
         {card.entry?.image && (

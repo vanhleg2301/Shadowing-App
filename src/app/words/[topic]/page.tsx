@@ -6,7 +6,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ListSkeleton } from "@/components/Skeleton";
 import { VocabTopicView } from "@/components/vocab/VocabTopicView";
 import { getGrammarUnit } from "@/data/grammar";
-import { VOCAB_COURSE_ID, VOCAB_TOPICS, getVocabTopic } from "@/data/vocabulary";
+import { VOCAB_COURSE_ID, VOCAB_TOPICS, getVocabNarration, getVocabNarrationId, getVocabTopic } from "@/data/vocabulary";
+import { getLineNarration } from "@/lib/story-audio";
 import { getCourseProgress } from "@/lib/user-data";
 
 export function generateStaticParams() {
@@ -30,7 +31,13 @@ export default function VocabTopicPage({ params }: PageProps<"/words/[topic]">) 
 async function TopicContent({ slug }: { slug: string }) {
   const topic = getVocabTopic(slug);
   if (!topic) notFound();
-  const progress = await getCourseProgress(VOCAB_COURSE_ID).catch(() => null);
+  const [progress, narration] = await Promise.all([
+    getCourseProgress(VOCAB_COURSE_ID).catch(() => null),
+    getLineNarration(
+      getVocabNarrationId(topic),
+      getVocabNarration(topic).map((line) => line.text),
+    ),
+  ]);
   const index = VOCAB_TOPICS.indexOf(topic);
   const next = VOCAB_TOPICS[index + 1];
   const grammar = topic.grammarSlug ? getGrammarUnit(topic.grammarSlug) : undefined;
@@ -57,6 +64,7 @@ async function TopicContent({ slug }: { slug: string }) {
         <VocabTopicView
           key={topic.slug}
           topic={topic}
+          narration={narration}
           isSignedIn={progress !== null}
           passed={progress?.[topic.id] ?? []}
           nextHref={next ? `/words/${next.slug}` : null}

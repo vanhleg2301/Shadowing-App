@@ -38,3 +38,24 @@ export async function getNarration(id: string, lines: string[]): Promise<StoryAu
   const isCurrent = texts.length === row.sentences.length && texts.every((text, i) => text === row.sentences[i].text);
   return isCurrent ? { url: `${supabaseUrl}/storage/v1/object/public/${MEDIA_BUCKET}/${row.audio_path}`, sentences: row.sentences } : null;
 }
+
+// A recording of a list of lines, with where each line starts and ends (a line may be several sentences).
+export interface LineNarration {
+  url: string;
+  // The lines, so one can be found by its text.
+  texts: string[];
+  lineTimes: { start: number; end: number }[];
+}
+
+export async function getLineNarration(id: string, lines: string[]): Promise<LineNarration | null> {
+  const audio = await getNarration(id, lines).catch(() => null);
+  if (!audio) return null;
+  let sentence = 0;
+  const lineTimes = lines.map((line) => {
+    const count = splitSentences(line).length;
+    const times = { start: audio.sentences[sentence].start, end: audio.sentences[sentence + count - 1].end };
+    sentence += count;
+    return times;
+  });
+  return { url: audio.url, texts: lines, lineTimes };
+}
